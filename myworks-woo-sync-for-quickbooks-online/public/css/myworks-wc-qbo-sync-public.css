@@ -1,0 +1,19 @@
+/**
+ * All of the CSS for your public-facing functionality should be
+ * included in this file.
+ */
+
+ table.invoice_table thead th,  table.invoice_table tbody td { font-size: 14px; padding: 10px; vertical-align: middle; }
+
+table.invoice_table tbody td a { width: auto; display: inline-block; vertical-align: middle; }
+
+table.invoice_table tbody td a.btn-pdf { background: #9c5898; color: #fff; border-color: #eee; text-decoration: none !important; font-weight: bold; /*vertical-align: top;*/ padding: 9px 16px; }
+table.invoice_table tbody td a.btn-pdf:hover { background-color: #eee; color: #333; }
+.mwqs_paginate_div .mwqspd_si_txt { float: left; width: auto; line-height: 38px; }
+.mwqs_paginate_div .pagination { width: auto; float: right; padding: 0; margin: 0; clear: none; }
+.mwqs_paginate_div .pagination a { width: auto; display: inline-block; vertical-align: middle; margin: 0 4px; text-decoration: none !important; }
+.mwqs_paginate_div .pagination span { width: auto; display: inline-block; width: 25px; height: 25px; vertical-align: middle; line-height: 25px; border-radius: 50%; background-color: #9c5898; color: #fff; }
+
+
+
+

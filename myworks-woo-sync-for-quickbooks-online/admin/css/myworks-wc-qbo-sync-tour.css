@@ -1,0 +1,207 @@
+/******* TOUR *******/
+.mw-wc-qbo-sync-tour-content {
+    padding: 0 0 10px;
+    position: relative;
+    font-size: 13px;
+    background: #fff;
+    border: 1px solid #ddd;
+    -webkit-box-shadow: 0 3px 6px rgba(0,0,0,0.075);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.075);
+  }
+
+  .mw-wc-qbo-sync-tour-content h3 {
+    position: relative;
+    margin: -1px -1px 5px;
+    padding: 15px 18px 14px 60px;
+    border: 1px solid #3592b6;
+    border-bottom: none;
+    line-height: 1.4em;
+    font-size: 14px;
+    color: #fff;
+    background: #00a0d2;
+  }
+
+  .mw-wc-qbo-sync-tour-content h3:before {
+    background: #fff;
+    -webkit-border-radius: 50%;
+    border-radius: 50%;
+    color: #00a0d2;
+    content: "\f227";
+    font: normal 20px/1.6 dashicons;
+    position: absolute;
+    top: 8px;
+    left: 15px;
+    speak: none;
+    text-align: center;
+    width: 32px;
+    height: 32px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .mw-wc-qbo-sync-tour-content p {
+    padding: 0 15px;
+  }
+
+  .mw-wc-qbo-sync-tour-buttons {
+    margin: 0;
+    padding: 5px 15px;
+    overflow: auto;
+  }
+
+  .mw-wc-qbo-sync-tour-buttons a {
+    float: right;
+    display: inline-block;
+    text-decoration: none;
+  }
+
+  .mw-wc-qbo-sync-tour-buttons a.close {
+    padding-left: 3px;
+    position: relative;
+  }
+
+  .mw-wc-qbo-sync-tour-buttons a.close:before {
+    background: none;
+    color: #b4b9be;
+    content: "\f153";
+    display: block !important;
+    font: normal 16px/1 dashicons;
+    speak: none;
+    margin: 1px 0;
+    text-align: center;
+    -webkit-font-smoothing: antialiased !important;
+    width: 10px;
+    height: 100%;
+    position: absolute;
+    left: -15px;
+    top: 1px;
+  }
+
+  .mw-wc-qbo-sync-tour-buttons a.close:hover:before {
+    color: #c00;
+  }
+
+  .mw-wc-qbo-sync-tour-arrow,
+  .mw-wc-qbo-sync-tour-arrow-inner {
+    position: absolute;
+    width: 0;
+    height: 0;
+  }
+
+  .mw-wc-qbo-sync-tour-arrow {
+    z-index: 10;
+    width: 0;
+    height: 0;
+    border: 0 solid transparent;
+  }
+
+  .mw-wc-qbo-sync-tour-arrow-inner {
+    z-index: 20;
+  }
+
+  .mw-wc-qbo-sync-tour-top,
+  .mw-wc-qbo-sync-tour-undefined {
+    padding-top: 13px;
+  }
+
+  .mw-wc-qbo-sync-tour-bottom {
+    margin-top: -13px;
+    padding-bottom: 13px;
+  }
+
+  .mw-wc-qbo-sync-tour-left {
+    padding-left: 13px;
+  }
+
+  .mw-wc-qbo-sync-tour-right {
+    margin-left: -13px;
+    padding-right: 13px;
+  }
+
+  .mw-wc-qbo-sync-tour-top .mw-wc-qbo-sync-tour-arrow,
+  .mw-wc-qbo-sync-tour-bottom .mw-wc-qbo-sync-tour-arrow,
+  .mw-wc-qbo-sync-tour-undefined .mw-wc-qbo-sync-tour-arrow {
+    left: 50px;
+  }
+
+  .mw-wc-qbo-sync-tour-left .mw-wc-qbo-sync-tour-arrow,
+  .mw-wc-qbo-sync-tour-right .mw-wc-qbo-sync-tour-arrow {
+    top: 50%;
+    margin-top: -15px;
+  }
+
+  .mw-wc-qbo-sync-tour-top .mw-wc-qbo-sync-tour-arrow,
+  .mw-wc-qbo-sync-tour-undefined .mw-wc-qbo-sync-tour-arrow {
+    top: 0;
+    border-width: 0 13px 13px 13px;
+    border-bottom-color: #3592b6;
+  }
+
+  .mw-wc-qbo-sync-tour-top .mw-wc-qbo-sync-tour-arrow-inner,
+  .mw-wc-qbo-sync-tour-undefined .mw-wc-qbo-sync-tour-arrow-inner {
+    top: 1px;
+    margin-left: -13px;
+    margin-top: -13px;
+    border: 13px solid transparent;
+    border-bottom-color: #00a0d2;
+    display: block;
+    content: " ";
+  }
+
+  .mw-wc-qbo-sync-tour-bottom .mw-wc-qbo-sync-tour-arrow {
+    bottom: 0;
+    border-width: 13px 13px 0 13px;
+    border-top-color: #ccc;
+  }
+
+  .mw-wc-qbo-sync-tour-bottom .mw-wc-qbo-sync-tour-arrow-inner {
+    bottom: 1px;
+    margin-left: -13px;
+    margin-bottom: -13px;
+    border: 13px solid transparent;
+    border-top-color: #fff;
+    display: block;
+    content: " ";
+  }
+
+  .mw-wc-qbo-sync-tour-left .mw-wc-qbo-sync-tour-arrow {
+    left: 0;
+    border-width: 13px 13px 13px 0;
+    border-right-color: #ccc;
+  }
+
+  .mw-wc-qbo-sync-tour-left .mw-wc-qbo-sync-tour-arrow-inner {
+    left: 1px;
+    margin-left: -13px;
+    margin-top: -13px;
+    border: 13px solid transparent;
+    border-right-color: #fff;
+    display: block;
+    content: " ";
+  }
+
+  .mw-wc-qbo-sync-tour-right .mw-wc-qbo-sync-tour-arrow {
+    right: 0;
+    border-width: 13px 0 13px 13px;
+    border-left-color: #ccc;
+  }
+
+  .mw-wc-qbo-sync-tour-right .mw-wc-qbo-sync-tour-arrow-inner {
+    right: 1px;
+    margin-right: -13px;
+    margin-top: -13px;
+    border: 13px solid transparent;
+    border-left-color: #fff;
+    display: block;
+    content: " ";
+  }
+
+  /*------- 17-7-2017-----*/
+  #mw-wc-qbo-sync-tour-0 { background-color: #fff; padding: 15px; border: 1px solid #e7e7e7;}
+  #mw-wc-qbo-sync-tour-0 .button-primary { margin-left: 5px;}
+/*-------Ends  17-7-2017-----*/
+  @media screen and ( max-width: 782px ) {
+    .mw-wc-qbo-sync-tour {
+      display: none;
+    }
+  }

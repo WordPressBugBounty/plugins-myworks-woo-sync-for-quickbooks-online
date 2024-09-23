@@ -1,0 +1,20 @@
+*** QuickBooks Sync for WooCommerce - by MyWorks ***
+
+= 2024-02-07 version 2.9.0 =
+* Added support for PHP 8.1 and 8.2
+* Added initial support for HPOS (requires compatibility mode enabled)
+* Added support for KWD and IQD currency
+* Added "Setup Tour" to assist with a walkthrough to easily set up initial sync settings
+* Added "Support" widget in the lower right of all sync pages for more easy access to support
+* Updated: Custom Field Mapping will show automatically for users with the correct plan
+* Updated: Product and Variation menus are now separated in our Map and Push tabs
+* Updated: Setup dialog will now only show if QuickBooks is not connected
+* Updated: Customer setting will not be on by default in Settings > Automatic Sync
+* Improved handling for refunds to use our default product setting instead of failing to sync if product not present in refund
+* Improved handling for deactivate/reactivate to ensure that sync settings aren't changed
+* Improved handling for transaction fees from third party plugins
+* Improved handling for batch support for scenarios with custom order numbers
+* Improved handling for syncing order updates - will now sync a payment to QuickBooks when updating an order if the payment doesn't already exist in QuickBooks
+* Improved setting to email invoice to customers from QuickBooks: this will only occur for unpaid orders with an open invoice (and no payment) in QuickBooks
+* Improved ability to search by SKU in Pull > Products tab
+* Removed the "Queue Sync" setting in Settings > Misc, as it's already the default
