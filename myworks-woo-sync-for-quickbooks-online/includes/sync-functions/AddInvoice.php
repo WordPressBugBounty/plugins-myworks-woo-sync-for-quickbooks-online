@@ -48,9 +48,10 @@ if($include_this_function){
 				$_payment_method = $this->get_array_isset($invoice_data,'_payment_method','',true);
 
 				$_paid_date = $this->get_array_isset($invoice_data,'_paid_date','');
-
+				$_transaction_id = $this->get_array_isset($invoice_data,'_transaction_id','',true);
+				
 				$is_unpaid_order = false;
-				if(empty($_paid_date) || empty($_payment_method)){
+				if(empty($_paid_date) || empty($_payment_method) || empty($_transaction_id)){
 					$is_unpaid_order = true;
 				}
 				
@@ -2928,7 +2929,7 @@ if($include_this_function){
 					$order->add_order_note($o_note);
 					
 					/*Send Invoice*/
-					if($this->option_checked('mw_wc_qbo_sync_send_inv_sr_afsi_qb') && $is_unpaid_order){
+					if($this->option_checked('mw_wc_qbo_sync_send_inv_sr_afsi_qb') && ($is_unpaid_order || $this->get_option('mw_wc_qbo_sync_send_inv_sr_afsi_qb_option') == 'f_a_o')){
 						//BillEmail
 						if(!empty($bill_email_addr) || !empty($_billing_email)){
 							if ($resp_send = $invoiceService->send($Context, $realm, $qbo_inv_id)){

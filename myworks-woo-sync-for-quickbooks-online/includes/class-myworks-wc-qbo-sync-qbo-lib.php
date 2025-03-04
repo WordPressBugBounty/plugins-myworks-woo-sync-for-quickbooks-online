@@ -3465,9 +3465,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	}
 	
 	public function get_slmt_hstry_msg(){
-		$mag = __( '<h2>Need to sync more than '.$this->get_hd_ldys_lmt().' days of history? <a href="'.$this->get_quickbooks_connection_dashboard_url().'/clientarea.php?action=services">Upgrade</a> to an annual plan!</h2>', 'mw_wc_qbo_sync' );
+		$plan_upgrade_url = $this->get_quickbooks_connection_dashboard_url().'/clientarea.php?action=services';
+		if($this->use_new_dash_connection_url()){
+  			$plan_upgrade_url = $this->get_new_dash_user_dashboard_url();
+  		}
+
+		$mag = __( '<h2>Need to sync more than '.$this->get_hd_ldys_lmt().' days of history? <a href="'.$plan_upgrade_url.'">Upgrade</a> to an annual plan!</h2>', 'mw_wc_qbo_sync' );
 		if($this->is_plg_lc_p_l()){
-			$mag = __( '<h2>Need to sync more than '.$this->get_hd_ldys_lmt().' days of history? <a href="'.$this->get_quickbooks_connection_dashboard_url().'/clientarea.php?action=services">Upgrade</a> to a paid plan!</h2>', 'mw_wc_qbo_sync' );
+			$mag = __( '<h2>Need to sync more than '.$this->get_hd_ldys_lmt().' days of history? <a href="'.$plan_upgrade_url.'">Upgrade</a> to a paid plan!</h2>', 'mw_wc_qbo_sync' );
 		}
 		
 		return $mag;
@@ -4720,6 +4725,17 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	}
 	
 	public function option_checked($option=''){
+		# Forced Oauth 2
+		if($option == 'mw_wc_qbo_sync_is_oauth2_qb_connection_fa'){
+			return true;
+		}
+
+		if($option == 'mw_wc_qbo_sync_send_inv_sr_afsi_qb'){
+			if($this->get_option('mw_wc_qbo_sync_send_inv_sr_afsi_qb_option') == 'd_n_e'){
+				return false;
+			}
+		}
+
 		if($option == 'mw_wc_qbo_sync_pause_up_qbo_conection'){return true;}
 		
 		if($option == 'mw_wc_qbo_sync_allow_cdc_for_invnt_import'){
@@ -7496,7 +7512,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			
 			if(is_array($map_data) && !empty($map_data)){
 				$qbo_items_tmp = array();
-				$qbo_items_tmp['Description'] = $Description;
+				$qbo_items_tmp['Description'] = strip_tags($Description);
 				$qbo_items_tmp['Qty'] = $wc_items['_qty'];
 				
 				if(isset($wc_items['qty'])){
@@ -11180,6 +11196,9 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			
 			//$qc_creds_api_url = $this->quickbooks_connection_dashboard_url.'/wc-qbo-get-connection-creds.php';
 			$qc_creds_api_url = $this->quickbooks_connection_dashboard_url.'/wc-qbo-get-connection-creds-v2.php';
+			if($this->use_new_dash_connection_url()){
+				$qc_creds_api_url = $this->get_new_dash_connection_url().'/api/qbo-connection-credentials';
+			}			
 			
 			$params = array(
 				//'timeout' => 10,
@@ -11291,7 +11310,10 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			);		
 			
 			$qc_creds_api_url = $this->quickbooks_connection_dashboard_url.'/wc-qbo-get-connection-creds-v2.php';
-			
+			if($this->use_new_dash_connection_url()){
+				$qc_creds_api_url = $this->get_new_dash_connection_url().'/api/qbo-connection-credentials';
+			}			
+
 			$params = array(
 				//'timeout' => 10,
 				'headers' => $requestHeader,
@@ -11381,7 +11403,10 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			//'is_oauth2_connection' => '1',
 		);	
 		$qco2_cr_api_url = $this->quickbooks_connection_dashboard_url.'/wc-qbo-oauth2-connection-refresh.php';
-		
+		if($this->use_new_dash_connection_url()){
+			$qco2_cr_api_url = $this->get_new_dash_connection_url().'/api/qbo-connection-refresh';
+		}		
+
 		$params = array(
 			//'timeout' => 10,
 			'headers' => $requestHeader,
@@ -11515,8 +11540,8 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 
 					$IPP->version(QuickBooks_IPP_IDS::VERSION_3);		// Need v3 for this
 
-					$CustomerService = new QuickBooks_IPP_Service_Customer();
-					$customers = $CustomerService->query($Context, $creds['qb_realm'], "SELECT * FROM Customer MAXRESULTS 1");
+					$TermService = new QuickBooks_IPP_Service_Term();
+					$terms = $TermService->query($Context, $creds['qb_realm'], "SELECT Id FROM Term STARTPOSITION 0 MaxResults 1");
 
 					$IPP->version($cur_version);		// Revert back to whatever they set
 				}
@@ -18863,6 +18888,7 @@ EOF;
 	public function PushEstimatePayment($payment_data){
 		if($this->is_connected()){
 			$wc_inv_id = (int) $this->get_array_isset($payment_data,'wc_inv_id',0);
+			$payment_id = (int) $this->get_array_isset($payment_data,'wc_inv_id',0);
 			$wc_inv_num = $this->get_array_isset($payment_data,'wc_inv_num','');
 
 			$ord_id_num = ($wc_inv_num!='')?$wc_inv_num:$wc_inv_id;
@@ -18977,6 +19003,24 @@ EOF;
 		}
 
 		return false;
+	}
+
+	public function use_new_dash_connection_url(){
+		return true;
+	}
+
+	public function get_new_dash_connection_url(){
+		return 'https://dash.myworks.software';
+	}
+
+	public function get_new_dash_connect_manage_c_url(){
+		return $this->get_new_dash_connection_url().'/dashboard';
+		#/subscription-details-qbonline/{stripe_sub_id}
+		#mw_wc_qbo_sync_stripe_sub_id
+	}
+
+	public function get_new_dash_user_dashboard_url(){
+		return $this->get_new_dash_connection_url().'/dashboard';
 	}
 	
 }

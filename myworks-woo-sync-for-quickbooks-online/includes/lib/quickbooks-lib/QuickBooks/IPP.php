@@ -938,7 +938,7 @@ class QuickBooks_IPP
 		$query = null;
 
 		$guid = QuickBooks_Utilities::GUID();
-		$minorversion = 38;//6
+		$minorversion = 70;//6
 		
 		if ($optype == QuickBooks_IPP_IDS::OPTYPE_ADD or $optype == QuickBooks_IPP_IDS::OPTYPE_MOD)
 		{

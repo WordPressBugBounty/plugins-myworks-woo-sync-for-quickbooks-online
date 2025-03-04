@@ -149,13 +149,20 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 						  
 					   </div>
 					</div>
+					<?php
+				  		$qb_connect_manage_c_url = $MSQS_QL->get_quickbooks_connection_dashboard_url().'/clientarea.php?action=productdetails&id='.(int) $MSQS_QL->get_option('mw_wc_qbo_sync_service_id');
+				  		if($MSQS_QL->use_new_dash_connection_url()){
+				  			$qb_connect_manage_c_url = $MSQS_QL->get_new_dash_connect_manage_c_url();
+				  		}
+				  	?>
+
 					<?php  if($MSQS_QL->is_connected()):?>
 					<div class="quick-book">
 					   <div class="quick-pdng">
 						  <h3>Manage QuickBooks Connection</h3>
 						  <p>You're already connected to QuickBooks, you can manage your connection here.</p>
 						  <div class="Connect-now">
-							 <a  target="_blank" href="<?php echo $MSQS_QL->get_quickbooks_connection_dashboard_url();?>/clientarea.php?action=productdetails&id=<?php echo (int) $MSQS_QL->get_option('mw_wc_qbo_sync_service_id');?>" class="CmnBtn">Manage Connection</a>
+							<a  target="_blank" href="<?php echo $qb_connect_manage_c_url;?>" class="CmnBtn">Manage Connection</a>
 						  </div>
 					   </div>
 					</div>
@@ -165,8 +172,8 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 					   <div class="quick-pdng">
 						  <h3>Connect to QuickBooks</h3>
 						  <p>Your license key is active, click here to connect to your QuickBooks Online account.</p>
-						  <div class="Connect-now">
-							 <a  target="_blank" href="<?php echo $MSQS_QL->get_quickbooks_connection_dashboard_url();?>/clientarea.php?action=productdetails&id=<?php echo (int) $MSQS_QL->get_option('mw_wc_qbo_sync_service_id');?>" class="CmnBtn">Connect</a>
+						  <div class="Connect-now">						  	
+							<a  target="_blank" href="<?php echo $qb_connect_manage_c_url;?>" class="CmnBtn">Connect</a>
 						  </div>
 					   </div>
 					</div> 

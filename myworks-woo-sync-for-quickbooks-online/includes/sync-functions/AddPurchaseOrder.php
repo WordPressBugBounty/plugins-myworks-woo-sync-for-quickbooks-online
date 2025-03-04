@@ -262,7 +262,13 @@ if($include_this_function){
 						
 						$ItemRef = $this->get_array_isset($qbo_item,'ItemRef',0);
 						$Qty = $this->get_array_isset($qbo_item,'Qty',1);
-						$PurchaseCost = (float) $this->get_qbo_product_PurchaseCost($ItemRef);
+						
+						$PurchaseCost = $this->get_qbo_product_PurchaseCost($ItemRef);
+						if(is_null($PurchaseCost) || $PurchaseCost == 0){
+							$PurchaseCost = $UnitPrice;
+						}
+						
+						$PurchaseCost = (float) $PurchaseCost;
 						
 						//$Amount = ($this->option_checked('mw_wc_qbo_sync_no_ad_discount_li'))?$line_total:$line_subtotal;
 						$Amount = $PurchaseCost*$Qty;

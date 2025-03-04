@@ -121,6 +121,64 @@ if(isset($_POST['mw_wc_qbo_sync_settings']) && check_admin_referer( 'myworks_wc_
 			wp_schedule_event(time(), $ppit, 'mwqbosync_pricing_import_schedule_hook');
 		}
 	}
+
+	#New - For Product
+	if($_POST['mw_wc_qbo_sync_product_pull_interval_time'] != $MSQS_QL->get_option('mw_wc_qbo_sync_product_pull_interval_time')){
+		$ppit = trim($_POST['mw_wc_qbo_sync_product_pull_interval_time']);
+		
+		$ilp = $is_plg_lc_p_l;
+		if(empty($ppit)){$ppit = 'MWQBO_5min';}
+		$oa_ppit = $MSQS_QL->get_qb_ivnt_p_til();
+		if(!isset($oa_ppit[$ppit])){$ppit = 'MWQBO_5min';}
+		if($ilp && $ppit != 'MWQBO_60min' && $ppit != 'MWQBO_360min'){
+			$ppit = 'MWQBO_60min';
+		}
+		
+		#New
+		/*
+		if($is_plg_lc_p_r && $ppit == 'MWQBO_5min'){
+			$ppit = 'MWQBO_15min';
+		}
+		*/
+		
+		if($is_plg_lc_p_r && $ppit != 'MWQBO_60min' && $ppit != 'MWQBO_360min' && $ppit != 'MWQBO_30min'){
+			$ppit = 'MWQBO_30min';
+		}
+		
+		if(wp_next_scheduled('mwqbosync_product_import_schedule_hook')){
+			wp_clear_scheduled_hook('mwqbosync_product_import_schedule_hook');
+			wp_schedule_event(time(), $ppit, 'mwqbosync_product_import_schedule_hook');
+		}
+	}
+
+	#New - For Payment
+	if($_POST['mw_wc_qbo_sync_payment_pull_interval_time'] != $MSQS_QL->get_option('mw_wc_qbo_sync_payment_pull_interval_time')){
+		$ppit = trim($_POST['mw_wc_qbo_sync_payment_pull_interval_time']);
+		
+		$ilp = $is_plg_lc_p_l;
+		if(empty($ppit)){$ppit = 'MWQBO_5min';}
+		$oa_ppit = $MSQS_QL->get_qb_ivnt_p_til();
+		if(!isset($oa_ppit[$ppit])){$ppit = 'MWQBO_5min';}
+		if($ilp && $ppit != 'MWQBO_60min' && $ppit != 'MWQBO_360min'){
+			$ppit = 'MWQBO_60min';
+		}
+		
+		#New
+		/*
+		if($is_plg_lc_p_r && $ppit == 'MWQBO_5min'){
+			$ppit = 'MWQBO_15min';
+		}
+		*/
+		
+		if($is_plg_lc_p_r && $ppit != 'MWQBO_60min' && $ppit != 'MWQBO_360min' && $ppit != 'MWQBO_30min'){
+			$ppit = 'MWQBO_30min';
+		}
+		
+		if(wp_next_scheduled('mwqbosync_payment_import_schedule_hook')){
+			wp_clear_scheduled_hook('mwqbosync_payment_import_schedule_hook');
+			wp_schedule_event(time(), $ppit, 'mwqbosync_payment_import_schedule_hook');
+		}
+	}
 	
 	#New
 	$is_rewrite_r = false;
@@ -1873,7 +1931,7 @@ $wu_roles = get_editable_roles();
 									</td>
 								</tr>
 								
-								<tr>
+								<tr style="display:none;">
 									<th class="title-description">
 								    	<?php echo __('Email invoice to customer when synced to QuickBooks, if unpaid order','mw_wc_qbo_sync') ?>
 								    	
@@ -1892,6 +1950,46 @@ $wu_roles = get_editable_roles();
 										  <span class="tooltiptext"><?php echo __('Turn on to send an invoice after syncing into QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
+								</tr>
+
+								<?php 
+									$qb_eiso_a = [
+										'd_n_e' => 'Do not email',
+										'f_a_o' => 'For all orders',
+										'o_f_u_o' => 'Only for unpaid orders',
+									];
+
+									$mw_wc_qbo_sync_send_inv_sr_afsi_qb_option = $admin_settings_data['mw_wc_qbo_sync_send_inv_sr_afsi_qb_option'];
+									if(empty($mw_wc_qbo_sync_send_inv_sr_afsi_qb_option)){
+										if($admin_settings_data['mw_wc_qbo_sync_send_inv_sr_afsi_qb']=='true'){
+											$mw_wc_qbo_sync_send_inv_sr_afsi_qb_option = 'o_f_u_o';
+										}else{
+											$mw_wc_qbo_sync_send_inv_sr_afsi_qb_option = 'd_n_e';
+										}										
+									}									
+								?>
+
+								<tr>
+									<th class="title-description">
+								    	<?php echo __('Email invoice to customer when synced to QuickBooks','mw_wc_qbo_sync') ?>
+								    	
+								    </th>
+									<td>
+										<div class="row">
+											<div class="input-field col s12 m12 l12">
+												<p>
+													<select name="mw_wc_qbo_sync_send_inv_sr_afsi_qb_option" id="mw_wc_qbo_sync_send_inv_sr_afsi_qb_option" class="filled-in production-option mw_wc_qbo_sync_select">													
+										            <?php echo $MSQS_QL->only_option($mw_wc_qbo_sync_send_inv_sr_afsi_qb_option,$qb_eiso_a); ?>
+										            </select>
+												</p>
+											</div>
+										</div>
+									</td>
+                                    <td>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo __('Choose to send an invoice after syncing into QuickBooks.','mw_wc_qbo_sync') ?></span>
+										</div>
+                                    </td>
 								</tr>
 								
 								<?php
@@ -3122,6 +3220,49 @@ $wu_roles = get_editable_roles();
 													
 													<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_webhook_items[]" id="mw_wc_qbo_sync_webhook_items" value="<?php echo $qwi_key;?>" <?php echo $qwi_checked;?>>
 													&nbsp;<span class="rt_item_hd"><?php echo $qwi_val;?></span>
+
+													<?php if($qwi_val == 'Product'):?>
+													<?php
+														$ppit = $admin_settings_data['mw_wc_qbo_sync_product_pull_interval_time'];
+														if(empty($ppit)){$ppit = 'MWQBO_5min';} //MWQBO_15min
+														
+														$oa_ppit = $MSQS_QL->get_qb_ivnt_p_til();
+														if(!isset($oa_ppit[$ppit])){$ppit = 'MWQBO_5min';} //MWQBO_15min
+														
+														if($is_plg_lc_p_l && $ppit != 'MWQBO_60min' && $ppit != 'MWQBO_360min'){
+															$ppit = 'MWQBO_60min';
+														}
+														
+														$oda = array();
+														if($is_plg_lc_p_l){
+															$oda = $MSQS_QL->get_qb_ivnt_p_til(true);			
+														}
+														
+														#New
+														/*
+														if($is_plg_lc_p_r && $ppit == 'MWQBO_5min'){
+															$ppit = 'MWQBO_15min';
+														}
+														*/
+														
+														if($is_plg_lc_p_r && $ppit != 'MWQBO_60min' && $ppit != 'MWQBO_360min' && $ppit != 'MWQBO_30min'){
+															$ppit = 'MWQBO_30min';
+														}
+														
+														if($is_plg_lc_p_r){
+															$oda = array(
+																'MWQBO_5min'=>'5 minutes',
+																'MWQBO_15min'=>'15 minutes',
+																//'MWQBO_30min'=>'30 minutes',
+															);
+														}
+													?>
+													
+													<!--&nbsp;<?php //echo __('Interval','mw_wc_qbo_sync');?>&nbsp;-->
+													<select name="mw_wc_qbo_sync_product_pull_interval_time">
+														<?php $MSQS_QL->only_option($ppit,$oa_ppit,'','',false,$oda) ?>
+													</select>
+													<?php endif;?>
 													
 													<?php if($qwi_val == 'Inventory'):?>
 													<?php
@@ -3205,6 +3346,49 @@ $wu_roles = get_editable_roles();
 													
 													<!--&nbsp;<?php //echo __('Interval','mw_wc_qbo_sync');?>&nbsp;-->
 													<select name="mw_wc_qbo_sync_prc_pull_interval_time">
+														<?php $MSQS_QL->only_option($ppit,$oa_ppit,'','',false,$oda) ?>
+													</select>
+													<?php endif;?>
+
+													<?php if($qwi_val == 'Payment'):?>
+													<?php
+														$ppit = $admin_settings_data['mw_wc_qbo_sync_payment_pull_interval_time'];
+														if(empty($ppit)){$ppit = 'MWQBO_5min';} //MWQBO_15min
+														
+														$oa_ppit = $MSQS_QL->get_qb_ivnt_p_til();
+														if(!isset($oa_ppit[$ppit])){$ppit = 'MWQBO_5min';} //MWQBO_15min
+														
+														if($is_plg_lc_p_l && $ppit != 'MWQBO_60min' && $ppit != 'MWQBO_360min'){
+															$ppit = 'MWQBO_60min';
+														}
+														
+														$oda = array();
+														if($is_plg_lc_p_l){
+															$oda = $MSQS_QL->get_qb_ivnt_p_til(true);			
+														}
+														
+														#New
+														/*
+														if($is_plg_lc_p_r && $ppit == 'MWQBO_5min'){
+															$ppit = 'MWQBO_15min';
+														}
+														*/
+														
+														if($is_plg_lc_p_r && $ppit != 'MWQBO_60min' && $ppit != 'MWQBO_360min' && $ppit != 'MWQBO_30min'){
+															$ppit = 'MWQBO_30min';
+														}
+														
+														if($is_plg_lc_p_r){
+															$oda = array(
+																'MWQBO_5min'=>'5 minutes',
+																'MWQBO_15min'=>'15 minutes',
+																//'MWQBO_30min'=>'30 minutes',
+															);
+														}
+													?>
+													
+													<!--&nbsp;<?php //echo __('Interval','mw_wc_qbo_sync');?>&nbsp;-->
+													<select name="mw_wc_qbo_sync_payment_pull_interval_time">
 														<?php $MSQS_QL->only_option($ppit,$oa_ppit,'','',false,$oda) ?>
 													</select>
 													<?php endif;?>

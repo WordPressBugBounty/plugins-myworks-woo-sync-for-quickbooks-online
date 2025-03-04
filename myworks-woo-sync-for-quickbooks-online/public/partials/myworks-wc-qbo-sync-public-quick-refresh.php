@@ -96,8 +96,8 @@ if($MSQS_QL->is_connected()){
 		exit(0);
 	}
 	
-	echo $MWQS_OF->get_html_msg(__('Myworks Quickbooks Sync Quick Refresh','mw_wc_qbo_sync'),'<h2>'.__('Quickbooks Online Data Successfully Recognized','mw_wc_qbo_sync').'</h2>'.$count_msg);
+	echo $MWQS_OF->get_html_msg(__('Myworks QuickBooks Sync Quick Refresh','mw_wc_qbo_sync'),'<h2>'.__('QuickBooks Online Data Successfully Recognized','mw_wc_qbo_sync').'</h2>'.$count_msg);
 }else{
-	echo $MWQS_OF->get_html_msg(__('Myworks Quickbooks Sync Quick Refresh','mw_wc_qbo_sync'),'<h2>'.__('Quickbooks Not Connected','mw_wc_qbo_sync').'</h2>');
+	echo $MWQS_OF->get_html_msg(__('Myworks QuickBooks Sync Quick Refresh','mw_wc_qbo_sync'),'<h2>'.__('QuickBooks Not Connected','mw_wc_qbo_sync').'</h2>');
 }
 echo $go_back_txt;

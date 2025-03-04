@@ -3,9 +3,9 @@ Contributors: myworksdesign
 Donate link: https://myworks.software
 Tags: woocommerce, quickbooks, quickbooks online, quickbooks desktop, quickbooks pos, woocommerce quickbooks, woocommerce sync, woocommerce quickbooks sync, quickbooks integration
 Requires at least: 5.3
-Stable tag: 2.9.0
+Stable tag: 2.9.1
 Requires PHP: 7.3
-Tested up to: 6.6.1
+Tested up to: 6.7.2
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -79,7 +79,7 @@ You will be able to connect to QuickBooks Online from within your account with u
 == Frequently Asked Questions ==
 
 = What are the requirements to use MyWorks Sync? =
-MyWorks Sync requires a recent version of Wordpress (5.1+) with WooCommerce (4.0+) installed. Your server should run on Linux and have at least PHP 5.6. You also need an active trial or paid plan with MyWorks at <https://app.myworks.software>
+MyWorks Sync requires a recent version of Wordpress (5.1+) with WooCommerce (4.0+) installed. Your server should run on Linux and have at least PHP 5.6. You also need an active trial or paid plan with MyWorks at <https://myworks.software/pricing>
 
 = What QuickBooks countries/versions do you support? =
 MyWorks Sync supports any version/country of QuickBooks Online, including any tax and currency for your locale. We also support QuickBooks Desktop 2015 and later. If you have QuickBooks Desktop, visit our site at <https://myworks.software> to sign up and learn more.
@@ -154,6 +154,13 @@ A: There sure are! We support over 25+ popular WooCommerce extensions - all incl
 6. Advanced payment syncing, including transaction fees & multicurrency support.
 
 == Changelog ==
+
+= 2025-02-25 version 2.9.1 =
+* Added support for PHP 8.3
+* Updated MyWorks connection process
+* Improved reliability when syncing products, pricing and payments from QuickBooks to WooCommerce
+* Improved QuickBooks API connection efficiency
+* Resolved minor bugs
 
 
 = 2024-02-06 version 2.9.0 =

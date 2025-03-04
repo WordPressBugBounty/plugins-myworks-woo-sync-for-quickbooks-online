@@ -292,7 +292,8 @@ class MyWorks_WC_QBO_Sync_Admin {
 				$timestamp = $last_timestamp;
 			}else{
 				$interval_mins = 60;
-				$now = new DateTime(null, new DateTimeZone('America/Los_Angeles'));
+				#$now = new DateTime(null, new DateTimeZone('America/Los_Angeles'));
+				$now = new DateTime(null, new DateTimeZone('UTC'));
 				$datetime = $now->format('Y-m-d H:i:s');
 				$datetime = date('Y-m-d H:i:s',strtotime("-{$interval_mins} minutes",strtotime($datetime)));
 				
@@ -355,7 +356,8 @@ class MyWorks_WC_QBO_Sync_Admin {
 				$timestamp = $last_timestamp;
 			}else{
 				$interval_mins = 60;
-				$now = new DateTime(null, new DateTimeZone('America/Los_Angeles'));
+				#$now = new DateTime(null, new DateTimeZone('America/Los_Angeles'));
+				$now = new DateTime(null, new DateTimeZone('UTC'));
 				$datetime = $now->format('Y-m-d H:i:s');
 				$datetime = date('Y-m-d H:i:s',strtotime("-{$interval_mins} minutes",strtotime($datetime)));
 				
@@ -389,6 +391,149 @@ class MyWorks_WC_QBO_Sync_Admin {
 			/**/
 			if(!empty($cdc_item_ids)){
 				update_option('mw_qbo_sync_iishc_cdc_last_prc_impt_timestamp',$timestamp);
+			}
+			
+		}
+	}
+	
+	#Product
+	public function mwqbosync_product_import_schedule_hook_callback(){
+		global $MSQS_QL;
+		if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
+			$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true);	
+		}		
+		
+		if($MSQS_QL->is_connected()){
+			$Context = $MSQS_QL->getContext();
+			$realm = $MSQS_QL->getRealm();
+			
+			$now = new DateTime(null, new DateTimeZone('UTC')); #America/Los_Angeles
+			$datetime = $now->format('Y-m-d H:i:s');
+			
+			$last_timestamp = trim($MSQS_QL->get_option('mw_qbo_sync_iishc_cdc_last_product_impt_timestamp'));
+			if(!empty($last_timestamp)){
+				$timestamp = $last_timestamp;
+			}else{
+				$interval_mins = 60;				
+				$datetime_m = date('Y-m-d H:i:s',strtotime("-{$interval_mins} minutes",strtotime($datetime)));
+
+				$timestamp = date('Y-m-d', strtotime($datetime_m)) . 'T' . date('H:i:s', strtotime($datetime_m)).'-00:00';
+			}
+
+			if(empty($timestamp)){
+				return false;
+			}
+
+			$last_timestamp = date('Y-m-d', strtotime($datetime)) . 'T' . date('H:i:s', strtotime($datetime)).'-00:00';
+            if(!empty($last_timestamp)){
+            	update_option('mw_qbo_sync_iishc_cdc_last_product_impt_timestamp',$last_timestamp);
+            }			
+			
+			$cdc_objects = array('Item');
+			
+			$CDCService = new QuickBooks_IPP_Service_ChangeDataCapture();
+			$cdc = $CDCService->cdc($Context, $realm, $cdc_objects,	$timestamp);
+			
+			$cdc_item_ids = array();
+			$it_arr = array('Inventory','Service','NonInventory'); //,'Group'
+			if($cdc && count($cdc)){
+				foreach ($cdc as $object_type => $list){
+					if($list && count($list)){
+						foreach ($list as $Object){
+							if($object_type=='Item'){
+								$item_id = (int) $MSQS_QL->qbo_clear_braces($Object->getId());
+								$item_type = $Object->getType();
+								if($item_id && in_array($item_type,$it_arr)){
+									$cdc_item_ids[] = $item_id;									
+									$return_id = $MSQS_QL->Qbo_Pull_Product(array('qbo_product_id'=>$item_id,'cdc'=>true));
+								}
+							}
+						}
+					}										
+				}
+			}
+
+			/*
+			$dm = 'UTC Changed Since: '.$timestamp.PHP_EOL;
+			$dm .= 'Item Ids: '.print_r($cdc_item_ids,true);
+			$MSQS_QL->save_log('Product Pull Cron Debug',$dm,'Debug',2);			
+			*/
+			
+			if(!empty($cdc_item_ids)){
+				#->
+			}
+			
+		}
+	}
+
+	#Payment
+	public function mwqbosync_payment_import_schedule_hook_callback(){
+		global $MSQS_QL;
+		if($MSQS_QL->is_plg_lc_p_l() || $MSQS_QL->is_plg_lc_p_r()){
+			return false;
+		}
+
+		if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
+			$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true);	
+		}		
+		
+		if($MSQS_QL->is_connected()){
+			$Context = $MSQS_QL->getContext();
+			$realm = $MSQS_QL->getRealm();
+
+			$now = new DateTime(null, new DateTimeZone('UTC')); #America/Los_Angeles
+			$datetime = $now->format('Y-m-d H:i:s');
+			
+			$last_timestamp = $MSQS_QL->get_option('mw_qbo_sync_iishc_cdc_last_payment_impt_timestamp');
+			if(!empty($last_timestamp)){
+				$timestamp = $last_timestamp;
+			}else{
+				$interval_mins = 60;				
+				$datetime_m = date('Y-m-d H:i:s',strtotime("-{$interval_mins} minutes",strtotime($datetime)));
+				
+				$timestamp = date('Y-m-d', strtotime($datetime_m)) . 'T' . date('H:i:s', strtotime($datetime_m)).'-00:00';
+			}
+
+			if(empty($timestamp)){
+				return false;
+			}
+
+			$last_timestamp = date('Y-m-d', strtotime($datetime)) . 'T' . date('H:i:s', strtotime($datetime)).'-00:00';
+            if(!empty($last_timestamp)){
+            	update_option('mw_qbo_sync_iishc_cdc_last_payment_impt_timestamp',$last_timestamp);
+            }
+			
+			$cdc_objects = array('Payment');
+			
+			$CDCService = new QuickBooks_IPP_Service_ChangeDataCapture();
+			$cdc = $CDCService->cdc($Context, $realm, $cdc_objects,	$timestamp);
+			
+			$cdc_item_ids = array();
+			
+			if($cdc && count($cdc)){
+				foreach ($cdc as $object_type => $list){
+					if($list && count($list)){
+						foreach ($list as $Object){
+							if($object_type=='Payment'){
+								$item_id = (int) $MSQS_QL->qbo_clear_braces($Object->getId());								
+								if($item_id){
+									$cdc_item_ids[] = $item_id;									
+									$return_id = $MSQS_QL->Qbo_Pull_Payment(array('qbo_payment_id'=>$item_id,'cdc'=>true));
+								}
+							}
+						}
+					}										
+				}
+			}
+
+			/*
+			$dm = 'UTC Changed Since: '.$timestamp.PHP_EOL;
+			$dm .= 'Item Ids: '.print_r($cdc_item_ids,true);
+			$MSQS_QL->save_log('Payment Pull Cron Debug',$dm,'Debug',2);			
+			*/
+			
+			if(!empty($cdc_item_ids)){
+				#->
 			}
 			
 		}
@@ -1010,6 +1155,102 @@ class MyWorks_WC_QBO_Sync_Admin {
 		
 		add_action($mwqb_ppis_hk, array($this,'mwqbosync_pricing_import_schedule_function'));		
 	}
+
+	#Product
+	public function mwqbosync_product_import_schedule_cron(){
+		global $MSQS_QL;
+		$mwqb_ppis_hk = 'mwqbosync_product_import_schedule_hook';
+		$ppit_on = 'mw_wc_qbo_sync_product_pull_interval_time';
+		
+		$ppit = $MSQS_QL->get_option($ppit_on);
+		$ilp = $MSQS_QL->is_plg_lc_p_l();
+		if(empty($ppit)){$ppit = 'MWQBO_5min';}
+		
+		$oa_ppit = $MSQS_QL->get_qb_ivnt_p_til();
+		if(!isset($oa_ppit[$ppit])){$ppit = 'MWQBO_5min';}
+		
+		$is_opuci = false;
+		if($ilp && $ppit != 'MWQBO_60min' && $ppit != 'MWQBO_360min'){
+			$ppit = 'MWQBO_60min';
+			$is_opuci = true;
+		}
+		
+		#New
+		/*
+		if($MSQS_QL->is_plg_lc_p_r() && ($ppit == 'MWQBO_5min' || $ppit == 'MWQBO_15min')){
+			$ppit = 'MWQBO_30min';
+			$is_opuci = true;
+		}
+		*/
+		
+		if($MSQS_QL->is_plg_lc_p_r() && $ppit != 'MWQBO_60min' && $ppit != 'MWQBO_360min' && $ppit != 'MWQBO_30min'){
+			$ppit = 'MWQBO_30min';
+			$is_opuci = true;
+		}
+		
+		if($is_opuci){
+			update_option($ppit_on,$ppit);
+			//
+			wp_clear_scheduled_hook($mwqb_ppis_hk);
+			wp_schedule_event(time(), $ppit, $mwqb_ppis_hk);
+		}
+		
+		if (!$is_opuci && ! wp_next_scheduled ( $mwqb_ppis_hk )){			
+			wp_schedule_event(time(), $ppit, $mwqb_ppis_hk);
+		}
+		
+		add_action($mwqb_ppis_hk, array($this,'mwqbosync_product_import_schedule_function'));		
+	}
+
+	#Payment
+	public function mwqbosync_payment_import_schedule_cron(){
+		global $MSQS_QL;
+		if($MSQS_QL->is_plg_lc_p_l() || $MSQS_QL->is_plg_lc_p_r()){
+			return false;
+		}
+
+		$mwqb_ppis_hk = 'mwqbosync_payment_import_schedule_hook';
+		$ppit_on = 'mw_wc_qbo_sync_payment_pull_interval_time';
+		
+		$ppit = $MSQS_QL->get_option($ppit_on);
+		$ilp = $MSQS_QL->is_plg_lc_p_l();
+		if(empty($ppit)){$ppit = 'MWQBO_5min';}
+		
+		$oa_ppit = $MSQS_QL->get_qb_ivnt_p_til();
+		if(!isset($oa_ppit[$ppit])){$ppit = 'MWQBO_5min';}
+		
+		$is_opuci = false;
+		if($ilp && $ppit != 'MWQBO_60min' && $ppit != 'MWQBO_360min'){
+			$ppit = 'MWQBO_60min';
+			$is_opuci = true;
+		}
+		
+		#New
+		/*
+		if($MSQS_QL->is_plg_lc_p_r() && ($ppit == 'MWQBO_5min' || $ppit == 'MWQBO_15min')){
+			$ppit = 'MWQBO_30min';
+			$is_opuci = true;
+		}
+		*/
+		
+		if($MSQS_QL->is_plg_lc_p_r() && $ppit != 'MWQBO_60min' && $ppit != 'MWQBO_360min' && $ppit != 'MWQBO_30min'){
+			$ppit = 'MWQBO_30min';
+			$is_opuci = true;
+		}
+		
+		if($is_opuci){
+			update_option($ppit_on,$ppit);
+			//
+			wp_clear_scheduled_hook($mwqb_ppis_hk);
+			wp_schedule_event(time(), $ppit, $mwqb_ppis_hk);
+		}
+		
+		if (!$is_opuci && ! wp_next_scheduled ( $mwqb_ppis_hk )){			
+			wp_schedule_event(time(), $ppit, $mwqb_ppis_hk);
+		}
+		
+		add_action($mwqb_ppis_hk, array($this,'mwqbosync_payment_import_schedule_function'));		
+	}
 	
 	public function mwqbosync_inventory_import_schedule_function(){
 		global $MSQS_AD;
@@ -1019,6 +1260,16 @@ class MyWorks_WC_QBO_Sync_Admin {
 	public function mwqbosync_pricing_import_schedule_function(){
 		global $MSQS_AD;
 		$MSQS_AD->mwqbosync_pricing_import_schedule_hook_callback();
+	}
+
+	public function mwqbosync_product_import_schedule_function(){
+		global $MSQS_AD;
+		$MSQS_AD->mwqbosync_product_import_schedule_hook_callback();
+	}
+
+	public function mwqbosync_payment_import_schedule_function(){
+		global $MSQS_AD;
+		$MSQS_AD->mwqbosync_payment_import_schedule_hook_callback();
 	}
 	
 	#Main Init
@@ -1108,10 +1359,30 @@ class MyWorks_WC_QBO_Sync_Admin {
 				$this->mwqbosync_pricing_import_schedule_cron();
 			}
 		}
+
+		#Product
+		$is_auto_product_pull_active = false;
+		if(is_array($mw_wc_qbo_sync_webhook_items) && count($mw_wc_qbo_sync_webhook_items)){
+			if(in_array('Product',$mw_wc_qbo_sync_webhook_items)){
+				$is_auto_product_pull_active = true;
+				$this->mwqbosync_product_import_schedule_cron();
+			}
+		}
+
+		#Payment
+		$is_auto_payment_pull_active = false;
+		if(is_array($mw_wc_qbo_sync_webhook_items) && count($mw_wc_qbo_sync_webhook_items)){
+			if(in_array('Payment',$mw_wc_qbo_sync_webhook_items) && !$MSQS_QL->is_plg_lc_p_l() && !$MSQS_QL->is_plg_lc_p_r()){
+				$is_auto_payment_pull_active = true;
+				$this->mwqbosync_payment_import_schedule_cron();
+			}
+		}
 		
 		$mqsl_f_param = array(
 		'is_auto_inventory_pull_active' => $is_auto_inventory_pull_active,
 		'is_auto_pricing_pull_active' => $is_auto_pricing_pull_active,
+		'is_auto_product_pull_active' => $is_auto_product_pull_active,
+		'is_auto_payment_pull_active' => $is_auto_payment_pull_active,
 		'is_deposit_sync_active' => $is_deposit_sync_active,
 		);
 		
@@ -2261,11 +2532,16 @@ EOF;
 		if($MSQS_QL->option_checked('mw_wc_qbo_sync_trial_license')){
 			//
 			$image = plugin_dir_url( __FILE__ ) . 'image/minilogo-square.png';
+			$plan_upgrade_url = $MSQS_QL->get_quickbooks_connection_dashboard_url().'/clientarea.php?action=productdetails&id='.(int) $MSQS_QL->get_option('mw_wc_qbo_sync_trial_license_serviceid');
+			if($MSQS_QL->use_new_dash_connection_url()){
+	  			$plan_upgrade_url = $MSQS_QL->get_new_dash_user_dashboard_url();
+	  		}
+
 			echo '
 			<div class="text-btn mwqb_tlmb" style="position: relative;">
 				<img width="25"  alt="MyWorks Sync" title="MyWorks Sync" src="'.$image.'">&nbsp;
 				<h3><b>'.(int) $MSQS_QL->get_option('mw_wc_qbo_sync_trial_days_left').'</b> &nbsp;DAYS LEFT ON YOUR FREE TRIAL</h3>
-				<a target="_blank" href="'.$MSQS_QL->get_quickbooks_connection_dashboard_url().'/clientarea.php?action=productdetails&id='.$MSQS_QL->get_option('mw_wc_qbo_sync_trial_license_serviceid').'" class="btn btn-info" role="button">UPGRADE NOW!
+				<a target="_blank" href="'.$plan_upgrade_url.'" class="btn btn-info" role="button">UPGRADE NOW!
 				</a></br>
 				&nbsp;
 				<a id="mwqs_tl_chk_again" style="font-size:12px;text-align: center;" href="javascript:void(0);">Check Again...</a>
@@ -2306,11 +2582,16 @@ EOF;
 			';
 		}else{
 			//
+			$plan_upgrade_url = $MSQS_QL->get_quickbooks_connection_dashboard_url().'/clientarea.php?action=productdetails&id='.(int) $MSQS_QL->get_option('mw_wc_qbo_sync_service_id');
+			if($MSQS_QL->use_new_dash_connection_url()){
+	  			$plan_upgrade_url = $MSQS_QL->get_new_dash_user_dashboard_url();
+	  		}
+
 			echo '
 			<div class="text-btn mwqb_lpmb" style="position: relative;">
 				
 				<h3>YOU\'RE ON OUR FREE PLAN! WANT MORE?</h3>
-				<a target="_blank" href="'.$MSQS_QL->get_quickbooks_connection_dashboard_url().'/clientarea.php?action=productdetails&id='.$MSQS_QL->get_option('mw_wc_qbo_sync_service_id').'" class="btn btn-info" role="button">UPGRADE NOW!
+				<a target="_blank" href="'.$plan_upgrade_url.'" class="btn btn-info" role="button">UPGRADE NOW!
 				</a></br>
 				&nbsp;
 				<small>Unlimited sync, 2-Way sync, Intelligent bank deposits and more!</small>

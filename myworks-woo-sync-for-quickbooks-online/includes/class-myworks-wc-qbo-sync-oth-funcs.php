@@ -175,6 +175,10 @@ class MyWorks_WC_QBO_Sync_Oth_Funcs {
 		$localkeyvalid = false;
 		
 		$localkeyresults = array();
+		if($this->use_new_dash_license_url()){
+			$whmcsurl = 'https://dash.myworks.software/';
+			$verifyfilepath = 'api/license';
+		}		
 		
 		if (!$only_remote_check && $localkey) {
 			$localkey = str_replace("\n", '', $localkey); # Remove the line breaks
@@ -376,6 +380,11 @@ class MyWorks_WC_QBO_Sync_Oth_Funcs {
 			$serviceid = $results["serviceid"];
 			$billingcycle = $results["billingcycle"];
 			update_option('mw_wc_qbo_sync_service_id',$serviceid);
+
+			# New - Dash
+			$stripe_sub_id = (isset($results["stripe_sub_id"]))?trim($results["stripe_sub_id"]):'';
+			update_option('mw_wc_qbo_sync_stripe_sub_id',$stripe_sub_id);
+
 			if(strpos($productname,'Free Trial')!==false){
 					$trialdaysleft = (int) 14-((strtotime(date("Y-m-d")) - strtotime($results["regdate"]))/86400);						
 				if($trialdaysleft<0){
@@ -867,6 +876,8 @@ EOF;
 		'mw_wc_qbo_sync_oaslim_iqbld' => isset($_POST['mw_wc_qbo_sync_oaslim_iqbld'])?trim($_POST['mw_wc_qbo_sync_oaslim_iqbld']):'',
 		
 		'mw_wc_qbo_sync_send_inv_sr_afsi_qb' => isset($_POST['mw_wc_qbo_sync_send_inv_sr_afsi_qb'])?$_POST['mw_wc_qbo_sync_send_inv_sr_afsi_qb']:'false',
+
+		'mw_wc_qbo_sync_send_inv_sr_afsi_qb_option' => isset($_POST['mw_wc_qbo_sync_send_inv_sr_afsi_qb_option'])?$_POST['mw_wc_qbo_sync_send_inv_sr_afsi_qb_option']:'d_n_e',
 		
 		'mw_wc_qbo_sync_no_ad_discount_li' => isset($_POST['mw_wc_qbo_sync_no_ad_discount_li'])?$_POST['mw_wc_qbo_sync_no_ad_discount_li']:'false',
 		
@@ -1062,6 +1073,7 @@ EOF;
 		'mw_wc_qbo_sync_skip_os_lid',
 		'mw_wc_qbo_sync_wolim_iqilid_desc',
 		'mw_wc_qbo_sync_send_inv_sr_afsi_qb',
+		'mw_wc_qbo_sync_send_inv_sr_afsi_qb_option',
 		'mw_wc_qbo_sync_no_ad_discount_li',
 		'mw_wc_qbo_sync_qb_sdioli_isli',
 		'mw_wc_qbo_sync_sync_txn_fee_as_ng_li',
@@ -1112,6 +1124,8 @@ EOF;
 		
 		'mw_wc_qbo_sync_ivnt_pull_interval_time',
 		'mw_wc_qbo_sync_prc_pull_interval_time',
+		'mw_wc_qbo_sync_product_pull_interval_time',
+		'mw_wc_qbo_sync_payment_pull_interval_time',
 		//
 		'mw_wc_qbo_sync_os_price_fp_update',
 		'mw_wc_qbo_sync_sync_product_images_pp',
@@ -1155,5 +1169,9 @@ EOF;
 	public function get_mpp_bs_msg($p=''){
 		$msg = __('Please set a search criteria or click Reset','mw_wc_qbo_sync');
 		return $msg;
+	}
+
+	public function use_new_dash_license_url(){
+		return true;
 	}
 }
