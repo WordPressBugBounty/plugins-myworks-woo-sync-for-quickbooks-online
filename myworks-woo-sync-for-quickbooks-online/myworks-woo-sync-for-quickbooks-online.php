@@ -10,7 +10,7 @@
  * Plugin Name:       WooCommerce Sync for QuickBooks Online - by MyWorks
  * Plugin URI:        https://myworks.software/integrations/sync-woocommerce-quickbooks-online
  * Description:       Automatically sync your WooCommerce store with QuickBooks Online - in real-time! Easily sync customers, orders, payments, products, inventory and more between your WooCommerce store and QuickBooks Online. Your complete solution to streamline your accounting workflow.
- * Version:           2.9.1
+ * Version:           2.9.2
  * Author:            MyWorks
  * Author URI:        https://myworks.software/
  * Developer: 		  MyWorks
@@ -21,7 +21,7 @@
  * Requires PHP: 7.3
  *
  * WC requires at least: 3.0.0
- * WC tested up to: 9.7.1
+ * WC tested up to: 9.8.1
  *
  * Copyright: © 2011-2025 MyWorks.
  */

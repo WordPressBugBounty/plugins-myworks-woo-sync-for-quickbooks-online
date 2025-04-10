@@ -3271,7 +3271,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php endif;?>		
 		
 		<!--WooCommerce Product ==> QuickBooks Online Product (NP)-->
-		<?php $wc_prd_qbo_prd_ext_fld_compt = true;?>
+		<?php $wc_prd_qbo_prd_ext_fld_compt = false;?>
 		<?php if($wc_prd_qbo_prd_ext_fld_compt && $MSQS_QL->is_plugin_active('atum-stock-manager-for-woocommerce')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
@@ -3341,7 +3341,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php endif;?>
 		
 		<!--WooCommerce USER  ==> QuickBooks Online Vendor (NP)-->
-		<?php $wc_user_to_qbo_vendor_compt = true;?>
+		<?php $wc_user_to_qbo_vendor_compt = false;?>
 		<?php if($wc_user_to_qbo_vendor_compt && $MSQS_QL->is_plugin_active('atum-stock-manager-for-woocommerce')):?>
 		<?php $is_compt=true;?>
 		

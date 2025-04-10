@@ -49,12 +49,12 @@ if($sync_type!='push' && $sync_type!='pull'){
 }
 
 $item_type = (isset($_GET['item_type']))?$_GET['item_type']:'';
-if($item_type!='customer' && $item_type!='invoice' && $item_type!='payment' && $item_type!='product' && $item_type!='inventory'  && $item_type!='v_inventory' && $item_type!='category' && $item_type!='variation' && $item_type!='refund'){	
+if($item_type!='customer' && $item_type!='invoice' && $item_type!='payment' && $item_type!='product' && $item_type!='inventory'  && $item_type!='v_inventory' && $item_type!='category' && $item_type!='variation' && $item_type!='refund' && $item_type!='vendor'){	
 	$is_valid_sync = false;
-	
-	if($item_type == 'vendor' && $MSQS_QL->is_wq_vendor_pm_enable()){
-		$is_valid_sync = true;
-	}
+}
+
+if($is_valid_sync && $item_type == 'vendor' && !$MSQS_QL->is_wq_vendor_pm_enable()){
+	$is_valid_sync = false;
 }
 
 $tot = 0;
@@ -166,8 +166,8 @@ if($item_ids!=''){
 		
 	}
 
-	var item_ids = '<?php echo $item_ids;?>';
-	var item_type = '<?php echo $item_type;?>';
+	var item_ids = '<?php echo esc_html($item_ids);?>';
+	var item_type = '<?php echo esc_html($item_type);?>';
 
 	function start_ajax_push(){	
 		if(item_ids!=''){
@@ -198,7 +198,7 @@ if($item_ids!=''){
 						
 			var ai_id = ids_arr[i];					
 			var ajaxurl = '<?php echo $ajaxurl;?>';
-			var sync_type = '<?php echo $sync_type;?>';
+			var sync_type = '<?php echo esc_html($sync_type);?>';
 			
 			var data = '';
 			
@@ -217,11 +217,11 @@ if($item_ids!=''){
 			};
 			
 			if(sync_type=='pull'){
-				complete_msg = "<span class='success_green'><?php echo ucfirst($item_type_txt);?> Pull Complete</span>";
+				complete_msg = "<span class='success_green'><?php echo esc_html(ucfirst($item_type_txt));?> Pull Complete</span>";
 			}else if(sync_type=='push'){
-				complete_msg = "<span class='success_green'><?php echo ucfirst($item_type_txt);?> Push Complete</span>";
+				complete_msg = "<span class='success_green'><?php echo esc_html(ucfirst($item_type_txt));?> Push Complete</span>";
 			}else{
-				complete_msg = "<span class='success_green'><?php echo ucfirst($item_type_txt);?> Sync Complete</span>";
+				complete_msg = "<span class='success_green'><?php echo esc_html(ucfirst($item_type_txt));?> Sync Complete</span>";
 			}
 			
 			
@@ -340,8 +340,8 @@ if($item_ids!=''){
 <?php if($is_valid_sync):?>
 
 <div class="sw_div">
-<h3><?php echo $p_title;?></h3>
-<h5><?php echo __('Total','mw_wc_qbo_sync');?>: <?php echo $tot;?></h5>
+<h3><?php echo esc_html($p_title);?></h3>
+<h5><?php echo __('Total','mw_wc_qbo_sync');?>: <?php echo esc_html($tot);?></h5>
 
 <div class="progress">
   <div id='progressor' class="progress-bar progress-bar-info progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em;">
@@ -352,7 +352,7 @@ if($item_ids!=''){
 <div class="sw_process">
 <b id="process_txt"><?php echo __('Processing','mw_wc_qbo_sync');?>:</b>
 &nbsp;
-<span id="sw_cur_item">0</span>/<span id="sw_tot_item"><?php echo $tot;?></span>
+<span id="sw_cur_item">0</span>/<span id="sw_tot_item"><?php echo esc_html($tot);?></span>
 &nbsp;
 <span id="sw_loading_img"><img id="sw_img" src="" alt=""></span>
 </div>

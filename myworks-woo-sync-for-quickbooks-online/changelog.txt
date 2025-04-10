@@ -1,5 +1,8 @@
 *** QuickBooks Sync for WooCommerce - by MyWorks Software ***
 
+= 2025-04-10 version 2.9.2 =
+* Updated compatibility with ATUM Inventory plugin to resolve a minor XSS conflict, reproducible only when logged in as an administrator user
+
 = 2025-02-24 version 2.9.1 =
 * Added support for PHP 8.3
 * Updated MyWorks connection process

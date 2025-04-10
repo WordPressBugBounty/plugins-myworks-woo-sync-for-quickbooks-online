@@ -2613,6 +2613,10 @@ if($include_this_function){
 													}
 													
 													if(!$dsf){
+														if($is_static_val){
+															$wcf_val = str_replace('__EOL__', PHP_EOL, $wcf_val);
+														}
+
 														$invoice->{"set".$wcfm_v}($wcf_val);
 													}													
 												}else{
