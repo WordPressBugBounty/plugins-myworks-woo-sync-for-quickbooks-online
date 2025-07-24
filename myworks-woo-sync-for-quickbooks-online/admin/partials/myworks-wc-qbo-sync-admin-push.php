@@ -84,4 +84,3 @@ if($tab=='customer' && !$MSQS_QL->is_plugin_active('customer-custom-post-type-ma
 	*/
 	require_once plugin_dir_path( __FILE__ ) . 'myworks-wc-qbo-sync-admin-push-dashboard.php';
 }
-?>

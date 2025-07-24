@@ -85,14 +85,14 @@ if(isset($_GET['run_queue_sync'])){
  <!--Graph-->
 <div id="mw_wc_qbo_sync_grph_div" style="background:white;">
 <div class="page_title">
-	<!-- <h3 title="<?php echo $plugin_version;?>"><?php _e( 'Dashboard', 'mw_wc_qbo_sync' );?></h3> -->
+	<!-- <h3 title="<?php echo $plugin_version;?>"><?php esc_html_e( 'Dashboard', 'mw_wc_qbo_sync' );?></h3> -->
 	<div class="dashboard_main_buttons">
 	<?php wp_nonce_field( 'myworks_wc_qbo_sync_clear_all_mappings', 'clear_all_mappings' ); ?>
-	<button title="<?php _e( 'Clear all data from map tables', 'mw_wc_qbo_sync' );?>" id="mwqs_clear_all_mappings"><?php _e( 'Clear All Mappings', 'mw_wc_qbo_sync' );?></button>
+	<button title="<?php esc_attr_e( 'Clear all data from map tables', 'mw_wc_qbo_sync' );?>" id="mwqs_clear_all_mappings"><?php esc_html_e( 'Clear All Mappings', 'mw_wc_qbo_sync' );?></button>
 	&nbsp;
 
 	<a id="mwqs_refresh_data_from_qbo" target="_blank" href="<?php echo site_url('index.php?mw_qbo_sync_public_quick_refresh=1');?>">
-	<button title="<?php _e( 'Refresh your sync to recognize the latest customers and products currently in QuickBooks.', 'mw_wc_qbo_sync' );?>"><?php _e( 'Refresh Customers & Products', 'mw_wc_qbo_sync' );?></button>
+	<button title="<?php esc_attr_e( 'Refresh your sync to recognize the latest customers and products currently in QuickBooks.', 'mw_wc_qbo_sync' );?>"><?php esc_html_e( 'Refresh Customers & Products', 'mw_wc_qbo_sync' );?></button>
 	</a>
 	<div id="mwqs_dashboard_ajax_loader"></div>
 	</div>

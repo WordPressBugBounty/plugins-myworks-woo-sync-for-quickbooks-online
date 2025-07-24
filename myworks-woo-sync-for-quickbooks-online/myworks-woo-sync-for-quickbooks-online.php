@@ -7,21 +7,23 @@
  * @package           MyWorks_WC_QBO_Sync
  *
  * @wordpress-plugin
- * Plugin Name:       WooCommerce Sync for QuickBooks Online - by MyWorks
+ * Plugin Name:       MyWorks Sync for WooCommerce & QuickBooks Online
  * Plugin URI:        https://myworks.software/integrations/sync-woocommerce-quickbooks-online
  * Description:       Automatically sync your WooCommerce store with QuickBooks Online - in real-time! Easily sync customers, orders, payments, products, inventory and more between your WooCommerce store and QuickBooks Online. Your complete solution to streamline your accounting workflow.
- * Version:           2.9.2
+ * Version:           2.9.3
  * Author:            MyWorks
  * Author URI:        https://myworks.software/
+ * License:           GPL v2 or later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Developer: 		  MyWorks
  * Developer URI:     https://myworks.software/
  * Text Domain:       quickbooks-sync-for-woocommerce
  * Domain Path:       /languages
- * Requires at least: 5.2
+ * Requires at least: 5.3
  * Requires PHP: 7.3
  *
  * WC requires at least: 3.0.0
- * WC tested up to: 9.8.1
+ * WC tested up to: 10.0.3
  *
  * Copyright: © 2011-2025 MyWorks.
  */
@@ -59,7 +61,7 @@ add_action( 'before_woocommerce_init', function() {
  * The code that runs during plugin activation.
  * This action is documented in includes/class-plugin-name-activator.php
  */
-function activate_myworks_woo_sync_for_quickbooks_online() {
+function myworks_woo_sync_for_quickbooks_online_activate() {
 	/**/
 	$active_plugins = apply_filters( 'active_plugins', get_option( 'active_plugins' ) );
 	if(is_array($active_plugins) && in_array('myworks-wc-qbo-sync/myworks-wc-qbo-sync.php',$active_plugins)){
@@ -91,19 +93,19 @@ function activate_myworks_woo_sync_for_quickbooks_online() {
  * The code that runs during plugin deactivation.
  * This action is documented in includes/class-plugin-name-deactivator.php
  */
-function deactivate_myworks_woo_sync_for_quickbooks_online() {
+function myworks_woo_sync_for_quickbooks_online_deactivate() {
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-myworks-wc-qbo-sync-deactivator.php';
 	MyWorks_WC_QBO_Sync_Deactivator::deactivate();
 }
 
-register_activation_hook( __FILE__, 'activate_myworks_woo_sync_for_quickbooks_online' );
-register_deactivation_hook( __FILE__, 'deactivate_myworks_woo_sync_for_quickbooks_online' );
+register_activation_hook( __FILE__, 'myworks_woo_sync_for_quickbooks_online_activate' );
+register_deactivation_hook( __FILE__, 'myworks_woo_sync_for_quickbooks_online_deactivate' );
 
 /**
 * Admin action links
 */
 
-function add_myworks_woo_sync_for_quickbooks_action_links($links) {
+function myworks_woo_sync_for_quickbooks_online_action_links($links) {
 		/**/
 		if(get_option('mw_wc_qbo_sync_is_valid_license') == 'true'){
 			$links[] = '<a href="' . admin_url( 'admin.php?page=myworks-wc-qbo-sync-settings' ) . '">Settings</a>';
@@ -119,7 +121,7 @@ function add_myworks_woo_sync_for_quickbooks_action_links($links) {
 		return array_merge( $links, $adminlinks );
 }
 
-add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), 'add_myworks_woo_sync_for_quickbooks_action_links' );
+add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), 'myworks_woo_sync_for_quickbooks_online_action_links' );
 
 /**
  * QuickBooks online plugin setup
@@ -142,9 +144,9 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-myworks-wc-qbo-sync.php';
  *
  * @since    1.0.0
  */
-function run_myworks_woo_sync_for_quickbooks_online() {
+function myworks_woo_sync_for_quickbooks_online_run() {
 	$myworks_wc_qbo_sync = new MyWorks_WC_QBO_Sync();	
 	$myworks_wc_qbo_sync->run();
 }
 
-run_myworks_woo_sync_for_quickbooks_online();
+myworks_woo_sync_for_quickbooks_online_run();

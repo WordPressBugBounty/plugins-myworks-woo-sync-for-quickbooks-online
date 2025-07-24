@@ -1320,8 +1320,8 @@ $wu_roles = get_editable_roles();
 									</td>
 									
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_desk') ?>
-										  <span class="tooltiptext"><?php echo __('Select QuickBooks Customer.','mw_wc_qbo_desk') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo __('Select QuickBooks Customer.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -3510,7 +3510,7 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wclp_qbo_sync') ?>
+										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
 										  <span class="tooltiptext"><font color="red">OFF: Default</font> <?php echo __('Check to enable support for invoice prefixes. Only check this box if your WooCommerce invoices have custom prefixes.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>

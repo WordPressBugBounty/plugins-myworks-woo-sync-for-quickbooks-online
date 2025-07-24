@@ -80,7 +80,7 @@ $wc_p_types = wc_get_product_types();
 <?php require_once plugin_dir_path( __FILE__ ) . 'myworks-wc-qbo-sync-admin-map-nav.php' ?>
 
 <div class="container map-product-responsive">
-	<div class="page_title"><h4><?php _e( 'Product Mappings', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Product Mappings', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="mw_wc_filter">
 	 <span class="search_text">Search</span>
 	  &nbsp;
@@ -153,7 +153,7 @@ $wc_p_types = wc_get_product_types();
 									<tr>
 										<td><?php echo $p_val['ID']?></td>
 										<td>
-										<b><a href="<?php echo admin_url('post.php?action=edit&post=').$p_val['ID'] ?>" target="_blank"><?php _e( $p_val['name'], 'mw_wc_qbo_sync' );?></b>
+										<b><a href="<?php echo admin_url('post.php?action=edit&post=').$p_val['ID'] ?>" target="_blank"><?php esc_html_e( $p_val['name'], 'mw_wc_qbo_sync' );?></b>
 										</a>					
 										</td>
 										<td><?php echo $p_val['sku']?></td>
@@ -210,9 +210,9 @@ $wc_p_types = wc_get_product_types();
 				
 				<br />
 				<div class="col col-m">
-				<h5><?php _e( 'Clear All Products Mappings', 'mw_wc_qbo_sync' );?></h5>
+				<h5><?php esc_html_e( 'Clear All Products Mappings', 'mw_wc_qbo_sync' );?></h5>
 				<?php wp_nonce_field( 'myworks_wc_qbo_sync_clear_all_mappings_products', 'clear_all_mappings_products' ); ?>
-				<button id="mwqs_capm_btn"><?php _e( 'Clear Mappings', 'mw_wc_qbo_sync' );?></button>
+				<button id="mwqs_capm_btn"><?php esc_html_e( 'Clear Mappings', 'mw_wc_qbo_sync' );?></button>
 				&nbsp;
 				<span id="mwqs_capm_msg"></span>
 				</div>
@@ -220,7 +220,7 @@ $wc_p_types = wc_get_product_types();
 				<?php else:?>
 				
 				<h4 class="mw_mlp_ndf">
-					<?php _e( 'No available products to display.', 'mw_wc_qbo_sync' );?>
+					<?php esc_html_e( 'No available products to display.', 'mw_wc_qbo_sync' );?>
 				</h4>
 				<?php endif;?>
 			</div>
@@ -267,7 +267,7 @@ $wc_p_types = wc_get_product_types();
 			
 			if(pam_wf!='' && pam_qf!=''){
 				$('#pam_wqf_e_msg').html('');
-				if(confirm('<?php echo __('This will override any previous product mappings, and scan your WooCommerce & QuickBooks Online products by selected fields to automatically match them for you.')?>')){
+				if(confirm('<?php echo __('This will override any previous product mappings, and scan your WooCommerce & QuickBooks Online products by selected fields to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 					var data = {
 						"action": 'mw_wc_qbo_sync_automap_products_wf_qf',
 						"automap_products_wf_qf": jQuery('#automap_products_wf_qf').val(),
@@ -306,7 +306,7 @@ $wc_p_types = wc_get_product_types();
 		
 		<?php if($js_section=false):?>
 		$('#mwqs_automap_products').click(function(){
-			if(confirm('<?php echo __('This will override any previous product mappings, and scan your WooCommerce & QuickBooks Online products by SKU to automatically match them for you.')?>')){
+			if(confirm('<?php echo __('This will override any previous product mappings, and scan your WooCommerce & QuickBooks Online products by SKU to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 				jQuery('#mwqs_automap_products_msg').html('');
 				jQuery('#mwqs_automap_products_msg_by_name').html('');
 				var data = {
@@ -343,7 +343,7 @@ $wc_p_types = wc_get_product_types();
 		});
 		
 		$('#mwqs_automap_products_by_name').click(function(){
-			if(confirm('<?php echo __('This will override any previous product mappings, and scan your WooCommerce & QuickBooks Online products by name to automatically match them for you.')?>')){
+			if(confirm('<?php echo __('This will override any previous product mappings, and scan your WooCommerce & QuickBooks Online products by name to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 				jQuery('#mwqs_automap_products_msg_by_name').html('');
 				jQuery('#mwqs_automap_products_msg').html('');
 				var data = {

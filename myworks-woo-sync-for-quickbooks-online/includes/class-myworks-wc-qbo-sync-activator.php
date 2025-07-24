@@ -34,7 +34,7 @@ class MyWorks_WC_QBO_Sync_Activator {
 		global $wpdb;
 		/*
 		if (!extension_loaded('mcrypt'))
-		die(__('This plugin requires <a target="_blank" href="http://php.net/manual/en/book.mcrypt.php">PHP Mcrypt Extension loaded into your server</a> to be active!', 'mw_wc_qbo_sync'));
+		wp_die(esc_html__('This plugin requires PHP Mcrypt Extension loaded into your server to be active!', 'mw_wc_qbo_sync'));
 		*/
 	    
 		include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
@@ -42,8 +42,8 @@ class MyWorks_WC_QBO_Sync_Activator {
 		/*
 		if(MyWorks_WC_QBO_Sync_Activator::activation_invalid_chars_in_db_conn_info()){
 
-			$error_message = __('MyWorks QuickBooks Online Sync for WooCommerce does not support these special characters in your database password in your wp-config.php file:  (+ / # % ‘ ?)  Please update your database password to not include these characters.', 'mw_wc_qbo_sync');
-			die($error_message);
+			$error_message = __('MyWorks QuickBooks Online Sync for WooCommerce does not support these special characters in your database password in your wp-config.php file:  (+ / # % \' ?)  Please update your database password to not include these characters.', 'mw_wc_qbo_sync');
+			wp_die(esc_html($error_message));
 		}
 		*/
 		
@@ -72,9 +72,9 @@ class MyWorks_WC_QBO_Sync_Activator {
 				if (!$is_pos_plugin_active) {
 					$error_message = __('Plugin conflict - QuickBooks Desktop plugin is already activate', 'mw_wc_qbo_sync');
 				} else {
-					$error_message = __('Plugin conflict - QuickBooks POS plugin is already activate', 'mw_wc_qbo_desk');
+					$error_message = __('Plugin conflict - QuickBooks POS plugin is already activate', 'mw_wc_qbo_sync');
 				}
-				die($error_message);
+				wp_die(esc_html($error_message));
 				
 			}
 		    
@@ -90,14 +90,14 @@ class MyWorks_WC_QBO_Sync_Activator {
 
 			return $is_plugin_activate;
 		} else {
-			$error_message = __('This plugin requires <a target="_blank" href="http://wordpress.org/extend/plugins/woocommerce/">WooCommerce</a> plugin to be active!', 'mw_wc_qbo_sync');
-			die($error_message);
+			$error_message = __('This plugin requires WooCommerce plugin to be active!', 'mw_wc_qbo_sync');
+			wp_die(esc_html($error_message));
 		}
 	}
 	
 	protected static function activation_pointer_add(){
-		$admin_pointer_content = '<h3>' . __( 'MyWorks Sync' ) . '</h3>';
-		$admin_pointer_content .= '<p>' . __( 'Automatically sync your WooCommerce store with QuickBooks Online! Get started with setup here, and check out our documentation, setup videos or a setup call (for paid plans) to get up and running right away!' ) . '</p>';
+		$admin_pointer_content = '<h3>' . __( 'MyWorks Sync', 'mw_wc_qbo_sync' ) . '</h3>';
+		$admin_pointer_content .= '<p>' . __( 'Automatically sync your WooCommerce store with QuickBooks Online! Get started with setup here, and check out our documentation, setup videos or a setup call (for paid plans) to get up and running right away!', 'mw_wc_qbo_sync' ) . '</p>';
 		update_option('mw_wc_qbo_sync_admin_pointers', $admin_pointer_content);
 		delete_option( 'mw_wc_qbo_sync_deactivation_popup' );
 	}

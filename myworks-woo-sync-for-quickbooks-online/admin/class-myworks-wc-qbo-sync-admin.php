@@ -92,7 +92,8 @@ class MyWorks_WC_QBO_Sync_Admin {
 
 		if(isset($_GET['qbo_after_activate_admin_notice']) && $_GET['qbo_after_activate_admin_notice']=='false'){
 			update_option('qbo_after_activate_admin_notice', 'false');
-			wp_redirect(admin_url('admin.php?page=myworks-wc-qbo-sync-connection'));
+			wp_safe_redirect(admin_url('admin.php?page=myworks-wc-qbo-sync-connection'));
+			exit();
 		}
 		
 		$mw_wc_qbo_sync_qbo_is_init = get_option('mw_wc_qbo_sync_qbo_is_init');
@@ -104,7 +105,8 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if(isset($_GET['qbo_after_admin_init_setup_notice']) && $_GET['qbo_after_admin_init_setup_notice']=='false'){
 			update_option( 'mw_wc_qbo_sync_fresh_install', 'false');
 			update_option('qbo_after_admin_init_setup_notice', 'false');
-			wp_redirect(admin_url('admin.php?page=myworks-wc-qbo-push'));
+			wp_safe_redirect(admin_url('admin.php?page=myworks-wc-qbo-push'));
+			exit();
 		}
 		
 		//
@@ -254,7 +256,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if(empty( $activation_message )) {
 		?>
 		<div class="notice notice-success is-dismissible">
-			<p><?php _e( 'You have successfully activated <b>MyWorks Sync for QuickBooks Online</b>. You may visit <a href="'.admin_url('admin.php?page=myworks-wc-qbo-sync-connection').'">MyWorks Sync > Connection</a> in your menubar to begin setup!', 'mw_wc_qbo_sync' ); ?></p>
+			<p><?php printf( esc_html__( 'You have successfully activated %1$s. You may visit %2$s in your menubar to begin setup!', 'mw_wc_qbo_sync' ), '<strong>MyWorks Sync for QuickBooks Online</strong>', '<a href="' . esc_url( admin_url('admin.php?page=myworks-wc-qbo-sync-connection') ) . '">MyWorks Sync > Connection</a>' ); ?></p>
 		</div>
 		<?php
 		update_option( 'mw_wc_qbo_sync_successfull_activation_message', 'triggered' );
@@ -928,46 +930,46 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if(!isset($schedules["MWQBO_5min"])){
 			$schedules["MWQBO_5min"] = array(
 				'interval' => 5*60,
-				'display' => __('Once every 5 minutes'));
+				'display' => __('Once every 5 minutes', 'mw_wc_qbo_sync'));
 		}
 		
 		if(!isset($schedules["MWQBO_10min"])){
 			$schedules["MWQBO_10min"] = array(
 				'interval' => 10*60,
-				'display' => __('Once every 10 minutes'));
+				'display' => __('Once every 10 minutes', 'mw_wc_qbo_sync'));
 		}
 		
 		if(!isset($schedules["MWQBO_15min"])){
 			$schedules["MWQBO_15min"] = array(
 				'interval' => 15*60,
-				'display' => __('Once every 15 minutes'));
+				'display' => __('Once every 15 minutes', 'mw_wc_qbo_sync'));
 		}
 		
 		//
 		if(!isset($schedules["MWQBO_30min"])){
 			$schedules["MWQBO_30min"] = array(
 				'interval' => 30*60,
-				'display' => __('Once every 30 minutes'));
+				'display' => __('Once every 30 minutes', 'mw_wc_qbo_sync'));
 		}
 		
 		/*
 		if(!isset($schedules["MWQBO_45min"])){
 			$schedules["MWQBO_45min"] = array(
 				'interval' => 45*60,
-				'display' => __('Once every 45 minutes'));
+				'display' => __('Once every 45 minutes', 'mw_wc_qbo_sync'));
 		}
 		*/
 		
 		if(!isset($schedules["MWQBO_60min"])){
 			$schedules["MWQBO_60min"] = array(
 				'interval' => 60*60,
-				'display' => __('Once every 1 hour'));
+				'display' => __('Once every 1 hour', 'mw_wc_qbo_sync'));
 		}
 		
 		if(!isset($schedules["MWQBO_360min"])){
 			$schedules["MWQBO_360min"] = array(
 				'interval' => 360*60,
-				'display' => __('Once every 6 hours'));
+				'display' => __('Once every 6 hours', 'mw_wc_qbo_sync'));
 		}
 		
 		//
@@ -975,13 +977,13 @@ class MyWorks_WC_QBO_Sync_Admin {
 			if(!isset($schedules["IIFMQS_5min"])){
 				$schedules["IIFMQS_5min"] = array(
 					'interval' => 5*60,
-					'display' => __('Once every 5 minutes'));
+					'display' => __('Once every 5 minutes', 'mw_wc_qbo_sync'));
 			}
 			
 			if(!isset($schedules["IIFMQS_30min"])){
 				$schedules["IIFMQS_30min"] = array(
 					'interval' => 30*60,
-					'display' => __('Once every 30 minutes'));
+					'display' => __('Once every 30 minutes', 'mw_wc_qbo_sync'));
 			}
 		}
 		
@@ -1441,8 +1443,6 @@ class MyWorks_WC_QBO_Sync_Admin {
 			if(isset($dbfix[$dbfixid])){
 				$wpdb->query($dbfix[$dbfixid]);
 			}
-			
-			//wp_redirect(admin_url('admin.php?page=myworks-wc-qbo-sync-db-fix'));
 		}
 	}
 	
@@ -1715,7 +1715,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 				$sub_page = add_submenu_page( 
 					'myworks-wc-qbo-sync', 
 					__( 'Queue', 'mw_wc_qbo_sync' ),
-					__( 'Queue('.$qc.')', 'mw_wc_qbo_sync' ),
+					sprintf( __( 'Queue(%s)', 'mw_wc_qbo_sync' ), $qc ),
 					'read',
 					'myworks-wc-qbo-sync-queue',
 					array($this, 'qbo_admin_sync_queue_submenu')
@@ -2147,11 +2147,11 @@ class MyWorks_WC_QBO_Sync_Admin {
 		
 		$help_tabs = array(
 			'mwqs_help' => array(
-				'title'	=> __('QuickBooks Sync'),
+				'title'	=> __('QuickBooks Sync', 'mw_wc_qbo_sync'),
 				'content'	=> '<p>' . __( 'QuickBooks Sync.','mw_wc_qbo_sync' ) . '</p>'
 			),
 			'mwqs_support' => array(
-				'title'	=> __('Help & Support'),
+				'title'	=> __('Help & Support', 'mw_wc_qbo_sync'),
 				'content'	=> '<p>' . __( 'Help & Support.','mw_wc_qbo_sync' ) . '</p>'
 			),
 		);
@@ -2361,16 +2361,8 @@ class MyWorks_WC_QBO_Sync_Admin {
 	}
 	
 	public static function get_checkbox_switch_assets(){
-		//		
-		return <<<EOF
-		
-		<!--<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' type='text/css' media='all' />-->
-	   <!--<script type='text/javascript' src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>-->
-	   
-	   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/css/bootstrap2/bootstrap-switch.css' type='text/css' media='all' />
-	   <script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/js/bootstrap-switch.js'></script>
-EOF;
-	
+		return "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/css/bootstrap2/bootstrap-switch.css' type='text/css' media='all' />
+	   <script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/js/bootstrap-switch.js'></script>";
 	}
 	
 	//

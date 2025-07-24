@@ -125,10 +125,10 @@ if($item_ids!=''){
 	$item_type_txt = ($item_type_txt=='invoice')?'order':$item_type_txt;
 	
 	if($sync_type=='push'){
-		$p_title = __('Push '.ucfirst($item_type_txt),'mw_wc_qbo_sync');
+		$p_title = sprintf( __('Push %s','mw_wc_qbo_sync'), ucfirst($item_type_txt) );
 	}
 	if($sync_type=='pull'){
-		$p_title = __('Pull '.ucfirst($item_type_txt),'mw_wc_qbo_sync');
+		$p_title = sprintf( __('Pull %s','mw_wc_qbo_sync'), ucfirst($item_type_txt) );
 	}
 	
 }
@@ -137,7 +137,7 @@ if($item_ids!=''){
 <!DOCTYPE html>
 <html>
 <head>
-    <title><?php echo __('QuickBooks Sync Progress','mw_wc_qbo_sync');?></title>
+    <title><?php echo esc_html__('QuickBooks Sync Progress','mw_wc_qbo_sync');?></title>
 	<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' type='text/css' media='all' />
 	<script type='text/javascript' src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.js"></script>
 	<script type='text/javascript' src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
@@ -341,7 +341,7 @@ if($item_ids!=''){
 
 <div class="sw_div">
 <h3><?php echo esc_html($p_title);?></h3>
-<h5><?php echo __('Total','mw_wc_qbo_sync');?>: <?php echo esc_html($tot);?></h5>
+<h5><?php echo esc_html__('Total','mw_wc_qbo_sync');?>: <?php echo esc_html($tot);?></h5>
 
 <div class="progress">
   <div id='progressor' class="progress-bar progress-bar-info progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em;">
@@ -350,7 +350,7 @@ if($item_ids!=''){
 </div>
 
 <div class="sw_process">
-<b id="process_txt"><?php echo __('Processing','mw_wc_qbo_sync');?>:</b>
+<b id="process_txt"><?php echo esc_html__('Processing','mw_wc_qbo_sync');?>:</b>
 &nbsp;
 <span id="sw_cur_item">0</span>/<span id="sw_tot_item"><?php echo esc_html($tot);?></span>
 &nbsp;
@@ -364,7 +364,7 @@ if($item_ids!=''){
 
 <input id="stop_p_bt" class="btn btn-danger m_top10" type="button" onclick="stop_ajax();"  value="Stop Process" />
 
-<button id="close_btn_id" class="btn btn-default right-btn" onclick="javascript:stop_ajax();self.close ();"><?php echo __('Close','mw_wc_qbo_sync');?></button>
+<button id="close_btn_id" class="btn btn-default right-btn" onclick="javascript:stop_ajax();self.close ();"><?php echo esc_html__('Close','mw_wc_qbo_sync');?></button>
 
 <input type="hidden" id="stop_process" value="0">
 <?php wp_nonce_field( 'myworks_wc_qbo_sync_window', 'window_qbo_sync' ); ?>
@@ -372,7 +372,7 @@ if($item_ids!=''){
 
 </div>
 <?php else:?>
-<h1><?php echo __('Error','mw_wc_qbo_sync');?>!</h1>
+<h1><?php echo esc_html__('Error','mw_wc_qbo_sync');?>!</h1>
 <?php endif;?>
 </body>
 </html>

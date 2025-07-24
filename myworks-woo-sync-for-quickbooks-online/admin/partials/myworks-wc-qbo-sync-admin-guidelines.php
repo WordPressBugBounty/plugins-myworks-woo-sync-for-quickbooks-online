@@ -134,11 +134,11 @@ $pv_tab = false;
                         <ul class="guide-accordion">
                             <?php wp_nonce_field( 'myworks_wc_qbo_sync_automap_products', 'automap_products' ); ?>
                             <li> 
-                                <a id="mwqs_automap_products"><?php _e( 'By Sku', 'mw_wc_qbo_sync' );?></a>
+                                <a id="mwqs_automap_products"><?php esc_html_e( 'By Sku', 'mw_wc_qbo_sync' );?></a>
                             </li>
                             <li>
                             <?php wp_nonce_field( 'myworks_wc_qbo_sync_automap_products_by_name', 'automap_products_by_name' ); ?>
-                            <a id="mwqs_automap_products_by_name"><?php _e( 'By Name', 'mw_wc_qbo_sync' );?></a>
+                            <a id="mwqs_automap_products_by_name"><?php esc_html_e( 'By Name', 'mw_wc_qbo_sync' );?></a>
                             </li>
                         </ul>
                     </div>  
@@ -153,7 +153,7 @@ $pv_tab = false;
 						<div class="myworks-wc-qbo-sync-table-responsive">
 							<table class="wqam_tbl">
 								<tr>
-									<td width="50%"><?php _e( 'WooCommerce Field', 'mw_wc_qbo_sync' );?> :</td>
+									<td width="50%"><?php esc_html_e( 'WooCommerce Field', 'mw_wc_qbo_sync' );?> :</td>
 									<td>
 										<?php wp_nonce_field( 'myworks_wc_qbo_sync_automap_products_wf_qf', 'automap_products_wf_qf' ); ?>
 										<select class="wqam_select" id="pam_wf">
@@ -164,7 +164,7 @@ $pv_tab = false;
 								</tr>
 								
 								<tr>
-									<td><?php _e( 'QuickBooks Field', 'mw_wc_qbo_sync' );?> :</td>
+									<td><?php esc_html_e( 'QuickBooks Field', 'mw_wc_qbo_sync' );?> :</td>
 									<td>
 										<select class="wqam_select" id="pam_qf">
 											<option value=""></option>
@@ -177,7 +177,7 @@ $pv_tab = false;
 									<td colspan="2">
 										<input type="checkbox" id="pam_moum_chk" value="true" checked>
 										&nbsp;
-										<?php _e( 'Only apply to unmapped products', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Only apply to unmapped products', 'mw_wc_qbo_sync' );?>
 									</td>
 								</tr>
 								
@@ -215,7 +215,7 @@ $pv_tab = false;
                     <ul class="guide-accordion">
                         <?php wp_nonce_field( 'myworks_wc_qbo_sync_automap_variations', 'automap_variations' ); ?>
                           <li> 
-                              <a id="mwqs_automap_variations"><?php _e( 'By Sku', 'mw_wc_qbo_sync' );?></a>
+                              <a id="mwqs_automap_variations"><?php esc_html_e( 'By Sku', 'mw_wc_qbo_sync' );?></a>
                           </li>
                       </ul>
                   </div>  
@@ -229,7 +229,7 @@ $pv_tab = false;
 					<div class="dropdown-content wqam_ndc">
 						<table class="wqam_tbl">
 							<tr>
-								<td width="50%"><?php _e( 'WooCommerce Field', 'mw_wc_qbo_sync' );?> :</td>
+								<td width="50%"><?php esc_html_e( 'WooCommerce Field', 'mw_wc_qbo_sync' );?> :</td>
 								<td>
 									<?php wp_nonce_field( 'myworks_wc_qbo_sync_automap_variations_wf_qf', 'automap_variations_wf_qf' ); ?>
 									<select class="wqam_select" id="vam_wf">
@@ -240,7 +240,7 @@ $pv_tab = false;
 							</tr>
 							
 							<tr>
-								<td><?php _e( 'QuickBooks Field', 'mw_wc_qbo_sync' );?> :</td>
+								<td><?php esc_html_e( 'QuickBooks Field', 'mw_wc_qbo_sync' );?> :</td>
 								<td>
 									<select class="wqam_select" id="vam_qf">
 										<option value=""></option>
@@ -253,7 +253,7 @@ $pv_tab = false;
 								<td colspan="2">
 									<input type="checkbox" id="vam_moum_chk" value="true" checked>
 									&nbsp;
-									<?php _e( 'Only apply to unmapped variations', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Only apply to unmapped variations', 'mw_wc_qbo_sync' );?>
 								</td>
 							</tr>
 							
@@ -291,11 +291,11 @@ $pv_tab = false;
                         <ul class="guide-accordion">
                             <?php wp_nonce_field( 'myworks_wc_qbo_sync_automap_customers', 'automap_customers' ); ?>
                             <li> 
-                                <a id="mwqs_automap_customers"><?php _e( 'By Email', 'mw_wc_qbo_sync' );?></a>
+                                <a id="mwqs_automap_customers"><?php esc_html_e( 'By Email', 'mw_wc_qbo_sync' );?></a>
                             </li>
                             <li>
                             <?php wp_nonce_field( 'myworks_wc_qbo_sync_automap_customers_by_name', 'automap_customers_by_name' ); ?>
-                            <a id="mwqs_automap_customers_by_name"><?php _e( 'By Name', 'mw_wc_qbo_sync' );?></a>
+                            <a id="mwqs_automap_customers_by_name"><?php esc_html_e( 'By Name', 'mw_wc_qbo_sync' );?></a>
                             </li>
                         </ul>
                     </div>  
@@ -309,7 +309,7 @@ $pv_tab = false;
 					<div class="dropdown-content wqam_ndc">
 						<table class="wqam_tbl">
 							<tr>
-								<td width="50%"><?php _e( 'WooCommerce Field', 'mw_wc_qbo_sync' );?> :</td>
+								<td width="50%"><?php esc_html_e( 'WooCommerce Field', 'mw_wc_qbo_sync' );?> :</td>
 								<td>
 									<?php wp_nonce_field( 'myworks_wc_qbo_sync_automap_customers_wf_qf', 'automap_customers_wf_qf' ); ?>
 									<select class="wqam_select" id="cam_wf">
@@ -320,7 +320,7 @@ $pv_tab = false;
 							</tr>
 							
 							<tr>
-								<td><?php _e( 'QuickBooks Field', 'mw_wc_qbo_sync' );?> :</td>
+								<td><?php esc_html_e( 'QuickBooks Field', 'mw_wc_qbo_sync' );?> :</td>
 								<td>
 									<select class="wqam_select" id="cam_qf">
 										<option value=""></option>
@@ -333,7 +333,7 @@ $pv_tab = false;
 								<td colspan="2">
 									<input type="checkbox" id="cam_moum_chk" value="true" checked>
 									&nbsp;
-									<?php _e( 'Only apply to unmapped customers', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Only apply to unmapped customers', 'mw_wc_qbo_sync' );?>
 								</td>
 							</tr>
 							
@@ -368,11 +368,11 @@ $pv_tab = false;
                         <ul class="guide-accordion">
                             <?php wp_nonce_field( 'myworks_wc_qbo_sync_automap_vendors', 'automap_vendors' ); ?>
                             <li> 
-                                <a id="mwqs_automap_vendors"><?php _e( 'By Email', 'mw_wc_qbo_sync' );?></a>
+                                <a id="mwqs_automap_vendors"><?php esc_html_e( 'By Email', 'mw_wc_qbo_sync' );?></a>
                             </li>
                             <li>
                             <?php wp_nonce_field( 'myworks_wc_qbo_sync_automap_vendors_by_name', 'automap_vendors_by_name' ); ?>
-                            <a id="mwqs_automap_vendors_by_name"><?php _e( 'By Name', 'mw_wc_qbo_sync' );?></a>
+                            <a id="mwqs_automap_vendors_by_name"><?php esc_html_e( 'By Name', 'mw_wc_qbo_sync' );?></a>
                             </li>
                         </ul>
                     </div>  

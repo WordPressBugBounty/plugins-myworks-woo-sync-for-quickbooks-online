@@ -75,7 +75,7 @@ $selected_options_script = '';
 <?php require_once plugin_dir_path( __FILE__ ) . 'myworks-wc-qbo-sync-admin-map-nav.php' ?>
 
 <div class="container map-vendor-outer">
-	 <div class="page_title"><h4><?php _e( 'Vendor Mappings', 'mw_wc_qbo_sync' );?></h4></div>
+	 <div class="page_title"><h4><?php esc_html_e( 'Vendor Mappings', 'mw_wc_qbo_sync' );?></h4></div>
 	 <div class="mw_wc_filter">
 	 <span class="search_text">Search</span>
 	  &nbsp;
@@ -175,7 +175,7 @@ $selected_options_script = '';
 							<?php echo $pagination_links?>
 							<?php if(empty($cl_map_data)):?>
 							   <h4 class="mw_mlp_ndf">
-									<?php _e( 'No available vendors to display.', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'No available vendors to display.', 'mw_wc_qbo_sync' );?>
 								</h4>
 							<?php endif;?>
 						</div>
@@ -191,9 +191,9 @@ $selected_options_script = '';
 				<br />
 
 				<div class="col col-m">
-				<h5><?php _e( 'Clear All Vendors Mappings', 'mw_wc_qbo_sync' );?></h5>
+				<h5><?php esc_html_e( 'Clear All Vendors Mappings', 'mw_wc_qbo_sync' );?></h5>
 				<?php wp_nonce_field( 'myworks_wc_qbo_sync_clear_all_mappings_vendors', 'clear_all_mappings_vendors' ); ?>
-				<button id="mwqs_cacm_btn"><?php _e( 'Clear Mappings', 'mw_wc_qbo_sync' );?></button>
+				<button id="mwqs_cacm_btn"><?php esc_html_e( 'Clear Mappings', 'mw_wc_qbo_sync' );?></button>
 				&nbsp;
 				<span id="mwqs_cacm_msg"></span>
 				</div>
@@ -225,7 +225,7 @@ $selected_options_script = '';
 	
 	jQuery(document).ready(function($){
 		$('#mwqs_automap_vendors').click(function(){
-			if(confirm('<?php echo __('This will override any previous vendor mappings, and scan your WooCommerce & QuickBooks Online vendors by email to automatically match them for you.')?>')){
+			if(confirm('<?php echo __('This will override any previous vendor mappings, and scan your WooCommerce & QuickBooks Online vendors by email to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 				jQuery('#mwqs_automap_vendors_msg').html('');
 				jQuery('#mwqs_automap_vendors_msg_by_name').html('');
 				var data = {
@@ -262,7 +262,7 @@ $selected_options_script = '';
 		});
 		
 		$('#mwqs_automap_vendors_by_name').click(function(){
-			if(confirm('<?php echo __('This will override any previous vendor mappings, and scan your WooCommerce & QuickBooks Online vendors by Display Name to automatically match them for you.')?>')){
+			if(confirm('<?php echo __('This will override any previous vendor mappings, and scan your WooCommerce & QuickBooks Online vendors by Display Name to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 				jQuery('#mwqs_automap_vendors_msg_by_name').html('');
 				jQuery('#mwqs_automap_vendors_msg').html('');
 				var data = {

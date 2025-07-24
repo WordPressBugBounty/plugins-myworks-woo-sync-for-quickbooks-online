@@ -1,11 +1,11 @@
-=== WooCommerce Sync for QuickBooks Online - by MyWorks ===
+=== MyWorks Sync for WooCommerce & QuickBooks Online ===
 Contributors: myworksdesign
 Donate link: https://myworks.software
-Tags: woocommerce, quickbooks, quickbooks online, quickbooks desktop, quickbooks pos, woocommerce quickbooks, woocommerce sync, woocommerce quickbooks sync, quickbooks integration
+Tags: quickbooks, quickbooks online, quickbooks desktop, woocommerce quickbooks, quickbooks integration
 Requires at least: 5.3
-Stable tag: 2.9.1
+Stable tag: 2.9.3
 Requires PHP: 7.3
-Tested up to: 6.7.2
+Tested up to: 6.8
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -154,6 +154,9 @@ A: There sure are! We support over 25+ popular WooCommerce extensions - all incl
 6. Advanced payment syncing, including transaction fees & multicurrency support.
 
 == Changelog ==
+
+= 2025-07-15 version 2.9.3 =
+* Updated plugin name to resolve WooCommerce trademark overlap
 
 = 2025-04-10 version 2.9.2 =
 * Updated compatibility with ATUM Inventory plugin to resolve a minor XSS conflict, reproducible only when logged in as an administrator user

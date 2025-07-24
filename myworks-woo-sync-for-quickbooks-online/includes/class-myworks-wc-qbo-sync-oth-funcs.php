@@ -543,148 +543,135 @@ class MyWorks_WC_QBO_Sync_Oth_Funcs {
 			echo $item;
 		}
 	}
-	
-	public function get_select2_js($item='select',$d_item='',$pvep='no'){
-		if(get_option('mw_wc_qbo_sync_select2_status')!='true'){
-			return '';
-		}
-		
-		$is_ajax_dd = 0;
-		if(get_option('mw_wc_qbo_sync_select2_ajax')=='true'){
-			$is_ajax_dd = 1;
-		}
-		
-		$json_data_url = '';
-		if($d_item=='qbo_product'){
-			$json_data_url = site_url('index.php?mw_qbo_sync_public_get_json_item_list=1&item=qbo_product');
-		}
-		
-		if($d_item=='qbo_customer'){
-			$json_data_url = site_url('index.php?mw_qbo_sync_public_get_json_item_list=1&item=qbo_customer');
-		}
-		
-		if($d_item=='qbo_vendor'){
-			$json_data_url = site_url('index.php?mw_qbo_sync_public_get_json_item_list=1&item=qbo_vendor');
-		}
-		
-		return <<<EOF
-		<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" />
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
-		<script type="text/javascript">
-		  jQuery(document).ready(function(){
-			 jQuery('{$item}').addClass('mwqs_s2');
-		  });
 
-		  var d_item = '{$d_item}';
-		  var pvep = '{$pvep}';
-		  jQuery(function($){			 
-			  //jQuery('{$item}').select2();
-			   jQuery('{$item}').each(function(){
-				   if(jQuery(this).prop('multiple')){
-						jQuery(this).select2();
-						 jQuery(this).removeClass('mwqs_s2');
-				   }
-			   });
-			  
-			  jQuery('{$item}').hover(function(){
-				  var is_ajax_dd = {$is_ajax_dd};
-				  if(jQuery(this).hasClass('mwqs_dynamic_select') && is_ajax_dd==1){					   
-					   jQuery(this).select2({
-						   ajax: {
-							url: "{$json_data_url}",
-							dataType: 'json',
-							delay: 250,
-							data: function (params) {
-								return {
-									q: params.term // search term
-								};
-							},
-							processResults: function (data) {								
-								return {
-									results: data
-								};
-							},
-							cache: true
+public function get_select2_js($item='select', $d_item='', $pvep='no') {
+	if (get_option('mw_wc_qbo_sync_select2_status') != 'true') {
+		return '';
+	}
+
+	$is_ajax_dd = (get_option('mw_wc_qbo_sync_select2_ajax') == 'true') ? 1 : 0;
+
+	$json_data_url = '';
+	if ($d_item == 'qbo_product') {
+		$json_data_url = site_url('index.php?mw_qbo_sync_public_get_json_item_list=1&item=qbo_product');
+	} elseif ($d_item == 'qbo_customer') {
+		$json_data_url = site_url('index.php?mw_qbo_sync_public_get_json_item_list=1&item=qbo_customer');
+	} elseif ($d_item == 'qbo_vendor') {
+		$json_data_url = site_url('index.php?mw_qbo_sync_public_get_json_item_list=1&item=qbo_vendor');
+	}
+
+	$html = '';
+	$html .= '<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" />' . "\n";
+	$html .= '<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>' . "\n";
+	$html .= '<script type="text/javascript">
+	jQuery(document).ready(function(){
+		jQuery("' . $item . '").addClass("mwqs_s2");
+	});
+
+	var d_item = "' . $d_item . '";
+	var pvep = "' . $pvep . '";
+	jQuery(function($){
+		jQuery("' . $item . '").each(function(){
+			if (jQuery(this).prop("multiple")) {
+				jQuery(this).select2();
+				jQuery(this).removeClass("mwqs_s2");
+			}
+		});
+
+		jQuery("' . $item . '").hover(function(){
+			var is_ajax_dd = ' . $is_ajax_dd . ';
+			if (jQuery(this).hasClass("mwqs_dynamic_select") && is_ajax_dd == 1) {
+				jQuery(this).select2({
+					ajax: {
+						url: "' . $json_data_url . '",
+						dataType: "json",
+						delay: 250,
+						data: function (params) {
+							return {
+								q: params.term
+							};
 						},
-						minimumInputLength: 3
-					   });
-				  }else{
-			  		if(d_item == 'qbo_product' && pvep != 'yes'){
-			  			jQuery(this).select2({
-						  	templateResult: mw_qb_s_s2_format,
-						  	templateSelection: mw_qb_s_s2_format
-						  });
-		  			}else{
-		  				jQuery(this).select2();
-		  			}
-					  
-				  }
-				  
-				  jQuery(this).removeClass('mwqs_s2');
-				  
-			  });
-			  var head = $("head");
-			  var headlinklast = head.find("link[rel='stylesheet']:last");
-			  var linkElement = "<style type='text/css'>ul.select2-results__options li:first-child{padding:12px 0;}</style>";
-			  if (headlinklast.length){
-			    headlinklast.after(linkElement);
-			  }
-			  else {
-			   head.append(linkElement);
-			  }
-		  });
+						processResults: function (data) {
+							return {
+								results: data
+							};
+						},
+						cache: true
+					},
+					minimumInputLength: 3
+				});
+			} else {
+				if (d_item == "qbo_product" && pvep != "yes") {
+					jQuery(this).select2({
+						templateResult: mw_qb_s_s2_format,
+						templateSelection: mw_qb_s_s2_format
+					});
+				} else {
+					jQuery(this).select2();
+				}
+			}
 
-		  function mw_qb_s_s2_format(item){
-		  	var selectionText = item.text.replace('- SKU: ','<br><b>SKU:</b> ');  	
-		  	var returnString =jQuery('<span style="font-size:13px;">'+selectionText+'</span>');
-		  	return returnString;
-		  }		  
-		</script>
-EOF;
+			jQuery(this).removeClass("mwqs_s2");
+		});
+
+		var head = $("head");
+		var headlinklast = head.find("link[rel=\'stylesheet\']:last");
+		var linkElement = "<style type=\'text/css\'>ul.select2-results__options li:first-child{padding:12px 0;}</style>";
+		if (headlinklast.length) {
+			headlinklast.after(linkElement);
+		} else {
+			head.append(linkElement);
+		}
+	});
+
+	function mw_qb_s_s2_format(item) {
+		var selectionText = item.text.replace("- SKU: ", "<br><b>SKU:</b> ");
+		var returnString = jQuery("<span style=\'font-size:13px;\'>" + selectionText + "</span>");
+		return returnString;
 	}
-	
-	public function get_tablesorter_js($item='table'){
-		return <<<EOF
-		<!--<link href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.28.5/css/theme.blue.css" rel="stylesheet" />-->
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.28.5/js/jquery.tablesorter.js"></script>
-		<script type="text/javascript">
-		  jQuery(function($){
-			  //jQuery('{$item}').addClass('tablesorter-blue');
-			  jQuery('{$item} th').css('cursor','pointer');
-			  jQuery('{$item} th').each(function(){
-				  var sort_th_title = jQuery(this).attr('title');
-				  if (sort_th_title == null){
-					  sort_th_title = '';
-				  }
-				  if(sort_th_title==''){
-					  sort_th_title = jQuery(this).text();
-				  }				  
-				  sort_th_title = jQuery.trim(sort_th_title);				  
-				  if(sort_th_title!=''){
-					  sort_th_title = 'Sort By '+sort_th_title;
-					jQuery(this).attr('title',sort_th_title);
-				  }else{
-					  //jQuery(this).addClass('{sorter: false}');
-					  jQuery(this).attr('data-sorter','false');
-					  jQuery(this).attr('data-filter','false');
-				  }				  
-			  });
-			  jQuery('{$item}').tablesorter();
-		  });
-		</script>
-EOF;
+	</script>';
+
+	return $html;
+}
+
+	public function get_tablesorter_js($item = 'table') {
+		$js = "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.28.5/js/jquery.tablesorter.js\"></script>\n";
+		$js .= "<script type=\"text/javascript\">\n";
+		$js .= "jQuery(function($){\n";
+		$js .= "  //jQuery('{$item}').addClass('tablesorter-blue');\n";
+		$js .= "  jQuery('{$item} th').css('cursor','pointer');\n";
+		$js .= "  jQuery('{$item} th').each(function(){\n";
+		$js .= "    var sort_th_title = jQuery(this).attr('title');\n";
+		$js .= "    if (sort_th_title == null) {\n";
+		$js .= "      sort_th_title = '';\n";
+		$js .= "    }\n";
+		$js .= "    if (sort_th_title == '') {\n";
+		$js .= "      sort_th_title = jQuery(this).text();\n";
+		$js .= "    }\n";
+		$js .= "    sort_th_title = jQuery.trim(sort_th_title);\n";
+		$js .= "    if (sort_th_title != '') {\n";
+		$js .= "      sort_th_title = 'Sort By ' + sort_th_title;\n";
+		$js .= "      jQuery(this).attr('title', sort_th_title);\n";
+		$js .= "    } else {\n";
+		$js .= "      //jQuery(this).addClass('{sorter: false}');\n";
+		$js .= "      jQuery(this).attr('data-sorter','false');\n";
+		$js .= "      jQuery(this).attr('data-filter','false');\n";
+		$js .= "    }\n";
+		$js .= "  });\n";
+		$js .= "  jQuery('{$item}').tablesorter();\n";
+		$js .= "});\n";
+		$js .= "</script>\n";
+
+		return $js;
 	}
-	
-	public function get_bootstrap_switch_lib(){
-		return <<<EOF
-		<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' type='text/css' media='all' />
-	   <script type='text/javascript' src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
-	   
-	   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/css/bootstrap2/bootstrap-switch.css' type='text/css' media='all' />
-	   <script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/js/bootstrap-switch.js'></script>
-EOF;
+
+	public function get_bootstrap_switch_lib() {
+		$html  = "<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' type='text/css' media='all' />\n";
+		$html .= "<script type='text/javascript' src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>\n";
+		$html .= "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/css/bootstrap2/bootstrap-switch.css' type='text/css' media='all' />\n";
+		$html .= "<script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/js/bootstrap-switch.js'></script>\n";
+		return $html;
 	}
-	
 	public function get_html_msg($title='',$body=''){
 		$display = '
 		<html>

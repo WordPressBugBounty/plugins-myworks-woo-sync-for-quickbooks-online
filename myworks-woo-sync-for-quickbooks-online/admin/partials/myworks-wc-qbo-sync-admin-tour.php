@@ -81,4 +81,3 @@ function tour_end(){
 }
 
 _tourHelper();
-?>

@@ -57,18 +57,18 @@ if($MSQS_QL->is_connected()){
 		$customer_count = (int) $MSQS_QL->quick_refresh_qbo_customers();
 		$product_count = (int) $MSQS_QL->quick_refresh_qbo_products();
 		
-		$count_msg.=__('<p>Total Customers Recognized: '.$customer_count.'</p>','mw_wc_qbo_sync');
-		$count_msg.=__('<p>Total Products Recognized: '.$product_count.'</p>','mw_wc_qbo_sync');
+		$count_msg.=sprintf( __('<p>Total Customers Recognized: %s</p>','mw_wc_qbo_sync'), $customer_count );
+		$count_msg.=sprintf( __('<p>Total Products Recognized: %s</p>','mw_wc_qbo_sync'), $product_count );
 		
 		if($MSQS_QL->is_wq_vendor_pm_enable()){
 			$vendor_count = (int) $MSQS_QL->quick_refresh_qbo_vendors();
-			$count_msg.=__('<p>Total Vendors Recognized: '.$vendor_count.'</p>','mw_wc_qbo_sync');
+			$count_msg.=sprintf( __('<p>Total Vendors Recognized: %s</p>','mw_wc_qbo_sync'), $vendor_count );
 		}
 	}
 	
 	if($data_type=='customer'){
 		$customer_count = (int) $MSQS_QL->quick_refresh_qbo_customers();
-		$count_msg.=__('<p>Total Customers Recognized: '.$customer_count.'</p>','mw_wc_qbo_sync');
+		$count_msg.=sprintf( __('<p>Total Customers Recognized: %s</p>','mw_wc_qbo_sync'), $customer_count );
 		if($MSQS_QL->is_plugin_active('customer-custom-post-type-map-for-myworks-qbo-sync')){
 			$red_url = admin_url('admin.php?page=myworks-wc-qbo-sync-custom-customer-map&rf_data_count='.$customer_count);
 		}else{
@@ -78,13 +78,13 @@ if($MSQS_QL->is_connected()){
 	
 	if($data_type=='vendor' && $MSQS_QL->is_wq_vendor_pm_enable()){
 		$vendor_count = (int) $MSQS_QL->quick_refresh_qbo_vendors();
-		$count_msg.=__('<p>Total Vendors Recognized: '.$vendor_count.'</p>','mw_wc_qbo_sync');
+		$count_msg.=sprintf( __('<p>Total Vendors Recognized: %s</p>','mw_wc_qbo_sync'), $vendor_count );
 		$red_url = admin_url('admin.php?page=myworks-wc-qbo-map&tab=vendor&rf_data_count='.$vendor_count);
 	}
 	
 	if($data_type=='product'){
 		$product_count = (int) $MSQS_QL->quick_refresh_qbo_products();
-		$count_msg.=__('<p>Total Products Recognized: '.$product_count.'</p>','mw_wc_qbo_sync');
+		$count_msg.=sprintf( __('<p>Total Products Recognized: %s</p>','mw_wc_qbo_sync'), $product_count );
 		$red_url = admin_url('admin.php?page=myworks-wc-qbo-map&tab=product&rf_data_count='.$product_count);
 		if(isset($_GET['variation']) && $_GET['variation']==1){
 			$red_url.='&variation=1';
@@ -92,8 +92,8 @@ if($MSQS_QL->is_connected()){
 	}
 
 	if($red_url!=''){
-		wp_redirect($red_url);
-		exit(0);
+		wp_safe_redirect($red_url);
+		exit();
 	}
 	
 	echo $MWQS_OF->get_html_msg(__('Myworks QuickBooks Sync Quick Refresh','mw_wc_qbo_sync'),'<h2>'.__('QuickBooks Online Data Successfully Recognized','mw_wc_qbo_sync').'</h2>'.$count_msg);

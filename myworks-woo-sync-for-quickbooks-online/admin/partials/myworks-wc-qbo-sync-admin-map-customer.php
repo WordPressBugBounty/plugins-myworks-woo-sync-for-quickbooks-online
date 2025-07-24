@@ -75,7 +75,7 @@ $selected_options_script = '';
 <?php require_once plugin_dir_path( __FILE__ ) . 'myworks-wc-qbo-sync-admin-map-nav.php' ?>
 
 <div class="container map-customer-outer map-product-responsive">
-	 <div class="page_title"><h4><?php _e( 'Customer Mappings', 'mw_wc_qbo_sync' );?></h4></div>
+	 <div class="page_title"><h4><?php esc_html_e( 'Customer Mappings', 'mw_wc_qbo_sync' );?></h4></div>
 	 <div class="mw_wc_filter">
 	 <span class="search_text">Search</span>
 	  &nbsp;
@@ -165,7 +165,7 @@ $selected_options_script = '';
 								<?php echo $pagination_links?>
 								<?php if(empty($cl_map_data)):?>
 								   <h4 class="mw_mlp_ndf">
-										<?php _e( 'No available customers to display.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'No available customers to display.', 'mw_wc_qbo_sync' );?>
 									</h4>
 								<?php endif;?>
 							</div>
@@ -185,9 +185,9 @@ $selected_options_script = '';
 				<br />
 
 				<div class="col col-m">
-				<h5><?php _e( 'Clear All Customers Mappings', 'mw_wc_qbo_sync' );?></h5>
+				<h5><?php esc_html_e( 'Clear All Customers Mappings', 'mw_wc_qbo_sync' );?></h5>
 				<?php wp_nonce_field( 'myworks_wc_qbo_sync_clear_all_mappings_customers', 'clear_all_mappings_customers' ); ?>
-				<button id="mwqs_cacm_btn"><?php _e( 'Clear Mappings', 'mw_wc_qbo_sync' );?></button>
+				<button id="mwqs_cacm_btn"><?php esc_html_e( 'Clear Mappings', 'mw_wc_qbo_sync' );?></button>
 				&nbsp;
 				<span id="mwqs_cacm_msg"></span>
 				</div>
@@ -229,7 +229,7 @@ $selected_options_script = '';
 			
 			if(cam_wf!='' && cam_qf!=''){
 				$('#cam_wqf_e_msg').html('');
-				if(confirm('<?php echo __('This will override any previous customer mappings, and scan your WooCommerce & QuickBooks Online customers by selected fields to automatically match them for you.')?>')){
+				if(confirm('<?php echo __('This will override any previous customer mappings, and scan your WooCommerce & QuickBooks Online customers by selected fields to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 					var data = {
 						"action": 'mw_wc_qbo_sync_automap_customers_wf_qf',
 						"automap_customers_wf_qf": jQuery('#automap_customers_wf_qf').val(),
@@ -268,7 +268,7 @@ $selected_options_script = '';
 		
 		<?php if($js_section=false):?>
 		$('#mwqs_automap_customers').click(function(){
-			if(confirm('<?php echo __('This will override any previous customer mappings, and scan your WooCommerce & QuickBooks Online customers by email to automatically match them for you.')?>')){
+			if(confirm('<?php echo __('This will override any previous customer mappings, and scan your WooCommerce & QuickBooks Online customers by email to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 				jQuery('#mwqs_automap_customers_msg').html('');
 				jQuery('#mwqs_automap_customers_msg_by_name').html('');
 				var data = {
@@ -305,7 +305,7 @@ $selected_options_script = '';
 		});
 		
 		$('#mwqs_automap_customers_by_name').click(function(){
-			if(confirm('<?php echo __('This will override any previous customer mappings, and scan your WooCommerce & QuickBooks Online customers by Display Name to automatically match them for you.')?>')){
+			if(confirm('<?php echo __('This will override any previous customer mappings, and scan your WooCommerce & QuickBooks Online customers by Display Name to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 				jQuery('#mwqs_automap_customers_msg_by_name').html('');
 				jQuery('#mwqs_automap_customers_msg').html('');
 				var data = {

@@ -53,13 +53,13 @@ $js_somqmi = false;
 	.sstchc{display:none;}
 </style>
 <div class="mwqs_page_tab_cont">
-	<span class="tab_one"><a href="<?php echo $page_url_product;?>"><?php _e( 'Products', 'mw_wc_qbo_sync' );?></a></span>
+	<span class="tab_one"><a href="<?php echo $page_url_product;?>"><?php esc_html_e( 'Products', 'mw_wc_qbo_sync' );?></a></span>
 	&nbsp;
-	<span class="tab_two active"><a href="<?php echo $page_url;?>"><?php _e( 'Variations', 'mw_wc_qbo_sync' );?></a></span>
+	<span class="tab_two active"><a href="<?php echo $page_url;?>"><?php esc_html_e( 'Variations', 'mw_wc_qbo_sync' );?></a></span>
 </div>
 
 <div class="container">
-	<div class="page_title"><h4><?php _e( 'Variation Inventory Push', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Variation Inventory Push', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card qo-push-responsive">
 		<div class="card-content">
 
@@ -144,10 +144,10 @@ $js_somqmi = false;
 												<tr class="wip_vtr" id="tr_wi_<?php echo $p_val['ID']?>">
 													<td><input type="checkbox" id="variation_inventory_push_<?php echo $p_val['ID']?>"></td>
 													<td><?php echo $p_val['ID']?></td>
-													<td><?php _e( $p_val['name'], 'mw_wc_qbo_sync' );?></td>
+													<td><?php esc_html_e( $p_val['name'], 'mw_wc_qbo_sync' );?></td>
 													<td>
 														<a title="<?php echo $p_val['parent_id']?>" target="_blank" href="post.php?post=<?php echo $p_val['parent_id']?>&action=edit">
-															<?php _e( $p_val['parent_name'], 'mw_wc_qbo_desk' );?>
+															<?php esc_html_e( $p_val['parent_name'], 'mw_wc_qbo_sync' );?>
 														</a>
 													</td>
 													<td><?php echo $p_val['sku'];?></td>
@@ -179,7 +179,7 @@ $js_somqmi = false;
 									<?php echo $pagination_links?>
 									<?php else:?>									
 									<h4 class="mw_mlp_ndf">
-										<?php _e( 'No available variation inventories to display.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'No available variation inventories to display.', 'mw_wc_qbo_sync' );?>
 									</h4>
 									<?php endif;?>					           
 						        </div>

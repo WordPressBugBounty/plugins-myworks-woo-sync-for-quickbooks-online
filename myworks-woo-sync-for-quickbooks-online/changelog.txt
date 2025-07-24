@@ -1,4 +1,7 @@
-*** QuickBooks Sync for WooCommerce - by MyWorks Software ***
+*** MyWorks Sync for WooCommerce & QuickBooks Online ***
+
+= 2025-07-15 version 2.9.3 =
+* Updated plugin name to resolve WooCommerce trademark overlap
 
 = 2025-04-10 version 2.9.2 =
 * Updated compatibility with ATUM Inventory plugin to resolve a minor XSS conflict, reproducible only when logged in as an administrator user

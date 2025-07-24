@@ -50,7 +50,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Frontend {
 	}
 
 	public function invoice_user_management_account_menu_items( $items ) {
-	    $items['invoices'] = __( 'Invoices' );
+	    $items['invoices'] = __( 'Invoices', 'mw_wc_qbo_sync' );
 	    return $items;
 	}
 	
@@ -87,7 +87,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Frontend {
 	}
 	
 	public function salesreceipt_user_management_account_menu_items( $items ) {
-	    $items['salesreceipts'] = __( 'Sales Receipts' );
+	    $items['salesreceipts'] = __( 'Sales Receipts', 'mw_wc_qbo_sync' );
 	    return $items;
 	}
 
@@ -123,7 +123,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Frontend {
 	}
 	
 	public function creditmemo_user_management_account_menu_items( $items ) {
-	    $items['creditmemos'] = __( 'Credit Memos' );
+	    $items['creditmemos'] = __( 'Credit Memos', 'mw_wc_qbo_sync' );
 	    return $items;
 	}
 	

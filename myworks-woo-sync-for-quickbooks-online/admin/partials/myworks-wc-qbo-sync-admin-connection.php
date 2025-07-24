@@ -188,7 +188,7 @@ if ( ! defined( 'ABSPATH' ) )
 					</td>
 					<td>
 					<p class="mw_wc_qbo_sync_paragraph">
-					<?php echo __('Select this box to accept webhooks (real-time sync) from this QuickBooks Online company as well as Connection #1.');?>
+					<?php echo __('Select this box to accept webhooks (real-time sync) from this QuickBooks Online company as well as Connection #1.', 'mw_wc_qbo_sync');?>
 					</p>
 					</td>
 				</tr>

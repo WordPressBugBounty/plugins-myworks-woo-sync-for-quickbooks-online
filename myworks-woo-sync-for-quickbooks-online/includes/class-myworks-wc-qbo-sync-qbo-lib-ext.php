@@ -214,7 +214,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Ext extends MyWorks_WC_QBO_Sync_QBO_Lib{
 			woocommerce_wp_text_input(
 				array(
 				'id' => 'qb_p_cost', 
-				'label' => __('QuickBooks Cost (' . get_woocommerce_currency_symbol() . ')', 'woocommerce'), 
+				'label' => sprintf( __('QuickBooks Cost (%s)', 'woocommerce'), get_woocommerce_currency_symbol() ),
 				'placeholder' => '0.00', 
 				'desc_tip' => 'true', 
 				'description' => __('QuickBooks Cost: Field for the cost of the product in QuickBooks, which if entered, would set this as the cost of the product when we create it in QuickBooks.', 'woocommerce'), 

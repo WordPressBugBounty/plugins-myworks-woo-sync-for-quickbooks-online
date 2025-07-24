@@ -3470,9 +3470,9 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
   			$plan_upgrade_url = $this->get_new_dash_user_dashboard_url();
   		}
 
-		$mag = __( '<h2>Need to sync more than '.$this->get_hd_ldys_lmt().' days of history? <a href="'.$plan_upgrade_url.'">Upgrade</a> to an annual plan!</h2>', 'mw_wc_qbo_sync' );
+		$mag = sprintf( __( '<h2>Need to sync more than %s days of history? <a href="%s">Upgrade</a> to an annual plan!</h2>', 'mw_wc_qbo_sync' ), $this->get_hd_ldys_lmt(), $plan_upgrade_url );
 		if($this->is_plg_lc_p_l()){
-			$mag = __( '<h2>Need to sync more than '.$this->get_hd_ldys_lmt().' days of history? <a href="'.$plan_upgrade_url.'">Upgrade</a> to a paid plan!</h2>', 'mw_wc_qbo_sync' );
+			$mag = sprintf( __( '<h2>Need to sync more than %s days of history? <a href="%s">Upgrade</a> to a paid plan!</h2>', 'mw_wc_qbo_sync' ), $this->get_hd_ldys_lmt(), $plan_upgrade_url );
 		}
 		
 		return $mag;
@@ -5597,7 +5597,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 									$old_status =(is_array($order_statuses) && isset($order_statuses[$order_status]))?$order_statuses[$order_status]:$order_status;
 									$new_status =(is_array($order_statuses) && isset($order_statuses[$payment_post_status]))?$order_statuses[$payment_post_status]:$payment_post_status;
 									$order = new WC_Order( $post_id );
-									$order_note = __('Order status changed from '.$old_status.' to '.$new_status,'mw_wc_qbo_sync');
+									$order_note = sprintf( __('Order status changed from %s to %s','mw_wc_qbo_sync'), $old_status, $new_status );
 									$order_note.=PHP_EOL;
 									$order_note.='Payment Pull - MyWorks WooCommerce Sync for QuickBooks Online';
 									$order->add_order_note($order_note);
@@ -12185,8 +12185,8 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$pagination_data.=paginate_links( array(
 								'base' => add_query_arg( 'paged', '%#%' ),
 								'format' => '',
-								'prev_text' => __('&laquo;'),
-								'next_text' => __('&raquo;'),
+								'prev_text' => __('&laquo;', 'mw_wc_qbo_sync'),
+								'next_text' => __('&raquo;', 'mw_wc_qbo_sync'),
 								'total' => ceil($total_records / $items_per_page),
 								'current' => $page,
 								'end_size' =>2,
@@ -12381,296 +12381,205 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
         );
 	}
 
-	public function get_log_chart_output($viewPeriod=''){
-		$data = $this->get_log_chart_data();
-		if (!in_array($viewPeriod, array('today', 'month', 'year'))) {
-            $viewPeriod = 'today';
-        }
+public function get_log_chart_output($viewPeriod=''){
+	$data = $this->get_log_chart_data();
+	if (!in_array($viewPeriod, array('today', 'month', 'year'))) {
+		$viewPeriod = 'today';
+	}
 
-		$invoiceData = (isset($data['invoices']['total'][$viewPeriod]))?$data['invoices']['total'][$viewPeriod]:array();
-		$clientData = (isset($data['clients']['total'][$viewPeriod]))?$data['clients']['total'][$viewPeriod]:array();
-		//$errorData = (isset($data['errors']['total'][$viewPeriod]))?$data['errors']['total'][$viewPeriod]:array();
+	$invoiceData = isset($data['invoices']['total'][$viewPeriod]) ? $data['invoices']['total'][$viewPeriod] : array();
+	$clientData = isset($data['clients']['total'][$viewPeriod]) ? $data['clients']['total'][$viewPeriod] : array();
+	$paymentData = isset($data['payments']['total'][$viewPeriod]) ? $data['payments']['total'][$viewPeriod] : array();
+	$productData = isset($data['products']['total'][$viewPeriod]) ? $data['products']['total'][$viewPeriod] : array();
+	$depositData = isset($data['deposits']['total'][$viewPeriod]) ? $data['deposits']['total'][$viewPeriod] : array();
 
-		$paymentData = (isset($data['payments']['total'][$viewPeriod]))?$data['payments']['total'][$viewPeriod]:array();
+	if ($viewPeriod == 'today') {
+		$graphLabels = $graphDataInv = $graphDataCus = $graphDataPmnt = $graphDataPrdt = $graphDataDpst = array();
+		for ($i = 0; $i <= $this->now("H"); $i++) {
+			$graphLabels[] = date("ga", mktime($i, $this->now("i"), $this->now("s"), $this->now("m"), $this->now("d"), $this->now("Y")));
+			$graphDataInv[] = isset($invoiceData[$i]) ? $invoiceData[$i] : 0;
+			$graphDataCus[] = isset($clientData[$i]) ? $clientData[$i] : 0;
+			$graphDataPmnt[] = isset($paymentData[$i]) ? $paymentData[$i] : 0;
+			$graphDataPrdt[] = isset($productData[$i]) ? $productData[$i] : 0;
+			$graphDataDpst[] = isset($depositData[$i]) ? $depositData[$i] : 0;
+		}
+	} elseif ($viewPeriod == 'month') {
+		$graphLabels = $graphDataInv = $graphDataCus = $graphDataPmnt = $graphDataPrdt = $graphDataDpst = array();
+		for ($i = 0; $i < 30; $i++) {
+			$time = mktime(0, 0, 0, $this->now("m"), $this->now("d") - $i, $this->now("Y"));
+			$label = date("j F", $time);
+			$graphLabels[] = date("jS", $time);
+			$graphDataInv[] = isset($invoiceData[$label]) ? $invoiceData[$label] : 0;
+			$graphDataCus[] = isset($clientData[$label]) ? $clientData[$label] : 0;
+			$graphDataPmnt[] = isset($paymentData[$label]) ? $paymentData[$label] : 0;
+			$graphDataPrdt[] = isset($productData[$label]) ? $productData[$label] : 0;
+			$graphDataDpst[] = isset($depositData[$label]) ? $depositData[$label] : 0;
+		}
+		$graphLabels = array_reverse($graphLabels);
+		$graphDataInv = array_reverse($graphDataInv);
+		$graphDataCus = array_reverse($graphDataCus);
+		$graphDataPmnt = array_reverse($graphDataPmnt);
+		$graphDataPrdt = array_reverse($graphDataPrdt);
+		$graphDataDpst = array_reverse($graphDataDpst);
+	} elseif ($viewPeriod == 'year') {
+		$graphLabels = $graphDataInv = $graphDataCus = $graphDataPmnt = $graphDataPrdt = $graphDataDpst = array();
+		for ($i = 0; $i < 12; $i++) {
+			$time = mktime(0, 0, 0, $this->now("m") - $i, 1, $this->now("Y"));
+			$label = date("F Y", $time);
+			$graphLabels[] = date("F y", $time);
+			$graphDataInv[] = isset($invoiceData[$label]) ? $invoiceData[$label] : 0;
+			$graphDataCus[] = isset($clientData[$label]) ? $clientData[$label] : 0;
+			$graphDataPmnt[] = isset($paymentData[$label]) ? $paymentData[$label] : 0;
+			$graphDataPrdt[] = isset($productData[$label]) ? $productData[$label] : 0;
+			$graphDataDpst[] = isset($depositData[$label]) ? $depositData[$label] : 0;
+		}
+		$graphLabels = array_reverse($graphLabels);
+		$graphDataInv = array_reverse($graphDataInv);
+		$graphDataCus = array_reverse($graphDataCus);
+		$graphDataPmnt = array_reverse($graphDataPmnt);
+		$graphDataPrdt = array_reverse($graphDataPrdt);
+		$graphDataDpst = array_reverse($graphDataDpst);
+	}
 
-		$productData = (isset($data['products']['total'][$viewPeriod]))?$data['products']['total'][$viewPeriod]:array();
-		$depositData = (isset($data['deposits']['total'][$viewPeriod]))?$data['deposits']['total'][$viewPeriod]:array();
+	$graphLabels = '"' . implode('","', $graphLabels) . '"';
+	$graphDataInv = implode(',', $graphDataInv);
+	$graphDataCus = implode(',', $graphDataCus);
+	$graphDataPmnt = implode(',', $graphDataPmnt);
+	$graphDataPrdt = implode(',', $graphDataPrdt);
+	$graphDataDpst = implode(',', $graphDataDpst);
 
-		if ($viewPeriod == 'today') {
+	$activeToday = ($viewPeriod == 'today') ? ' active' : '';
+	$activeThisMonth = ($viewPeriod == 'month') ? ' active' : '';
+	$activeThisYear = ($viewPeriod == 'year') ? ' active' : '';
 
-            $graphLabels = array();
+	// colors
+	$client_bg_color_rgb = '220,220,220,0.5';
+	$client_border_color_rgb = '220,220,220,1';
+	$client_point_bg_color_rgb = '220,220,220,1';
+	$client_point_border_color = '#fff';
 
-            $graphDataInv = array();
-            $graphDataCus = array();
-			$graphDataErr = array();
+	$payment_bg_color_rgb = '66, 134, 244, 0.5';
+	$payment_border_color_rgb = '66, 134, 244, 1';
+	$payment_point_bg_color_rgb = '66, 134, 244, 1';
+	$payment_point_border_color = '#fff';
 
-			$graphDataPmnt = array();
+	$deposit_bg_color_rgb = '66, 238, 244, 0.5';
+	$deposit_border_color_rgb = '66, 238, 244, 1';
+	$deposit_point_bg_color_rgb = '66, 238, 244, 1';
+	$deposit_point_border_color = '#fff';
 
-			$graphDataPrdt = array();
-			$graphDataDpst = array();
+	$product_bg_color_rgb = '232, 163, 2, 0.5';
+	$product_border_color_rgb = '232, 163, 2,1';
+	$product_point_bg_color_rgb = '232, 163, 2, 1';
+	$product_point_border_color = '#fff';
 
+	$help_txt = __('Click on colors or labels for enable/disable','mw_wc_qbo_sync');
 
-            for ($i = 0; $i <= $this->now("H"); $i++) {
-                $graphLabels[] = date("ga", mktime($i, $this->now("i"), $this->now("s"), $this->now("m"), $this->now("d"), $this->now("Y")));
-                $graphDataInv[] = isset($invoiceData[$i]) ? $invoiceData[$i] : 0;
-                $graphDataCus[] = isset($clientData[$i]) ? $clientData[$i] : 0;
-				//$graphDataErr[] = isset($errorData[$i]) ? $errorData[$i] : 0;
-
-				$graphDataPmnt[] = isset($paymentData[$i]) ? $paymentData[$i] : 0;
-
-				$graphDataPrdt[] = isset($productData[$i]) ? $productData[$i] : 0;
-				$graphDataDpst[] = isset($depositData[$i]) ? $depositData[$i] : 0;
-            }
-
-        } elseif ($viewPeriod == 'month') {
-
-            $graphLabels = array();
-
-		    $graphDataInv = array();
-            $graphDataCus = array();
-			//$graphDataErr = array();
-
-			$graphDataPmnt = array();
-			$graphDataPrdt = array();
-			$graphDataDpst = array();
-
-            for ($i = 0; $i < 30; $i++) {
-                $time = mktime(0, 0, 0, $this->now("m"), $this->now("d") - $i, $this->now("Y"));
-                $graphLabels[] = date("jS", $time);
-                $graphDataInv[] = isset($invoiceData[date("j F", $time)]) ? $invoiceData[date("j F", $time)] : 0;
-                $graphDataCus[] = isset($clientData[date("j F", $time)]) ? $clientData[date("j F", $time)] : 0;
-				//$graphDataErr[] = isset($errorData[date("j F", $time)]) ? $errorData[date("j F", $time)] : 0;
-
-				$graphDataPmnt[] = isset($paymentData[date("j F", $time)]) ? $paymentData[date("j F", $time)] : 0;
-
-				$graphDataPrdt[] = isset($productData[date("j F", $time)]) ? $productData[date("j F", $time)] : 0;
-				$graphDataDpst[] = isset($depositData[date("j F", $time)]) ? $depositData[date("j F", $time)] : 0;
-            }
-
-            $graphLabels = array_reverse($graphLabels);
-
-            $graphDataInv = array_reverse($graphDataInv);
-            $graphDataCus = array_reverse($graphDataCus);
-			//$graphDataErr = array_reverse($graphDataErr);
-
-			$graphDataPmnt = array_reverse($graphDataPmnt);
-
-			$graphDataPrdt = array_reverse($graphDataPrdt);
-			$graphDataDpst = array_reverse($graphDataDpst);
-
-        } elseif ($viewPeriod == 'year') {
-
-            $graphLabels = array();
-
-			$graphDataInv = array();
-            $graphDataCus = array();
-			//$graphDataErr = array();
-
-			$graphDataPmnt = array();
-			$graphDataPrdt = array();
-			$graphDataDpst = array();
-
-            for ($i = 0; $i < 12; $i++) {
-                $time = mktime(0, 0, 0, $this->now("m") - $i, 1, $this->now("Y"));
-                $graphLabels[] = date("F y", $time);
-                $graphDataInv[] = isset($invoiceData[date("F Y", $time)]) ? $invoiceData[date("F Y", $time)] : 0;
-                $graphDataCus[] = isset($clientData[date("F Y", $time)]) ? $clientData[date("F Y", $time)] : 0;
-				//$graphDataErr[] = isset($errorData[date("F Y", $time)]) ? $errorData[date("F Y", $time)] : 0;
-
-				$graphDataPmnt[] = isset($paymentData[date("F Y", $time)]) ? $paymentData[date("F Y", $time)] : 0;
-				$graphDataPrdt[] = isset($productData[date("F Y", $time)]) ? $productData[date("F Y", $time)] : 0;
-				$graphDataDpst[] = isset($depositData[date("F Y", $time)]) ? $depositData[date("F Y", $time)] : 0;
-            }
-
-            $graphLabels = array_reverse($graphLabels);
-
-            $graphDataInv = array_reverse($graphDataInv);
-            $graphDataCus = array_reverse($graphDataCus);
-			//$graphDataErr = array_reverse($graphDataErr);
-
-			$graphDataPmnt = array_reverse($graphDataPmnt);
-			$graphDataPrdt = array_reverse($graphDataPrdt);
-			$graphDataDpst = array_reverse($graphDataDpst);
-
-        }
-
-        $graphLabels = '"' . implode('","', $graphLabels) . '"';
-
-        $graphDataInv = implode(',', $graphDataInv);
-
-        $graphDataCus = implode(',', $graphDataCus);
-		//$graphDataErr = implode(',', $graphDataErr);
-
-		$graphDataPmnt = implode(',', $graphDataPmnt);
-		$graphDataPrdt = implode(',', $graphDataPrdt);
-		$graphDataDpst = implode(',', $graphDataDpst);
-
-        $activeToday = ($viewPeriod == 'today') ? ' active' : '';
-        $activeThisMonth = ($viewPeriod == 'month') ? ' active' : '';
-        $activeThisYear = ($viewPeriod == 'year') ? ' active' : '';
-
-		//colors
-		$client_bg_color_rgb = '220,220,220,0.5';
-		$client_border_color_rgb = '220,220,220,1';
-		$client_point_bg_color_rgb = '220,220,220,1';
-		$client_point_border_color = '#fff';
-
-
-
-
-		$payment_bg_color_rgb = '66, 134, 244, 0.5';
-		$payment_border_color_rgb = '66, 134, 244, 1';
-		$payment_point_bg_color_rgb = '66, 134, 244, 1';
-		$payment_point_border_color = '#fff';
-
-		$deposit_bg_color_rgb = '66, 238, 244, 0.5';
-		$deposit_border_color_rgb = '66, 238, 244, 1';
-		$deposit_point_bg_color_rgb = '66, 238, 244, 1';
-		$deposit_point_border_color = '#fff';
-
-		$product_bg_color_rgb = '232, 163, 2, 0.5';
-		$product_border_color_rgb = '232, 163, 2,1';
-		$product_point_bg_color_rgb = '232, 163, 2, 1';
-		$product_point_border_color = '#fff';
-
-		$help_txt = __('Click on colors or labels for enable/disable','mw_wc_qbo_sync');
-
-		//
-		return <<<EOF
-    <div style="padding:20px;">
-    <div class="btn-group btn-group-sm btn-period-chooser" role="group" aria-label="...">
-        <button type="button" class="btn btn-default{$activeToday}" data-period="today">Today</button>
-        <button type="button" class="btn btn-default{$activeThisMonth}" data-period="month">This Month</button>
-        <button type="button" class="btn btn-default{$activeThisYear}" data-period="year">This Year</button>
-    </div>
-	<p>{$help_txt}</p>
+	$html = '<div style="padding:20px;">
+	<div class="btn-group btn-group-sm btn-period-chooser" role="group" aria-label="...">
+		<button type="button" class="btn btn-default'.$activeToday.'" data-period="today">Today</button>
+		<button type="button" class="btn btn-default'.$activeThisMonth.'" data-period="month">This Month</button>
+		<button type="button" class="btn btn-default'.$activeThisYear.'" data-period="year">This Year</button>
+	</div>
+	<p>'.$help_txt.'</p>
 </div>
 
 <div style="width:100%;height:450px;">
-    <div id="ChartParent_MWQS">
-        <canvas id="Chart_MWQS" height="400"></canvas>
-    </div>
+	<div id="ChartParent_MWQS">
+		<canvas id="Chart_MWQS" height="400"></canvas>
+	</div>
 </div>
 
 <script>
-
 jQuery(document).ready(function($) {
-
-    $('.btn-period-chooser button').click(function() {
-        $('.btn-period-chooser button').removeClass('active');
-        $(this).addClass('active');
-		var period = $(this).data('period');
+	$(".btn-period-chooser button").click(function() {
+		$(".btn-period-chooser button").removeClass("active");
+		$(this).addClass("active");
+		var period = $(this).data("period");
 		mw_wc_qbo_sync_refresh_log_chart(period);
-    });
+	});
 
-    var lineData = {
-        labels: [{$graphLabels}],
-        datasets: [
-            {
-                label: "Customer",
-                backgroundColor: "rgba({$client_bg_color_rgb})",
-                borderColor: "rgba({$client_border_color_rgb})",
-                pointBackgroundColor: "rgba({$client_point_bg_color_rgb})",
-                pointBorderColor: "{$client_point_border_color}",
-                data: [{$graphDataCus}]
-            },
-            {
-                label: "Invoice",
-                backgroundColor: "rgba(93,197,96,0.5)",
-                borderColor: "rgba(93,197,96,1)",
-                pointBackgroundColor: "rgba(93,197,96,1)",
-                pointBorderColor: "#fff",
-                data: [{$graphDataInv}]
-            },
+	var lineData = {
+		labels: ['.$graphLabels.'],
+		datasets: [
 			{
-                label: "Payment",
-                backgroundColor: "rgba({$payment_bg_color_rgb})",
-                borderColor: "rgba({$payment_border_color_rgb})",
-                pointBackgroundColor: "rgba({$payment_point_bg_color_rgb})",
-                pointBorderColor: "{$payment_point_border_color}",
-                data: [{$graphDataPmnt}]
-            },
+				label: "Customer",
+				backgroundColor: "rgba('.$client_bg_color_rgb.')",
+				borderColor: "rgba('.$client_border_color_rgb.')",
+				pointBackgroundColor: "rgba('.$client_point_bg_color_rgb.')",
+				pointBorderColor: "'.$client_point_border_color.'",
+				data: ['.$graphDataCus.']
+			},
 			{
-                label: "Deposit",
-                backgroundColor: "rgba({$deposit_bg_color_rgb})",
-                borderColor: "rgba({$deposit_border_color_rgb})",
-                pointBackgroundColor: "rgba({$deposit_point_bg_color_rgb})",
-                pointBorderColor: "{$deposit_point_border_color}",
-                data: [{$graphDataDpst}]
-            },
+				label: "Invoice",
+				backgroundColor: "rgba(93,197,96,0.5)",
+				borderColor: "rgba(93,197,96,1)",
+				pointBackgroundColor: "rgba(93,197,96,1)",
+				pointBorderColor: "#fff",
+				data: ['.$graphDataInv.']
+			},
 			{
-                label: "Product",
-                backgroundColor: "rgba({$product_bg_color_rgb})",
-                borderColor: "rgba({$product_border_color_rgb})",
-                pointBackgroundColor: "rgba({$product_point_bg_color_rgb})",
-                pointBorderColor: "{$product_point_border_color}",
-                data: [{$graphDataPrdt}]
-            },
-        ]
-    };
+				label: "Payment",
+				backgroundColor: "rgba('.$payment_bg_color_rgb.')",
+				borderColor: "rgba('.$payment_border_color_rgb.')",
+				pointBackgroundColor: "rgba('.$payment_point_bg_color_rgb.')",
+				pointBorderColor: "'.$payment_point_border_color.'",
+				data: ['.$graphDataPmnt.']
+			},
+			{
+				label: "Deposit",
+				backgroundColor: "rgba('.$deposit_bg_color_rgb.')",
+				borderColor: "rgba('.$deposit_border_color_rgb.')",
+				pointBackgroundColor: "rgba('.$deposit_point_bg_color_rgb.')",
+				pointBorderColor: "'.$deposit_point_border_color.'",
+				data: ['.$graphDataDpst.']
+			},
+			{
+				label: "Product",
+				backgroundColor: "rgba('.$product_bg_color_rgb.')",
+				borderColor: "rgba('.$product_border_color_rgb.')",
+				pointBackgroundColor: "rgba('.$product_point_bg_color_rgb.')",
+				pointBorderColor: "'.$product_point_border_color.'",
+				data: ['.$graphDataPrdt.']
+			}
+		]
+	};
 
-    var canvas = document.getElementById("Chart_MWQS");
-    var parent = document.getElementById('ChartParent_MWQS');
+	var canvas = document.getElementById("Chart_MWQS");
+	var parent = document.getElementById("ChartParent_MWQS");
 
-    canvas.width = parent.offsetWidth;
-    canvas.height = parent.offsetHeight;
+	canvas.width = parent.offsetWidth;
+	canvas.height = parent.offsetHeight;
 
-    var ctx = $("#Chart_MWQS");
-	//var ctx = $("#Chart_MWQS").get(0).getContext("2d");
-	//var chartDisplay = new Chart(document.getElementById("Chart_MWQS").getContext("2d")).Line(lineData);
-	//var ctx = document.getElementById("Chart_MWQS").getContext("2d");
+	var ctx = $("#Chart_MWQS");
+
 	var options = {
-	 responsive: true,
+		responsive: true,
 		maintainAspectRatio: false,
 		scales: {
-			 yAxes: [{
-				 ticks: {
-					 beginAtZero: true,
-					 userCallback: function(label, index, labels) {
-						 // when the floored value is the same as the value we have a whole number
-						 if (Math.floor(label) === label) {
-							 return label;
-						 }
+			yAxes: [{
+				ticks: {
+					beginAtZero: true,
+					userCallback: function(label, index, labels) {
+						if (Math.floor(label) === label) {
+							return label;
+						}
+					}
+				}
+			}]
+		}
+	};
 
-					 },
-				 }
-			 }],
-		},
-	}
 	var Chart_MWQS = Chart.Line(ctx, {
 		data: lineData,
 		options: options
 	});
-
-	/*
-    new Chart(ctx, {
-        type: 'line',
-        data: lineData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-			scales: {
-				 yAxes: [{
-					 ticks: {
-						 beginAtZero: true,
-						 userCallback: function(label, index, labels) {
-							 // when the floored value is the same as the value we have a whole number
-							 if (Math.floor(label) === label) {
-								 return label;
-							 }
-
-						 },
-					 }
-				 }],
-			},
-        }
-    });
-	*/
 });
-</script>
-EOF;
+</script>';
 
-	}
+	return $html;
+}
+
 	/************************************************************---------------------------------******************************************************/
 
 	public function get_data($query){
@@ -15444,7 +15353,7 @@ EOF;
 		$post_array = $post_query_obj->posts;
 
 		$total_records = $post_query_obj->found_posts;
-		wp_reset_query();
+		wp_reset_postdata();
 		//$this->_p($post_query_obj);
 		$pagination_links = $this->get_paginate_links($total_records,$items_per_page);
 		return array('post_array'=>$post_array, 'pagination_links'=>$pagination_links);

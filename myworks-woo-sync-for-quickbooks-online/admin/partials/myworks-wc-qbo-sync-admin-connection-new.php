@@ -42,11 +42,10 @@ if($MSQS_QL->is_connected()){
 	$local_connection_status_txt = '<h5 style="color:red;">Not Connected</h5>';
 }
 ?>
-<?php echo __('','mw_wc_qbo_sync');?>
 <div class="mw_wc_qbo_sync_container container conect-outer">
 	<?php if($MWQS_OF->is_valid_license($mw_wc_qbo_sync_license,$mw_wc_qbo_sync_localkey)):?>
 	<div class="mwqs_conection_options">
-		<h4><?php echo __('Configure License Key & Access Token','mw_wc_qbo_sync');?></h4>
+		<h4><?php echo esc_html__('Configure License Key & Access Token','mw_wc_qbo_sync');?></h4>
 		<form method="post" action="<?php echo $page_url;?>">
 			<div class="myworks-wc-qbo-sync-table-responsive">
 				<table class="widefat fixed">
@@ -59,7 +58,7 @@ if($MSQS_QL->is_connected()){
 						<td  width="30%">
 							<p class="mw_wc_qbo_sync_paragraph">
 							<?php 
-							echo __('To update your license key, deactivate and re-activate the plugin. All your settings and mappings will be saved.','mw_wc_qbo_sync');
+							echo esc_html__('To update your license key, deactivate and re-activate the plugin. All your settings and mappings will be saved.','mw_wc_qbo_sync');
 							?>
 							</p>
 						</td>
@@ -73,7 +72,7 @@ if($MSQS_QL->is_connected()){
 						</td>
 						<td>
 							<p class="mw_wc_qbo_sync_paragraph">
-								<?php echo __('Please refresh the page after adding new access token','mw_wc_qbo_sync');?>
+								<?php echo esc_html__('Please refresh the page after adding new access token','mw_wc_qbo_sync');?>
 							</p>
 						</td>
 					</tr>				
@@ -88,15 +87,15 @@ if($MSQS_QL->is_connected()){
 	</div>
 	
 	<div class="mwqs_rp_cont">
-		<h4><?php echo __('Refresh Page','mw_wc_qbo_sync');?></h4>
+		<h4><?php echo esc_html__('Refresh Page','mw_wc_qbo_sync');?></h4>
 		<button class="button button-primary button-large" onclick="javascript:window.location.reload();">
-		<?php echo __('Reload','mw_wc_qbo_sync');?>
+		<?php echo esc_html__('Reload','mw_wc_qbo_sync');?>
 		</button>
 	</div>
 	
 	<div class="mwqs_conection_local_info">
 		<h4>	
-			<?php echo __('Local QuickBooks Online Connection Info','mw_wc_qbo_sync');?>
+			<?php echo esc_html__('Local QuickBooks Online Connection Info','mw_wc_qbo_sync');?>
 		</h4>
 		
 		<div class="cnctin-infrmtionarea">	
@@ -129,7 +128,7 @@ if($MSQS_QL->is_connected()){
 			?>
 			</p>
 			<?php else:?>
-			<p style="color:red;"><?php echo __('QuickBooks online company info not found.','mw_wc_qbo_sync');?></p>
+			<p style="color:red;"><?php echo esc_html__('QuickBooks online company info not found.','mw_wc_qbo_sync');?></p>
 			<?php endif;?>
 			
 			<?php endif;?>
@@ -137,7 +136,7 @@ if($MSQS_QL->is_connected()){
 
 			<br />
 			<b style="font-size:16px;">
-			<?php echo __('Reload the connection page after connect, disconect or reconnect to view real time connection status','mw_wc_qbo_sync');?>
+			<?php echo esc_html__('Reload the connection page after connect, disconect or reconnect to view real time connection status','mw_wc_qbo_sync');?>
 			</b>
 		
 		</div>
@@ -149,10 +148,10 @@ if($MSQS_QL->is_connected()){
 	<div class="qbd_input_license">
 		<?php if($MWQS_OF->get_license_status()=='Invalid'):?>
 		<p>
-			<?php echo __('Please enter a valid license key in order to continue.','mw_wc_qbo_sync');?>
+			<?php echo esc_html__('Please enter a valid license key in order to continue.','mw_wc_qbo_sync');?>
 			<br/><br/>
-			<strong><?php echo __('Installing for the first time?','mw_wc_qbo_sync');?></strong> 
-			<?php echo __('Great! Simply enter your key below.','mw_wc_qbo_sync');?>
+			<strong><?php echo esc_html__('Installing for the first time?','mw_wc_qbo_sync');?></strong> 
+			<?php echo esc_html__('Great! Simply enter your key below.','mw_wc_qbo_sync');?>
 			<br/>
 			<strong><?php echo __('Moving sites?','mw_wc_qbo_sync');?></strong> 
 			<?php echo __('Don\'t forget to click Change Site in your account with us.','mw_wc_qbo_sync');?>
@@ -173,7 +172,7 @@ if($MSQS_QL->is_connected()){
 		
 		<?php else:?>
 		<p>
-			<?php echo __('Please enter a valid license key in order to continue.','mw_wc_qbo_sync');?>
+			<?php echo esc_html__('Please enter a valid license key in order to continue.','mw_wc_qbo_sync');?>
 		</p>
 		
 		<?php endif;?>

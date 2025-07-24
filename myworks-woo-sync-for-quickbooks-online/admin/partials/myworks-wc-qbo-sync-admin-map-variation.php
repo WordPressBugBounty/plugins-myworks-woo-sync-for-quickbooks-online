@@ -75,7 +75,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 
 <div class="container">	
 	<?php //$MSQS_QL->_p($wc_variation_list);?>
-	<div class="page_title"><h4><?php _e( 'Variation Mappings', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Variation Mappings', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="mw_wc_filter">
 	 <span class="search_text">Search</span>
 	  &nbsp;
@@ -140,7 +140,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 									<tr>
 										<td><?php echo $p_val['ID']?></td>
 										<td title="<?php echo $p_val['post_name']?>">
-										<a href="<?php echo admin_url('post.php?action=edit&post=').wp_get_post_parent_id( $p_val['ID'] ) ?>" target="_blank"><b><?php _e( $p_val['name'], 'mw_wc_qbo_sync' );?></b>
+										<a href="<?php echo admin_url('post.php?action=edit&post=').wp_get_post_parent_id( $p_val['ID'] ) ?>" target="_blank"><b><?php esc_html_e( $p_val['name'], 'mw_wc_qbo_sync' );?></b>
 										
 										<p>
 										Price: <?php echo $wc_currency_symbol.$p_val['price'];?>
@@ -229,9 +229,9 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 				
 				<br />
 				<div class="col col-m">
-				<h5><?php _e( 'Clear All Variations Mappings', 'mw_wc_qbo_sync' );?></h5>
+				<h5><?php esc_html_e( 'Clear All Variations Mappings', 'mw_wc_qbo_sync' );?></h5>
 				<?php wp_nonce_field( 'myworks_wc_qbo_sync_clear_all_mappings_variations', 'clear_all_mappings_variations' ); ?>
-				<button id="mwqs_cavm_btn"><?php _e( 'Clear Mappings', 'mw_wc_qbo_sync' );?></button>
+				<button id="mwqs_cavm_btn"><?php esc_html_e( 'Clear Mappings', 'mw_wc_qbo_sync' );?></button>
 				&nbsp;
 				<span id="mwqs_cavm_msg"></span>
 				</div>
@@ -239,7 +239,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 				<?php else:?>
 				
 				<h4 class="mw_mlp_ndf">
-					<?php _e( 'No available variations to display.', 'mw_wc_qbo_sync' );?>
+					<?php esc_html_e( 'No available variations to display.', 'mw_wc_qbo_sync' );?>
 				</h4>
 				<?php endif;?>
 			</div>
@@ -284,7 +284,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 			
 			if(vam_wf!='' && vam_qf!=''){
 				$('#vam_wqf_e_msg').html('');
-				if(confirm('<?php echo __('This will override any previous variation mappings, and scan your WooCommerce & QuickBooks Online variations by selected fields to automatically match them for you.')?>')){
+				if(confirm('<?php echo __('This will override any previous variation mappings, and scan your WooCommerce & QuickBooks Online variations by selected fields to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 					jQuery('#mwqs_automap_variations_msg').html('');
 					var data = {
 						"action": 'mw_wc_qbo_sync_automap_variations_wf_qf',
@@ -321,7 +321,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 		
 		<?php if($js_section=false):?>
 		$('#mwqs_automap_variations').click(function(){
-			if(confirm('<?php echo __('Are you sure, you want to automap all variations?')?>')){
+			if(confirm('<?php echo __('Are you sure, you want to automap all variations?', 'mw_wc_qbo_sync')?>')){
 				jQuery('#mwqs_automap_variations_msg').html('');
 				var data = {
 					"action": 'mw_wc_qbo_sync_automap_variations',

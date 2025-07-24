@@ -41,4 +41,3 @@ if($tab=='inventory'){
 	
 	require_once plugin_dir_path( __FILE__ ) . 'myworks-wc-qbo-sync-admin-pull-dashboard.php';
 }
-?>
