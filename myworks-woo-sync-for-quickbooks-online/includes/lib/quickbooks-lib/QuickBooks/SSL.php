@@ -14,6 +14,6 @@ openssl_csr_export($csr, $csrout) and var_dump($csrout);
 openssl_x509_export($sscert, $certout) and var_dump($certout);
 openssl_pkey_export($privkey, $pkeyout, "mypassword") and var_dump($pkeyout);
 while (($e = openssl_error_string()) !== false) {
-echo $e . "\n";
+echo esc_html($e . "\n");
 }
 ?>

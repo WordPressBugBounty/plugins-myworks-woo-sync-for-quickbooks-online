@@ -326,11 +326,11 @@ class QuickBooks_Driver_Sql_Mssql extends QuickBooks_Driver_Sql
 		
 		if ($port)
 		{
-			$this->_conn = mssql_connect($host, $user, $pass, $new_link) or die('host: ' . $host . ', user: ' . $user . ', pass: ' . $pass . ' mysql_error(): ' . mssql_get_last_message());
+			$this->_conn = mssql_connect($host, $user, $pass, $new_link) or die('Database connection failed: ' . esc_html(mssql_get_last_message()));
 		}
 		else
 		{
-			$this->_conn = mssql_connect($host . ':' . $port, $user, $pass, $new_link) or die('host: ' . $host . ', user: ' . $user . ', pass: ' . $pass . ' mysql_error(): ' . mssql_get_last_message());
+			$this->_conn = mssql_connect($host . ':' . $port, $user, $pass, $new_link) or die('Database connection failed: ' . esc_html(mssql_get_last_message()));
 		}
 		
 		return mssql_select_db($db, $this->_conn);
@@ -400,7 +400,7 @@ select * from (
 			
 			//print($sql);
 			
-			trigger_error('Error: ' . $errmsg . "\n" . 'SQL: ' . $sql, E_USER_ERROR);
+			trigger_error('Database query error: ' . esc_html($errmsg), E_USER_ERROR);
 			return false;
 		}
 		
@@ -574,8 +574,8 @@ select * from (
 				
 				/*if ($name == 'ListID')
 				{
-					print('LIST ID:');
-					print_r($def);
+					// echo esc_html('LIST ID:');
+					// print_r($def);
 				}*/
 				
 				if (!empty($def[1]))

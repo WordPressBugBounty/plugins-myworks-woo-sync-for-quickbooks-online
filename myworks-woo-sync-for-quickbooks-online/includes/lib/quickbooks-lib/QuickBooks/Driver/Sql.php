@@ -886,7 +886,7 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 				) VALUES (
 					'" . $this->_escape($username) . "',
 					'" . $this->_escape($ticket) . "',
-					'" . $_SERVER['REMOTE_ADDR'] . "',
+					'" . $this->_escape(isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field($_SERVER['REMOTE_ADDR']) : '') . "',
 					'" . date('Y-m-d H:i:s') . "',
 					'" . date('Y-m-d H:i:s') . "'
 				) ", $errnum, $errmsg);
@@ -3373,7 +3373,7 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		{
 			if ($config['quickbooks_sql_debug'] or $config['quickbooks_sql_print'])
 			{
-				print($sql . "\n\n");
+				print(esc_html($sql) . "\n\n");
 			}
 			else
 			{
@@ -3687,7 +3687,7 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		if (!is_array($object) or !is_array($avail))
 		{
 			print('ERROR SAVING [[' . "\n");
-			print('TABLE: ' . $table . "\n");
+			print('TABLE: ' . esc_html($table) . "\n");
 			print_r($object);
 			print_r($avail);
 			print(']]');

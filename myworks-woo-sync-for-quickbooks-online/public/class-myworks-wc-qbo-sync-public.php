@@ -190,8 +190,8 @@ class MyWorks_WC_QBO_Sync_Public {
 			$ai_pdf = false;
 			$cuc_mwc = current_user_can('manage_woocommerce');
 			
-			$pdf_ref = isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:'';
-			$s_pdf_ref = (isset($_SESSION['mw_wc_qbo_sync_pdf_referer']))?$_SESSION['mw_wc_qbo_sync_pdf_referer']:'';
+			$pdf_ref = isset($_SERVER['HTTP_REFERER'])?sanitize_url($_SERVER['HTTP_REFERER']):'';
+			$s_pdf_ref = (isset($_SESSION['mw_wc_qbo_sync_pdf_referer']))?sanitize_url($_SESSION['mw_wc_qbo_sync_pdf_referer']):'';
 			
 			if($cuc_mwc && strpos($pdf_ref, '/post.php?post=') !== false && strpos($pdf_ref, '&action=edit') !== false){
 				$ai_pdf = true;
@@ -201,7 +201,7 @@ class MyWorks_WC_QBO_Sync_Public {
 				$ai_pdf = true;
 			}
 			
-			if(get_option('mw_wc_qbo_sync_wam_mng_inv_ed') == 'true' || $ai_pdf){
+			if(get_option('mw_wc_qbo_sync_wam_mng_inv_ed') == 'true' || $ai_pdf || $cuc_mwc){
 				require_once plugin_dir_path( __FILE__ ) . 'partials/myworks-wc-qbo-sync-public-user-invoice-pdf.php';
 			}else{
 				echo 'Not Authorized';

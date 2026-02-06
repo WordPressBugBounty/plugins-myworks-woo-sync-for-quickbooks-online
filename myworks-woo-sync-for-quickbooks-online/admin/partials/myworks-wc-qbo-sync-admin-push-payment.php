@@ -54,7 +54,7 @@ if($show_sync_status && is_array($wc_payment_list) && count($wc_payment_list)){
 	.sstchc{display:none;}
 </style>
 <div class="container">
-	<div class="page_title"><h4><?php _e( 'Payment Push', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Payment Push', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card qo-push-responsive">
 		<div class="card-content">
 
@@ -65,11 +65,11 @@ if($show_sync_status && is_array($wc_payment_list) && count($wc_payment_list)){
 									<div class="mw_wc_filter">
 									 <span class="search_text">Search</span>
 									  &nbsp;
-									  <input placeholder="<?php echo __('Name / Company / ORDER ID / NUM','mw_wc_qbo_sync')?>" type="text" id="payment_push_search" value="<?php echo $payment_push_search;?>">
+									  <input placeholder="<?php echo esc_attr__('Name / Company / ORDER ID / NUM','mw_wc_qbo_sync')?>" type="text" id="payment_push_search" value="<?php echo esc_attr($payment_push_search);?>">
 									  &nbsp;
-									  <input class="mwqs_datepicker" placeholder="<?php echo __('From yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="payment_date_from" value="<?php echo $payment_date_from;?>">
+									  <input class="mwqs_datepicker" placeholder="<?php echo esc_attr__('From yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="payment_date_from" value="<?php echo esc_attr($payment_date_from);?>">
 									  &nbsp;
-									  <input class="mwqs_datepicker" placeholder="<?php echo __('To yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="payment_date_to" value="<?php echo $payment_date_to;?>">
+									  <input class="mwqs_datepicker" placeholder="<?php echo esc_attr__('To yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="payment_date_to" value="<?php echo esc_attr($payment_date_to);?>">
 									  &nbsp;									  
 									  <button onclick="javascript:search_item();" class="btn btn-info">Filter</button>
 									  &nbsp;
@@ -78,17 +78,17 @@ if($show_sync_status && is_array($wc_payment_list) && count($wc_payment_list)){
 									  <span class="filter-right-sec">
 										  <span class="entries">Show entries</span>
 										  &nbsp;
-										  <select style="width:50px;" onchange="javascript:window.location='<?php echo $page_url;?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-											<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+										  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_attr($MSQS_QL->per_page_keyword);?>='+this.value;">
+											<?php echo wp_kses($MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 										 </select>
 									 </span>
 									 </div>
 									 <br />
 									 <div class="row">						
 										<div class="input-field col s12 m12 14">
-											<button id="push_selected_payment_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo __('Push Selected Payments','mw_wc_qbo_sync')?></button>
-											<button disabled="disabled" id="push_all_payment_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo __('Push All Payments','mw_wc_qbo_sync')?></button>
-											<button disabled="disabled" id="push_all_unsynced_payment_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo __('Push Un-synced Payments','mw_wc_qbo_sync')?></button>
+											<button id="push_selected_payment_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo esc_html__('Push Selected Payments','mw_wc_qbo_sync')?></button>
+											<button disabled="disabled" id="push_all_payment_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo esc_html__('Push All Payments','mw_wc_qbo_sync')?></button>
+											<button disabled="disabled" id="push_all_unsynced_payment_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo esc_html__('Push Un-synced Payments','mw_wc_qbo_sync')?></button>
 										</div>
 									</div>
 									 <br />
@@ -103,17 +103,17 @@ if($show_sync_status && is_array($wc_payment_list) && count($wc_payment_list)){
 															<input type="checkbox" onclick="javascript:mw_qbo_sync_check_all(this,'payment_push_')">
 														</th>
 														<th width="5%">&nbsp; ID</th>
-														<th width="9%"><?php _e( 'TXN ID', 'mw_wc_qbo_sync' ) ?></th>
-														<th width="20%"><?php _e( 'Customer', 'mw_wc_qbo_sync' ) ?></th>
-														<th width="13%"><?php _e( 'Order', 'mw_wc_qbo_sync' ) ?></th>
-														<th width="8%" title="<?php _e( 'Order Amount', 'mw_wc_qbo_sync' ) ?>">
-														<?php _e( 'Amount', 'mw_wc_qbo_sync' ) ?>
+														<th width="9%"><?php esc_html_e( 'TXN ID', 'mw_wc_qbo_sync' ) ?></th>
+														<th width="20%"><?php esc_html_e( 'Customer', 'mw_wc_qbo_sync' ) ?></th>
+														<th width="13%"><?php esc_html_e( 'Order', 'mw_wc_qbo_sync' ) ?></th>
+														<th width="8%" title="<?php esc_attr_e( 'Order Amount', 'mw_wc_qbo_sync' ) ?>">
+														<?php esc_html_e( 'Amount', 'mw_wc_qbo_sync' ) ?>
 														</th>
-														<th width="6%"><?php _e( 'TXN Fee', 'mw_wc_qbo_sync' ) ?></th>
-														<th width="14%"><?php _e( 'Date', 'mw_wc_qbo_sync' ) ?></th>
-														<th width="8%"><?php _e( 'Payment</br>Method', 'mw_wc_qbo_sync' ) ?></th>
-														<th width="10%"><?php _e( 'Order</br>Status', 'mw_wc_qbo_sync' ) ?></th>
-														<th width="5%" <?php echo $sstchc;?>><?php _e( 'Sync</br>Status', 'mw_wc_qbo_sync' ) ?></th>	
+														<th width="6%"><?php esc_html_e( 'TXN Fee', 'mw_wc_qbo_sync' ) ?></th>
+														<th width="14%"><?php esc_html_e( 'Date', 'mw_wc_qbo_sync' ) ?></th>
+														<th width="8%"><?php echo wp_kses( __( 'Payment<br>Method', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+														<th width="10%"><?php echo wp_kses( __( 'Order<br>Status', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+														<th width="5%" <?php echo esc_attr($sstchc);?>><?php echo wp_kses( __( 'Sync<br>Status', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>	
 													</tr>
 												</thead>
 												
@@ -136,12 +136,12 @@ if($show_sync_status && is_array($wc_payment_list) && count($wc_payment_list)){
 													
 													?>
 													<tr>
-														<td><input type="checkbox" id="payment_push_<?php echo $payment_details['payment_id']?>"></td>
-														<td><?php echo $payment_details['payment_id'] ?></td>
-														<td><?php echo $payment_details['transaction_id'] ?></td>
+														<td><input type="checkbox" id="payment_push_<?php echo esc_attr($payment_details['payment_id']);?>"></td>
+														<td><?php echo esc_html($payment_details['payment_id']); ?></td>
+														<td><?php echo esc_html($payment_details['transaction_id']); ?></td>
 														<?php $dts=true;?>
 														<td <?php if(!$dts && !(int) $payment_details['customer_user']):?> style="color:red;" title="Guest Order"<?php endif;?>>
-														<?php echo $payment_details['billing_first_name'] ?> <?php echo $payment_details['billing_last_name'] ?>
+														<?php echo esc_html($payment_details['billing_first_name']); ?> <?php echo esc_html($payment_details['billing_last_name']); ?>
 														</td>
 														
 														<?php
@@ -149,37 +149,37 @@ if($show_sync_status && is_array($wc_payment_list) && count($wc_payment_list)){
 														?>
 														
 														<td>
-														<a target="_blank" href="<?php echo admin_url('post.php?post='.$payment_details['order_id'].'&action=edit') ?>">
-														<?php echo (!empty($wc_inv_no))?$wc_inv_no.'<br/>':'';?>
-														<?php echo $payment_details['order_id'] ?>													
+														<a target="_blank" href="<?php echo esc_url(admin_url('post.php?post='.$payment_details['order_id'].'&action=edit')); ?>">
+														<?php echo (!empty($wc_inv_no)) ? esc_html($wc_inv_no).'<br/>' : ''; ?>
+														<?php echo esc_html($payment_details['order_id']); ?>													
 														</a>
 														</td>
 														
 														<td>
 														<?php 
 														if($wc_currency==$payment_details['order_currency']){
-															echo $wc_currency_symbol;
+															echo esc_html($wc_currency_symbol);
 														}else{
-															echo $MSQS_QL->get_array_isset($MSQS_QL->get_world_currency_list(true),$payment_details['order_currency'],$payment_details['order_currency'],false);
+															echo esc_html($MSQS_QL->get_array_isset($MSQS_QL->get_world_currency_list(true),$payment_details['order_currency'],$payment_details['order_currency'],false));
 														}													
-														echo $payment_details['order_total'];
+														echo esc_html($payment_details['order_total']);
 														?>
 														</td>
 														<td>
 														<?php 
 															if(isset($payment_details[$payment_details['payment_method'].'_txn_fee'])){
-																echo $payment_details[$payment_details['payment_method'].'_txn_fee'];
+																echo esc_html($payment_details[$payment_details['payment_method'].'_txn_fee']);
 															}else{
 																echo '0.00';
 															}
 														?>
 														</td>
-														<td><?php echo ($payment_details['paid_date']!='')?$payment_details['paid_date']:$payment_details['order_date']; ?></td>
-														<td title="<?php echo $payment_details['payment_method_title'] ?>">
-														<?php echo $payment_details['payment_method'] ?>
+														<td><?php echo esc_html(($payment_details['paid_date']!='') ? $payment_details['paid_date'] : $payment_details['order_date']); ?></td>
+														<td title="<?php echo esc_attr($payment_details['payment_method_title']); ?>">
+														<?php echo esc_html($payment_details['payment_method']); ?>
 														</td>
-														<td><?php echo $MSQS_QL->get_array_isset($order_statuses,$payment_details['order_status'],$payment_details['order_status']); ?></td>
-														<td <?php echo $sstchc;?>><?php echo $sync_status_html;?></td>
+														<td><?php echo esc_html($MSQS_QL->get_array_isset($order_statuses,$payment_details['order_status'],$payment_details['order_status'])); ?></td>
+														<td <?php echo esc_attr($sstchc);?>><?php echo !empty($sync_status_html) ? wp_kses($sync_status_html, array('i' => array('class' => array(), 'style' => array(), 'title' => array()), 'a' => array('target' => array(), 'href' => array()))) : ''; ?></td>
 													</tr>
 													<?php endforeach;?>		    	
 												</tbody>
@@ -191,16 +191,16 @@ if($show_sync_status && is_array($wc_payment_list) && count($wc_payment_list)){
 									<?php if($MSQS_QL->is_pl_res_tml()):?>
 										<div class="pp_mt_lsk_msg" style="text-align:center; padding:10px 5px;">
 											<p>
-											<?php echo $MSQS_QL->get_slmt_hstry_msg();?>
+											<?php echo $MSQS_QL->get_slmt_hstry_msg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 											</p>
 										</div>
 									<?php endif;?>
 									
-									<?php echo $pagination_links?>
+									<?php echo $pagination_links; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 									
 									<?php else:?>									
 									<h4 class="mw_mlp_ndf">
-										<?php _e( 'No available payments to display.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'No available payments to display.', 'mw_wc_qbo_sync' );?>
 									</h4>
 									<?php endif;?>
 								
@@ -225,14 +225,14 @@ if($show_sync_status && is_array($wc_payment_list) && count($wc_payment_list)){
 		payment_date_to = jQuery.trim(payment_date_to);
 		
 		if(payment_push_search!='' || payment_date_from!='' || payment_date_to!=''){		
-			window.location = '<?php echo $page_url;?>&payment_push_search='+payment_push_search+'&payment_date_from='+payment_date_from+'&payment_date_to='+payment_date_to;
+			window.location = '<?php echo esc_url_raw($page_url);?>&payment_push_search='+payment_push_search+'&payment_date_from='+payment_date_from+'&payment_date_to='+payment_date_to;
 		}else{
-			alert('<?php echo __('Please enter search keyword or dates.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_js(__('Please enter search keyword or dates.','mw_wc_qbo_sync')); ?>');
 		}
 	}
 
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&payment_push_search=&payment_date_from=&payment_date_to=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&payment_push_search=&payment_date_from=&payment_date_to=';
 	}
 	
 	jQuery(document).ready(function($) {
@@ -257,21 +257,21 @@ if($show_sync_status && is_array($wc_payment_list) && count($wc_payment_list)){
 			}
 			
 			if(item_checked==0){
-				alert('<?php echo __('Please select at least one item.','mw_wc_qbo_sync');?>');
+				alert('<?php echo esc_js(__('Please select at least one item.','mw_wc_qbo_sync')); ?>');
 				return false;
 			}
 			
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_payment_push',0,0,650,350);
+			popUpWindow('<?php echo esc_url($sync_window_url);?>&sync_type=push&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_payment_push',0,0,650,350);
 			return false;
 		});
 		
 		$('#push_all_payment_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&sync_all=1&item_type='+item_type,'mw_qs_payment_push',0,0,650,350);
+			popUpWindow('<?php echo esc_url($sync_window_url);?>&sync_type=push&sync_all=1&item_type='+item_type,'mw_qs_payment_push',0,0,650,350);
 			return false;
 		});
 		
 		$('#push_all_unsynced_payment_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&sync_unsynced=1&item_type='+item_type,'mw_qs_payment_push',0,0,650,350);
+			popUpWindow('<?php echo esc_url($sync_window_url);?>&sync_type=push&sync_unsynced=1&item_type='+item_type,'mw_qs_payment_push',0,0,650,350);
 			return false;
 		});
 	});
@@ -288,4 +288,4 @@ if($show_sync_status && is_array($wc_payment_list) && count($wc_payment_list)){
 		);
 	  } );
  </script>
- <?php echo $MWQS_OF->get_tablesorter_js('#mwqs_payment_push_table');?>
+<?php echo wp_kses( $MWQS_OF->get_tablesorter_js('#mwqs_payment_push_table'), array('script' => array('src' => array(), 'type' => array(), 'crossorigin' => array(), 'onerror' => array()), 'style' => array()) );?>

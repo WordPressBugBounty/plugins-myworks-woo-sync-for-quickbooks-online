@@ -49,7 +49,7 @@ if(is_array($qbo_product_list) && count($qbo_product_list)){
 ?>
 </br></br>
 <div class="container">
-	<div class="page_title"><h4><?php _e( 'Product Pull', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Product Pull', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card pull-block-responsive">
 		<div class="card-content">
 
@@ -59,11 +59,11 @@ if(is_array($qbo_product_list) && count($qbo_product_list)){
 									<div class="mw_wc_filter">
 									 <span class="search_text">Search</span>
 									  &nbsp;
-									  <input placeholder="<?php echo __('Name','mw_wc_qbo_sync')?>" type="text" id="product_pull_search" value="<?php echo esc_attr($product_pull_search);?>">
+									  <input placeholder="<?php echo esc_attr__('Name','mw_wc_qbo_sync')?>" type="text" id="product_pull_search" value="<?php echo esc_attr($product_pull_search);?>">
 									  &nbsp;
-									  <input class="mwqs_datepicker" placeholder="<?php echo __('Created from yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="product_pull_date_from" value="<?php echo esc_attr($product_pull_date_from);?>">
+									  <input class="mwqs_datepicker" placeholder="<?php echo esc_attr__('Created from yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="product_pull_date_from" value="<?php echo esc_attr($product_pull_date_from);?>">
 									  &nbsp;
-									  <input class="mwqs_datepicker" placeholder="<?php echo __('Created to yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="product_pull_date_to" value="<?php echo esc_attr($product_pull_date_to);?>">
+									  <input class="mwqs_datepicker" placeholder="<?php echo esc_attr__('Created to yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="product_pull_date_to" value="<?php echo esc_attr($product_pull_date_to);?>">
 									  &nbsp;									  
 									  <button onclick="javascript:search_item();" class="btn btn-info">Filter</button>
 									  &nbsp;
@@ -71,15 +71,15 @@ if(is_array($qbo_product_list) && count($qbo_product_list)){
 									  <span class="filter-right-sec">
 										  <span class="entries">Show entries</span>
 										  &nbsp;
-										  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url($page_url);?>&<?php echo $MSQS_QL->escape($MSQS_QL->per_page_keyword);?>='+this.value;">
-											<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+										  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_attr($MSQS_QL->per_page_keyword);?>='+this.value;">
+											<?php echo wp_kses($MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 										 </select>
 									 </span>
 									 </div>
 									 <br />
 									 <div class="row">						
 										<div class="input-field col s12 m12 14">
-											<button id="pull_selected_product_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo __('Pull Selected Products','mw_wc_qbo_sync')?></button>
+											<button id="pull_selected_product_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo esc_html__('Pull Selected Products','mw_wc_qbo_sync')?></button>
 										
 											
 										</div>
@@ -97,15 +97,15 @@ if(is_array($qbo_product_list) && count($qbo_product_list)){
 														<input type="checkbox" onclick="javascript:mw_qbo_sync_check_all(this,'product_pull_')">
 													</th>
 													<th width="4%">ID</th>
-													<th title="Type" width="10%"><?php _e( 'Type', 'mw_wc_qbo_sync' ) ?></th>
-													<th width="25%"><?php _e( 'QuickBooks Product Name', 'mw_wc_qbo_sync' ) ?></th>
-													<th width="14%"><?php _e( 'SKU', 'mw_wc_qbo_sync' ) ?></th>
-													<th width="5%"><?php _e( 'Active', 'mw_wc_qbo_sync' ) ?></th>												
-													<th title="UnitPrice" width="8%"><?php _e( 'Price', 'mw_wc_qbo_sync' ) ?></th>
-													<th title="TrackQtyOnHand" width="7%"><?php _e( 'Manage</br>Stock', 'mw_wc_qbo_sync' ) ?></th>
-													<th title="QtyOnHand" width="8%"><?php _e( 'QuickBooks</br>Stock', 'mw_wc_qbo_sync' ) ?></th>
-													<th title="CreateTime" width="13%"><?php _e( 'Created', 'mw_wc_qbo_sync' ) ?></th>
-													<th width="5%">Sync</br>Status</th>
+													<th title="Type" width="10%"><?php esc_html_e( 'Type', 'mw_wc_qbo_sync' ) ?></th>
+													<th width="25%"><?php esc_html_e( 'QuickBooks Product Name', 'mw_wc_qbo_sync' ) ?></th>
+													<th width="14%"><?php esc_html_e( 'SKU', 'mw_wc_qbo_sync' ) ?></th>
+													<th width="5%"><?php esc_html_e( 'Active', 'mw_wc_qbo_sync' ) ?></th>												
+													<th title="UnitPrice" width="8%"><?php esc_html_e( 'Price', 'mw_wc_qbo_sync' ) ?></th>
+													<th title="TrackQtyOnHand" width="7%"><?php echo wp_kses( __( 'Manage<br>Stock', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+													<th title="QtyOnHand" width="8%"><?php echo wp_kses( __( 'QuickBooks<br>Stock', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+													<th title="CreateTime" width="13%"><?php esc_html_e( 'Created', 'mw_wc_qbo_sync' ) ?></th>
+													<th width="5%"><?php echo wp_kses( __( 'Sync<br>Status', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
 												</tr>
 											</thead>
 											
@@ -120,25 +120,25 @@ if(is_array($qbo_product_list) && count($qbo_product_list)){
 												}
 												?>
 													<tr>
-														<td><input type="checkbox" id="product_pull_<?php echo (int) $product_id?>"></td>
-														<td><?php echo (int) $product_id?></td>
-														<td><?php echo $MSQS_QL->escape($product->getType());?></td>
-														<td title="<?php echo esc_attr($pn_title);?>"><?php echo $MSQS_QL->escape($product->getName());?></td>
-														<td><?php echo ($product->countSku())?$MSQS_QL->escape($product->getSku()):'';?></td>
-														<td><?php echo $MSQS_QL->escape($product->getActive());?></td>
+														<td><input type="checkbox" id="product_pull_<?php echo (int) $product_id; ?>"></td>
+														<td><?php echo (int) $product_id; ?></td>
+														<td><?php echo esc_html($product->getType());?></td>
+														<td title="<?php echo esc_attr($pn_title);?>"><?php echo esc_html($product->getName());?></td>
+														<td><?php echo ($product->countSku())?esc_html($product->getSku()):'';?></td>
+														<td><?php echo esc_html($product->getActive());?></td>
 														<td>
 														<?php
 														if($wc_currency==$qbo_home_currency){
-															echo $MSQS_QL->escape($wc_currency_symbol);
+															echo esc_html($wc_currency_symbol);
 														}else{
-															echo $MSQS_QL->escape($MSQS_QL->get_array_isset($MSQS_QL->get_world_currency_list(true),$qbo_home_currency,$qbo_home_currency,false));
+															echo esc_html($MSQS_QL->get_array_isset($MSQS_QL->get_world_currency_list(true),$qbo_home_currency,$qbo_home_currency,false));
 														}														
-														echo $MSQS_QL->escape($product->getUnitPrice());
+														echo esc_html($product->getUnitPrice());
 														?>
 														</td>
-														<td><?php echo $MSQS_QL->escape($product->getTrackQtyOnHand());?></td>
-														<td><?php echo ($product->countQtyOnHand())?$MSQS_QL->escape($product->getQtyOnHand()):'';?></td>														
-														<td><?php echo $MSQS_QL->escape($MSQS_QL->view_date($product->getMetaData()->getCreateTime(),'Y-m-d H:i:s'));?></td>
+														<td><?php echo esc_html($product->getTrackQtyOnHand());?></td>
+														<td><?php echo ($product->countQtyOnHand())?esc_html($product->getQtyOnHand()):'';?></td>														
+														<td><?php echo esc_html($MSQS_QL->view_date($product->getMetaData()->getCreateTime(),'Y-m-d H:i:s'));?></td>
 														<td class="p_prd_ss" id="p_prd_ss_<?php echo (int) $product_id;?>"></td>
 													</tr>
 												<?php endforeach;?>
@@ -146,11 +146,11 @@ if(is_array($qbo_product_list) && count($qbo_product_list)){
 										</table>
 										</div>
 									</div>
-									<?php echo $pagination_links?>
+									<?php echo !empty($pagination_links) ? $pagination_links : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 									<?php else:?>
 									
 									<h4 class="mw_mlp_ndf">
-										<?php _e( 'No available products to display.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'No available products to display.', 'mw_wc_qbo_sync' );?>
 									</h4>
 									<?php endif;?>
 								
@@ -176,14 +176,14 @@ if(is_array($qbo_product_list) && count($qbo_product_list)){
 		product_pull_date_to = jQuery.trim(product_pull_date_to);
 		
 		if(product_pull_search!='' || product_pull_date_from!='' || product_pull_date_to!=''){		
-			window.location = '<?php echo $page_url;?>&product_pull_search='+product_pull_search+'&product_pull_date_from='+product_pull_date_from+'&product_pull_date_to='+product_pull_date_to;
+			window.location = '<?php echo esc_url_raw($page_url);?>&product_pull_search='+product_pull_search+'&product_pull_date_from='+product_pull_date_from+'&product_pull_date_to='+product_pull_date_to;
 		}else{
-			alert('<?php echo __('Please enter search keyword or dates.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_js(__('Please enter search keyword or dates.','mw_wc_qbo_sync')); ?>');
 		}
 	}
 
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&product_pull_search=&product_pull_date_from=&product_pull_date_to=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&product_pull_search=&product_pull_date_from=&product_pull_date_to=';
 	}
 	
 	jQuery(document).ready(function($) {
@@ -192,10 +192,10 @@ if(is_array($qbo_product_list) && count($qbo_product_list)){
 		 <?php if(is_array($pull_map_data_arr) && count($pull_map_data_arr)):?>
 		 <?php foreach($pull_map_data_arr as $pmd):?>
 		 <?php 
-			$sync_status_html = '<i title="Mapped to #'.$pmd['wc_product_id'].'" class="fa fa-check-circle" style="color:green"></i>';
+			$sync_status_html = '<i title="Mapped to #'.esc_attr($pmd['wc_product_id']).'" class="fa fa-check-circle" style="color:green"></i>';
 		 ?>
-		 list_ids.push("<?php echo $pmd['quickbook_product_id']?>");		 
-		 jQuery('#p_prd_ss_<?php echo $pmd['quickbook_product_id']?>').html('<?php echo $sync_status_html?>');
+		 list_ids.push("<?php echo esc_js($pmd['quickbook_product_id']); ?>");		 
+		 jQuery('#p_prd_ss_<?php echo esc_js($pmd['quickbook_product_id']); ?>').html('<?php echo !empty($sync_status_html) ? wp_kses($sync_status_html, array('i' => array('title' => array(), 'class' => array(), 'style' => array()))) : ''; ?>');
 		 <?php endforeach;?>
 		 <?php endif;?>
 		 <?php unset($pull_map_data_arr);?>
@@ -212,10 +212,10 @@ if(is_array($qbo_product_list) && count($qbo_product_list)){
 		 <?php if(is_array($pull_map_data_arr_variation) && count($pull_map_data_arr_variation)):?>
 		 <?php foreach($pull_map_data_arr_variation as $pmd):?>
 		 <?php 
-			$sync_status_html = '<i title="Mapped to Variation #'.$pmd['wc_variation_id'].'(Variation)" class="fa fa-check-circle" style="color:green"></i>';
+			$sync_status_html = '<i title="Mapped to Variation #'.esc_attr($pmd['wc_variation_id']).'(Variation)" class="fa fa-check-circle" style="color:green"></i>';
 		 ?>
-		 list_ids.push("<?php echo $pmd['quickbook_product_id']?>");		 
-		 jQuery('#p_prd_ss_<?php echo $pmd['quickbook_product_id']?>').html('<?php echo $sync_status_html?>');
+		 list_ids.push("<?php echo esc_js($pmd['quickbook_product_id']); ?>");		 
+		 jQuery('#p_prd_ss_<?php echo esc_js($pmd['quickbook_product_id']); ?>').html('<?php echo !empty($sync_status_html) ? wp_kses($sync_status_html, array('i' => array('title' => array(), 'class' => array(), 'style' => array()))) : ''; ?>');
 		 <?php endforeach;?>
 		 <?php endif;?>
 		 <?php unset($pull_map_data_arr_variation);?>
@@ -249,16 +249,16 @@ if(is_array($qbo_product_list) && count($qbo_product_list)){
 			}
 			
 			if(item_checked==0){
-				alert('<?php echo __('Please select at least one item.','mw_wc_qbo_sync');?>');
+				alert('<?php echo esc_js(__('Please select at least one item.','mw_wc_qbo_sync')); ?>');
 				return false;
 			}
 			
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=pull&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_product_pull',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=pull&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_product_pull',0,0,650,350);
 			return false;
 		});
 		
 		$('#pull_all_product_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=pull&sync_all=1&item_type='+item_type,'mw_qs_product_pull',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=pull&sync_all=1&item_type='+item_type,'mw_qs_product_pull',0,0,650,350);
 			return false;
 		});	
 		
@@ -276,4 +276,4 @@ if(is_array($qbo_product_list) && count($qbo_product_list)){
 		);
 	  } );
  </script>
- <?php echo $MWQS_OF->get_tablesorter_js('#mwqs_product_pull_table');?>
+<?php echo wp_kses( $MWQS_OF->get_tablesorter_js('#mwqs_product_pull_table'), array('script' => array('src' => array(), 'type' => array(), 'crossorigin' => array(), 'onerror' => array()), 'style' => array()) );?>

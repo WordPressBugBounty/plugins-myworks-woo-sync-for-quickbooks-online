@@ -36,13 +36,13 @@ if(isset($_GET['time']) && $_GET['time'] == 1 && !empty($deposit_cron_utc) && !e
 	$utc_date = $utc_now->format('Y-m-d');
 	//
 	//$utc_date = '2019-08-11';
-	echo 'Current Date: '.$utc_date.'<br>';
+	echo 'Current Date: ' . esc_html($utc_date) . '<br>';
 	
 	$utc_date_time = $utc_date.' '.$deposit_cron_utc.':00';
 	
 	$wp_date_time_c = $MSQS_QL->converToTz($utc_date_time,$wp_timezone,'UTC');
 	$interval_per_page = 100;
-	echo '<b>Currently Showing '.$interval_per_page.' Time Interval</b><br>';
+	echo '<b>Currently Showing ' . esc_html($interval_per_page) . ' Time Interval</b><br>';
 	
 	for($i=1;$i <= $interval_per_page;$i++){
 		$c_day = date('l',strtotime($wp_date_time_c));
@@ -90,12 +90,12 @@ if(isset($_GET['time']) && $_GET['time'] == 1 && !empty($deposit_cron_utc) && !e
 		
 		$q_data =  $MSQS_QL->get_data($sql);
 		
-		echo $i.'.';
+		echo esc_html($i) . '.';
 		echo '<div style="background:lightgray; padding:20px;">';
-		echo ''.$f_time.' ['.$fday.'] - '.''.$prev_dt.' ['.$pday.']<br>';		
+		echo '' . esc_html($f_time) . ' [' . esc_html($fday) . '] - ' . '' . esc_html($prev_dt) . ' [' . esc_html($pday) . ']<br>';		
 		
 		if(is_array($q_data) && !empty($q_data)){
-			echo 'Total Orders: '.count($q_data).'<br>';
+			echo 'Total Orders: ' . esc_html(count($q_data)) . '<br>';
 			
 			foreach($q_data as $k => $v){				
 				$MSQS_QL->_p(array(
@@ -238,7 +238,7 @@ if($enable_batch && !empty($deposit_cron_utc) && !empty($wp_timezone)){
 						";
 						$q_data =  $MSQS_QL->get_data($sql);
 						//$MSQS_QL->_p($sql);
-						echo '##<>##[BETWEEN: '.$last_72_hour_dt.' - '.$start_dt.']<br>';
+						echo '##<>##[BETWEEN: ' . esc_html($last_72_hour_dt) . ' - ' . esc_html($start_dt) . ']<br>';
 						$MSQS_QL->_p($q_data);
 							
 						if(is_array($q_data) && !empty($q_data)){							

@@ -794,13 +794,34 @@ class QuickBooks_Utilities
 	 */
 	static public function GUID()
 	{
-		$guid = sprintf('%04x%04x-%04x-%03x4-%04x-%04x%04x%04x',
-			mt_rand(0, 65535), mt_rand(0, 65535), 
-			mt_rand(0, 65535), 
-			mt_rand(0, 4095),  
-			bindec(substr_replace(sprintf('%016b', mt_rand(0, 65535)), '01', 6, 2)),
-			mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535)
-			);  	
+		// Ensure proper random seeding with microtime for uniqueness
+		static $seeded = false;
+		if (!$seeded) {
+			$pid = function_exists('getmypid') ? getmypid() : mt_rand(1, 65535);
+			mt_srand((int)(microtime(true) * 1000000) + $pid);
+			$seeded = true;
+		}
+		
+		// Generate a proper UUID v4 using combination of timestamp and random data
+		$data = openssl_random_pseudo_bytes(16);
+		
+		// Set version (4) and variant bits according to RFC 4122
+		$data[6] = chr(ord($data[6]) & 0x0f | 0x40); // Version 4
+		$data[8] = chr(ord($data[8]) & 0x3f | 0x80); // Variant bits
+		
+		// Format as standard GUID
+		$guid = sprintf('%08x-%04x-%04x-%04x-%012x',
+			// 32 bits for time_low
+			unpack('N', substr($data, 0, 4))[1],
+			// 16 bits for time_mid  
+			unpack('n', substr($data, 4, 2))[1],
+			// 16 bits for time_hi_and_version
+			unpack('n', substr($data, 6, 2))[1],
+			// 16 bits for clock_seq_hi_and_reserved and clock_seq_low
+			unpack('n', substr($data, 8, 2))[1],
+			// 48 bits for node
+			unpack('N', "\x00\x00" . substr($data, 10, 2))[1] << 32 | unpack('N', substr($data, 12, 4))[1]
+		);
 			
 		return $guid;	
 	}	

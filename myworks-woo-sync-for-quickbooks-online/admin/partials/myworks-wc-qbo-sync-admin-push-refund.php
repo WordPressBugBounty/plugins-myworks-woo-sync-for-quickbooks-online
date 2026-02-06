@@ -58,7 +58,13 @@
 				$wc_inv_no = $MSQS_QL->get_woo_ord_number_from_order($refund_details['order_id']);
 				$ord_id_num = ($wc_inv_no!='')?$wc_inv_no:$refund_details['order_id'];
 			}else{
-				$ord_id_num = get_post_meta($refund_details['order_id'],'_mw_qbo_sync_ord_doc_no',true);
+				// HPOS Compatible meta retrieval
+				if (get_option('woocommerce_custom_orders_table_enabled') === 'yes') {
+					$order = wc_get_order($refund_details['order_id']);
+					$ord_id_num = $order ? $order->get_meta('_mw_qbo_sync_ord_doc_no', true) : '';
+				} else {
+					$ord_id_num = get_post_meta($refund_details['order_id'],'_mw_qbo_sync_ord_doc_no',true);
+				}
 				//$ord_id_num = $refund_details['_mw_qbo_sync_ord_doc_no'];
 				if(empty($ord_id_num)){
 					continue;
@@ -76,7 +82,7 @@
 ?>
 
 <div class="container">
-	<div class="page_title"><h4><?php _e( 'Refund Push', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Refund Push', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card qo-push-responsive">
 		<div class="card-content">			
 						<div class="col s12 m12 l12">
@@ -86,11 +92,11 @@
 									 <span class="search_text">Search</span>
 									  &nbsp;
 									  <!--Name / Company / ID / NUM-->
-									  <input placeholder="<?php echo __('Refund/Order ID','mw_wc_qbo_sync')?>" type="text" id="refund_push_search" value="<?php echo $refund_push_search;?>">
+									  <input placeholder="<?php echo esc_html__('Refund/Order ID','mw_wc_qbo_sync')?>" type="text" id="refund_push_search" value="<?php echo esc_attr($refund_push_search);?>">
 									  &nbsp;
-									  <input style="width:130px;" class="mwqs_datepicker" placeholder="<?php echo __('From yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="refund_date_from" value="<?php echo $refund_date_from;?>">
+									  <input style="width:130px;" class="mwqs_datepicker" placeholder="<?php echo esc_html__('From yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="refund_date_from" value="<?php echo esc_attr($refund_date_from);?>">
 									  &nbsp;
-									  <input style="width:130px;" class="mwqs_datepicker" placeholder="<?php echo __('To yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="refund_date_to" value="<?php echo $refund_date_to;?>">									  
+									  <input style="width:130px;" class="mwqs_datepicker" placeholder="<?php echo esc_html__('To yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="refund_date_to" value="<?php echo esc_attr($refund_date_to);?>">									  
 									  &nbsp;
 									  <?php if( $html_section=false):?>
 									  <span>
@@ -108,8 +114,8 @@
 									  <span class="filter-right-sec"> 
 										  <span class="entries">Show entries</span>
 										  &nbsp;
-										  <select style="width:50px;" onchange="javascript:window.location='<?php echo $page_url;?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-											<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+										  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_attr($MSQS_QL->per_page_keyword);?>='+this.value;">
+											<?php echo wp_kses($MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 										 </select>
 									 </span>
 									 </div>
@@ -118,9 +124,9 @@
 									 <?php if(is_array($wc_refund_list) && count($wc_refund_list)):?>
 									 <div class="row">
 										<div class="input-field col s12 m12 14">
-											<button id="push_selected_refund_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo __('Push Selected Refunds','mw_wc_qbo_sync')?></button>
-											<button style="display:none;" id="push_all_refund_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo __('Push All Refunds','mw_wc_qbo_sync')?></button>
-											<button style="display:none;" disabled="disabled" id="push_all_unsynced_refund_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo __('Push Un-synced Refunds','mw_wc_qbo_sync')?></button>
+											<button id="push_selected_refund_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo esc_html__('Push Selected Refunds','mw_wc_qbo_sync')?></button>
+											<button style="display:none;" id="push_all_refund_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo esc_html__('Push All Refunds','mw_wc_qbo_sync')?></button>
+											<button style="display:none;" disabled="disabled" id="push_all_unsynced_refund_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo esc_html__('Push Un-synced Refunds','mw_wc_qbo_sync')?></button>
 										</div>
 									</div>
 									 <br />
@@ -148,6 +154,20 @@
 													<?php foreach($wc_refund_list as $refund_details):?>
 													<?php
 													$refund_meta = get_post_meta($refund_details['ID']);
+													
+													if(empty($refund_meta) && function_exists('wc_get_orders')) {
+														$refund = wc_get_order( $refund_details['ID'] );
+														if ( $refund instanceof WC_Order_Refund ) {
+															$refund_parent_order = wc_get_order( $refund->get_parent_id() );
+															$refund_meta = array(
+																'_order_currency' => array($refund->get_currency()),
+																'_order_total' => array($refund_parent_order->get_total()),
+																'_refund_amount' => array($refund->get_amount()),
+																'_refund_reason' => array($refund->get_reason())
+															);
+														}
+													}
+
 													if(!is_array($refund_meta)){
 														$refund_meta = array(
 														'_order_currency' => array(''),
@@ -170,42 +190,43 @@
 													}
 													?>
 													<tr>
-														<td><input <?php echo $s_chk_disabled;?> type="checkbox" id="refund_push_<?php echo $refund_details['ID']?>"></td>
+														<td><input <?php echo esc_attr($s_chk_disabled);?> type="checkbox" id="refund_push_<?php echo esc_attr($refund_details['ID']);?>"></td>
 														
-														<td><?php echo $refund_details['ID']?></td>
+														<td><?php echo esc_html($refund_details['ID']);?></td>
 														<?php 
 															$wc_inv_no = $MSQS_QL->get_woo_ord_number_from_order($refund_details['order_id']);
 														?>
 														<td>
-														<a href="<?php echo admin_url('post.php?post='.$refund_details['order_id'].'&action=edit');?>" target="_blank">
-														<?php echo (!empty($wc_inv_no))?$wc_inv_no.'<br/>':'';?>
-														<?php echo $refund_details['order_id']?>
+														<a href="<?php echo esc_url(admin_url('post.php?post=' . intval($refund_details['order_id']) . '&action=edit'));?>" target="_blank">
+														<?php echo (!empty($wc_inv_no)) ? esc_html($wc_inv_no) . '<br/>' : '';?>
+														<?php echo esc_html($refund_details['order_id']);?>
 														</a>
 														</td>
-														<td><?php echo $refund_details['refund_date']?></td>
+														<td><?php echo esc_html($refund_details['refund_date']);?></td>
 														
 														<td>
 														<?php 
 														if($wc_currency==$refund_meta['_order_currency'][0]){
-															echo $wc_currency_symbol;
+															echo esc_html($wc_currency_symbol);
 														}else{
-															echo $MSQS_QL->get_array_isset($MSQS_QL->get_world_currency_list(true),$refund_meta['order_currency'][0],$refund_meta['_order_currency'][0],false);
+															echo esc_html($MSQS_QL->get_array_isset($MSQS_QL->get_world_currency_list(true),$refund_meta['order_currency'][0],$refund_meta['_order_currency'][0],false));
 														}													
-														echo ($refund_meta['_refund_amount'][0]!='')?$refund_meta['_refund_amount'][0]:'0.00';
+														echo ($refund_meta['_refund_amount'][0]!='') ? esc_html($refund_meta['_refund_amount'][0]) : '0.00';
 														?>
 														</td>
 														<td>
 														<?php 
 														if($wc_currency==$refund_meta['_order_currency'][0]){
-															echo $wc_currency_symbol;
+															echo esc_html($wc_currency_symbol);
 														}else{
-															echo $MSQS_QL->get_array_isset($MSQS_QL->get_world_currency_list(true),$refund_meta['order_currency'][0],$refund_meta['_order_currency'][0],false);
+															echo esc_html($MSQS_QL->get_array_isset($MSQS_QL->get_world_currency_list(true),$refund_meta['order_currency'][0],$refund_meta['_order_currency'][0],false));
 														}													
 														//echo ($refund_meta['_order_total'][0]!='')?$refund_meta['_order_total'][0]:'0.00';
-														echo get_post_meta($refund_details['order_id'],'_order_total',true);
+														$order_total = get_post_meta(intval($refund_details['order_id']),'_order_total',true);
+														echo $order_total ? esc_html($order_total) : esc_html($refund_meta['_order_total'][0]);
 														?>
 														</td>
-														<td><?php echo strip_tags($refund_meta['_refund_reason'][0]);?></td>
+														<td><?php echo esc_html(strip_tags($refund_meta['_refund_reason'][0]));?></td>
 														
 														<?php
 															//$r_key = $refund_details['order_id'].'-'.$refund_details['ID'];
@@ -213,7 +234,13 @@
 															
 															/*
 															if($is_qb_next_ord_num){
-																$ord_id_num = get_post_meta($refund_details['order_id'],'_mw_qbo_sync_ord_doc_no',true);
+																// HPOS Compatible meta retrieval
+			if (get_option('woocommerce_custom_orders_table_enabled') === 'yes') {
+				$order = wc_get_order($refund_details['order_id']);
+				$ord_id_num = $order ? $order->get_meta('_mw_qbo_sync_ord_doc_no', true) : '';
+			} else {
+				$ord_id_num = get_post_meta($refund_details['order_id'],'_mw_qbo_sync_ord_doc_no',true);
+			}
 															}
 															*/
 															
@@ -221,8 +248,8 @@
 															
 															$r_key = md5($r_key);
 														?>
-														<td class="ph_rfnd_ss<?php if(!$show_sync_status){echo ' sstchc';}?>" id="ph_rfnd_ss_<?php echo $r_key;?>">
-															<?php echo $sync_status_html;?>
+														<td class="ph_rfnd_ss<?php if(!$show_sync_status){echo ' sstchc';}?>" id="ph_rfnd_ss_<?php echo esc_attr($r_key);?>">
+															<?php echo $sync_status_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 														</td>
 													</tr>
 													<?php endforeach;?>		    	
@@ -235,15 +262,15 @@
 									<?php if($MSQS_QL->is_pl_res_tml()):?>
 										<div class="pp_mt_lsk_msg" style="text-align:center; padding:10px 5px;">
 											<p>											
-											<?php echo $MSQS_QL->get_slmt_hstry_msg();?>
+											<?php echo esc_html($MSQS_QL->get_slmt_hstry_msg());?>
 											</p>
 										</div>
 									<?php endif;?>
 									
-									<?php echo $pagination_links?>
+									<?php echo $pagination_links; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 									<?php else:?>									
 									<h4 class="mw_mlp_ndf">
-										<?php _e( 'No available refunds to display.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'No available refunds to display.', 'mw_wc_qbo_sync' );?>
 									</h4>
 									<?php endif;?>
 						        </div>
@@ -268,14 +295,14 @@
 		refund_status_srch = jQuery.trim(refund_status_srch);
 		
 		if(refund_push_search!='' || refund_date_from!='' || refund_date_to!='' || refund_status_srch!=''){		
-			window.location = '<?php echo $page_url;?>&refund_push_search='+refund_push_search+'&refund_date_from='+refund_date_from+'&refund_date_to='+refund_date_to+'&refund_status_srch='+refund_status_srch;
+			window.location = '<?php echo esc_url_raw($page_url);?>&refund_push_search='+refund_push_search+'&refund_date_from='+refund_date_from+'&refund_date_to='+refund_date_to+'&refund_status_srch='+refund_status_srch;
 		}else{
-			alert('<?php echo __('Please enter search keyword or dates and status.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_html__('Please enter search keyword or dates and status.','mw_wc_qbo_sync')?>');
 		}
 	}
 
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&refund_push_search=&refund_date_from=&refund_date_to=&refund_status_srch=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&refund_push_search=&refund_date_from=&refund_date_to=&refund_status_srch=';
 	}
 	
 	jQuery(document).ready(function($) {
@@ -284,8 +311,8 @@
 		 <?php foreach($push_map_data_arr as $pmd):?>
 		 <?php
 			$qbo_href = $MSQS_QL->get_push_qbo_view_href('Refund',$pmd['Id']);
-			$sync_status_html = '<i title="QuickBooks Refund Id #'.$pmd['Id'].' - Click to view it in QuickBooks Online" class="fa fa-check-circle" style="color:green"></i>';
-			$sync_status_html = '<a target="_blank" href="'.$qbo_href.'">'.$sync_status_html.'</a>';
+			$sync_status_html = '<i title="' . esc_attr('QuickBooks Refund Id #' . $pmd['Id'] . ' - Click to view it in QuickBooks Online') . '" class="fa fa-check-circle" style="color:green"></i>';
+			$sync_status_html = '<a target="_blank" href="' . esc_url($qbo_href) . '">' . $sync_status_html . '</a>';
 			
 			$dn_arr = explode('-',$pmd['DocNumber']);
 			$m_rf_id = (is_array($dn_arr) && count($dn_arr) == 2)?$dn_arr[1]:'';
@@ -295,7 +322,7 @@
 			}
 			
 			if(!empty($m_rf_id)){
-				echo 'jQuery("#refund_push_'.$m_rf_id.'").attr("disabled","disabled").attr("title","Synced");' .PHP_EOL;
+				echo 'jQuery("#refund_push_' . esc_js($m_rf_id) . '").attr("disabled","disabled").attr("title","Synced");' . PHP_EOL;
 			}
 			
 		 ?>
@@ -303,12 +330,12 @@
 		  $c_doc_no = $pmd['DocNumber'];		  
 		  $c_doc_no = md5($c_doc_no);
 		  ?>
-		 if($.inArray('<?php echo $c_doc_no;?>', list_ids) == -1){
-		 list_ids.push("<?php echo $c_doc_no;?>");		
-		 jQuery('#ph_rfnd_ss_<?php echo $c_doc_no;?>').html('<?php echo $sync_status_html?>');
+		 if($.inArray('<?php echo esc_js($c_doc_no);?>', list_ids) == -1){
+		 list_ids.push("<?php echo esc_js($c_doc_no);?>");		
+		 jQuery('#ph_rfnd_ss_<?php echo esc_js($c_doc_no);?>').html('<?php echo wp_kses($sync_status_html, array('a' => array('href' => array(), 'target' => array(), 'title' => array()), 'i' => array('class' => array(), 'style' => array(), 'title' => array())));?>');
 		 }else{
-			var ss_title = jQuery('#ph_rfnd_ss_<?php echo $c_doc_no;?>').children('i').attr('title');
-			jQuery('#ph_rfnd_ss_<?php echo $c_doc_no;?>').children('i').attr('title',ss_title+', #<?php echo $pmd['Id'];?>');
+			var ss_title = jQuery('#ph_rfnd_ss_<?php echo esc_js($c_doc_no);?>').children('i').attr('title');
+			jQuery('#ph_rfnd_ss_<?php echo esc_js($c_doc_no);?>').children('i').attr('title',ss_title+', #<?php echo esc_js($pmd['Id']);?>');
 		 }
 		 
 		 <?php endforeach;?>		 
@@ -344,21 +371,21 @@
 			}
 			
 			if(item_checked==0){
-				alert('<?php echo __('Please select at least one item.','mw_wc_qbo_sync');?>');
+				alert('<?php echo esc_html__('Please select at least one item.','mw_wc_qbo_sync');?>');
 				return false;
 			}
 			
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_refund_push_desk',0,0,650,350);
+			popUpWindow('<?php echo esc_url_raw($sync_window_url);?>&sync_type=push&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_refund_push_desk',0,0,650,350);
 			return false;
 		});
 		
 		$('#push_all_refund_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&sync_all=1&item_type='+item_type,'mw_qs_refund_push_desk',0,0,650,350);
+			popUpWindow('<?php echo esc_url_raw($sync_window_url);?>&sync_type=push&sync_all=1&item_type='+item_type,'mw_qs_refund_push_desk',0,0,650,350);
 			return false;
 		});
 		
 		$('#push_all_unsynced_refund_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&sync_unsynced=1&item_type='+item_type,'mw_qs_refund_push_desk',0,0,650,350);
+			popUpWindow('<?php echo esc_url_raw($sync_window_url);?>&sync_type=push&sync_unsynced=1&item_type='+item_type,'mw_qs_refund_push_desk',0,0,650,350);
 			return false;
 		});
 	});
@@ -375,4 +402,4 @@
 		);
 	  } );
  </script>
- <?php echo $MWQS_OF->get_tablesorter_js('#mwqs_refund_push_table');?>
+<?php echo wp_kses( $MWQS_OF->get_tablesorter_js('#mwqs_refund_push_table'), array('script' => array('src' => array(), 'type' => array(), 'crossorigin' => array(), 'onerror' => array()), 'style' => array()) );?>

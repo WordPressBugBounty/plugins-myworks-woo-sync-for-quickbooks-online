@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) )
 exit;
 
 /**
- * Update Product Into Quickbooks Online.
+ * Update Product Into QuickBooks Online.
  *
  * @since    
  * Last Updated: 2019-01-25
@@ -133,17 +133,24 @@ if($include_this_function){
 				}
 			}
 
-			#New
-			/*
-			$qb_p_cost = (float) $this->get_array_isset($product_data,'qb_p_cost',0);
-			if(!empty($qb_p_cost)){
-				$item->setPurchaseCost($qb_p_cost);
-			}
-			*/
+			#New - Priority: _cogs_total_value > _wc_cog_cost
+			$cost_set = false;
 			
-			if($this->is_plugin_active('woocommerce-cost-of-goods') && $this->option_checked('mw_wc_qbo_sync_wcogs_fiels')){
+			// First priority: WooCommerce core Cost field
+			if(!$cost_set){
+				$_cost = (float) $this->get_array_isset($product_data,'_cogs_total_value',0);
+				if(!empty($_cost)){
+					$item->setPurchaseCost($_cost);
+					$cost_set = true;
+				}
+			}
+			
+			// Third priority: WooCommerce Cost of Goods plugin
+			if(!$cost_set && $this->is_plugin_active('woocommerce-cost-of-goods') && $this->option_checked('mw_wc_qbo_sync_wcogs_fiels')){
 				$_wc_cog_cost = $this->get_array_isset($product_data,'_wc_cog_cost',0);
-				$item->setPurchaseCost($_wc_cog_cost);
+				if(!empty($_wc_cog_cost)){
+					$item->setPurchaseCost($_wc_cog_cost);
+				}
 			}
 			
 			if($mw_wc_qbo_sync_product_pull_desc_field!='none' || $this->option_checked('mw_wc_qbo_sync_wc_qbo_product_desc')){

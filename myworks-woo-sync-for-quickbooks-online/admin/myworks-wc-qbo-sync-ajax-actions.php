@@ -86,7 +86,15 @@ function mw_wc_qbo_sync_refresh_log_chart(){
 	$vp = $MSQS_QL->var_p('period');
 	$vp  = $MSQS_QL->sanitize($vp);
 	$MSQS_QL->set_session_val('dashboard_graph_period',$vp);
-	echo $MSQS_QL->get_log_chart_output($vp);
+	// Allow script tags for chart functionality - this is trusted content from our own plugin
+	$allowed_html = wp_kses_allowed_html('post');
+	$allowed_html['script'] = array();
+	$allowed_html['canvas'] = array(
+		'id' => array(),
+		'height' => array(),
+		'width' => array()
+	);
+	echo wp_kses($MSQS_QL->get_log_chart_output($vp), $allowed_html);
 	wp_die();
 }
 
@@ -195,9 +203,25 @@ function mw_wc_qbo_sync_window(){
 							}
 						}
 						
-						//23-05-2017
-						$rfd_q = $wpdb->prepare("SELECT ID FROM `{$wpdb->posts}` WHERE `post_type` = 'shop_order_refund' AND `post_parent` = %d ORDER BY ID ASC ",$id);
-						$rf_data = $MSQS_QL->get_data($rfd_q);
+						//23-05-2017 - HPOS Compatible refund query
+						if (get_option('woocommerce_custom_orders_table_enabled') === 'yes') {
+							// HPOS enabled - use WooCommerce orders API
+							$refunds = wc_get_orders(array(
+								'type' => 'shop_order_refund',
+								'parent' => $id,
+								'orderby' => 'id',
+								'order' => 'ASC',
+								'return' => 'ids'
+							));
+							$rf_data = array();
+							foreach($refunds as $refund_id) {
+								$rf_data[] = array('ID' => $refund_id);
+							}
+						} else {
+							// Legacy - use direct database query
+							$rfd_q = $wpdb->prepare("SELECT ID FROM `{$wpdb->posts}` WHERE `post_type` = 'shop_order_refund' AND `post_parent` = %d ORDER BY ID ASC ",$id);
+							$rf_data = $MSQS_QL->get_data($rfd_q);
+						}
 						//$MSQS_QL->_p($rf_data);
 						if(is_array($rf_data) && !empty($rf_data)){
 							foreach($rf_data as $rfd){
@@ -233,7 +257,15 @@ function mw_wc_qbo_sync_window(){
 							if($ord_sync_in_qb_as != 'Sales Receipt' && $MSQS_QL->option_checked('mw_wc_qbo_sync_compt_yithwgcp_gpc_ed')){
 								$yithwgcp_gcp_qb_acc = (int) $MSQS_QL->get_option('mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_acc');
 								if($yithwgcp_gcp_qb_acc > 0){
-									$p_order_data = $MSQS_QL->get_wc_order_details_from_order($id,get_post($id));									
+									// HPOS Compatible order data retrieval
+									if (get_option('woocommerce_custom_orders_table_enabled') === 'yes') {
+										// HPOS enabled - use WooCommerce order object
+										$order = wc_get_order($id);
+										$p_order_data = $MSQS_QL->get_wc_order_details_from_order($id, $order);
+									} else {
+										// Legacy - use post object
+										$p_order_data = $MSQS_QL->get_wc_order_details_from_order($id,get_post($id));
+									}									
 									if(isset($p_order_data['_ywgc_applied_gift_cards_totals']) && $p_order_data['_ywgc_applied_gift_cards_totals'] > 0){
 										if(floatval($p_order_data['_order_total']) == 0){											
 											$MSQS_QL->set_session_val('yithwgcp_gpc_fp_manual_payment',true);
@@ -364,9 +396,19 @@ function mw_wc_qbo_sync_window(){
 					/**/
 					if($item_type=='refund'){
 						$order_id = 0; 
-						$rf_data = $wpdb->get_row("SELECT `post_parent` FROM `{$wpdb->posts}` WHERE `post_type` = 'shop_order_refund' AND `ID` = {$id} ");
-						if(is_object($rf_data) && !empty($rf_data)){
-							$order_id = $rf_data->post_parent;
+						// HPOS Compatible refund parent order retrieval
+						if (get_option('woocommerce_custom_orders_table_enabled') === 'yes') {
+							// HPOS enabled - use WooCommerce refund object
+							$refund = wc_get_order($id);
+							if($refund && $refund->get_type() === 'shop_order_refund') {
+								$order_id = $refund->get_parent_id();
+							}
+						} else {
+							// Legacy - use direct database query
+							$rf_data = $wpdb->get_row($wpdb->prepare("SELECT `post_parent` FROM `{$wpdb->posts}` WHERE `post_type` = 'shop_order_refund' AND `ID` = %d", $id));
+							if(is_object($rf_data) && !empty($rf_data)){
+								$order_id = $rf_data->post_parent;
+							}
 						}
 						
 						$return_id = $MSQS_AD->mw_wc_qbo_sync_woocommerce_order_refunded(array('order_id'=>$order_id),$id);
@@ -533,7 +575,7 @@ function mw_wc_qbo_sync_automap_vendors(){
 		global $MSQS_QL;
 		$map_count = (int) $MSQS_QL->AutoMapVendor();
 		//echo 'Success';
-		echo 'Total Vendor Mapped: '.$map_count;
+		echo 'Total Vendor Mapped: ' . absint($map_count);
 	}	
 	wp_die();
 }
@@ -543,7 +585,7 @@ function mw_wc_qbo_sync_automap_vendors_by_name(){
 		global $MSQS_QL;
 		$map_count = (int) $MSQS_QL->AutoMapVendorByName();
 		//echo 'Success';
-		echo 'Total Vendor Mapped: '.$map_count;
+		echo 'Total Vendor Mapped: ' . absint($map_count);
 	}	
 	wp_die();
 }
@@ -553,7 +595,7 @@ function mw_wc_qbo_sync_automap_customers(){
 		global $MSQS_QL;
 		$map_count = (int) $MSQS_QL->AutoMapCustomer();
 		//echo 'Success';
-		echo 'Total Customer Mapped: '.$map_count;
+		echo 'Total Customer Mapped: ' . absint($map_count);
 	}	
 	wp_die();
 }
@@ -562,17 +604,17 @@ function mw_wc_qbo_sync_automap_customers_wf_qf(){
 	if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_automap_customers_wf_qf', 'automap_customers_wf_qf' ) ) {
 		global $MSQS_QL;
 		
-		$cam_wf = (isset($_POST['cam_wf']))?trim($_POST['cam_wf']):'';
-		$cam_qf = (isset($_POST['cam_qf']))?trim($_POST['cam_qf']):'';
+		$cam_wf = (isset($_POST['cam_wf']))?trim(sanitize_text_field($_POST['cam_wf'])):'';
+		$cam_qf = (isset($_POST['cam_qf']))?trim(sanitize_text_field($_POST['cam_qf'])):'';
 		
 		$mo_um = false;
-		if(isset($_POST['mo_um']) && $_POST['mo_um'] == 'true'){
+		if(isset($_POST['mo_um']) && sanitize_text_field($_POST['mo_um']) == 'true'){
 			$mo_um = true;
 		}
 		
 		$map_count = (int) $MSQS_QL->AutoMapCustomerWfQf($cam_wf,$cam_qf,$mo_um);
 		//echo 'Success';
-		echo 'Total Customer Mapped: '.$map_count;
+		echo 'Total Customer Mapped: ' . absint($map_count);
 	}	
 	wp_die();
 }
@@ -583,7 +625,7 @@ function mw_wc_qbo_sync_automap_customers_by_name(){
 		global $MSQS_QL;
 		$map_count = (int) $MSQS_QL->AutoMapCustomerByName();
 		//echo 'Success';
-		echo 'Total Customer Mapped: '.$map_count;
+		echo 'Total Customer Mapped: ' . absint($map_count);
 	}	
 	wp_die();
 }
@@ -593,7 +635,7 @@ function mw_wc_qbo_sync_automap_products(){
 		global $MSQS_QL;
 		$map_count = (int) $MSQS_QL->AutoMapProduct();
 		//echo 'Success';
-		echo 'Total Product Mapped: '.$map_count;
+		echo 'Total Product Mapped: ' . absint($map_count);
 	}	
 	wp_die();
 }
@@ -602,17 +644,17 @@ function mw_wc_qbo_sync_automap_products_wf_qf(){
 	if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_automap_products_wf_qf', 'automap_products_wf_qf' ) ) {
 		global $MSQS_QL;
 		
-		$pam_wf = (isset($_POST['pam_wf']))?trim($_POST['pam_wf']):'';
-		$pam_qf = (isset($_POST['pam_qf']))?trim($_POST['pam_qf']):'';
+		$pam_wf = (isset($_POST['pam_wf']))?trim(sanitize_text_field($_POST['pam_wf'])):'';
+		$pam_qf = (isset($_POST['pam_qf']))?trim(sanitize_text_field($_POST['pam_qf'])):'';
 		
 		$mo_um = false;
-		if(isset($_POST['mo_um']) && $_POST['mo_um'] == 'true'){
+		if(isset($_POST['mo_um']) && sanitize_text_field($_POST['mo_um']) == 'true'){
 			$mo_um = true;
 		}
 		
 		$map_count = (int) $MSQS_QL->AutoMapProductWfQf($pam_wf,$pam_qf,$mo_um);
 		//echo 'Success';
-		echo 'Total Product Mapped: '.$map_count;
+		echo 'Total Product Mapped: ' . absint($map_count);
 	}	
 	wp_die();
 }
@@ -622,7 +664,7 @@ function mw_wc_qbo_sync_automap_products_by_name(){
 		global $MSQS_QL;
 		$map_count = (int) $MSQS_QL->AutoMapProductByName();
 		//echo 'Success';
-		echo 'Total Product Mapped: '.$map_count;
+		echo 'Total Product Mapped: ' . absint($map_count);
 	}	
 	wp_die();
 }
@@ -633,7 +675,7 @@ function mw_wc_qbo_sync_automap_variations(){
 		global $MSQS_QL;
 		$map_count = (int) $MSQS_QL->AutoMapVariation();
 		//echo 'Success';
-		echo 'Total Variation Mapped: '.$map_count;
+		echo 'Total Variation Mapped: ' . absint($map_count);
 	}	
 	wp_die();
 }
@@ -642,17 +684,17 @@ function mw_wc_qbo_sync_automap_variations_wf_qf(){
 	if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_automap_variations_wf_qf', 'automap_variations_wf_qf' ) ) {
 		global $MSQS_QL;
 		
-		$vam_wf = (isset($_POST['vam_wf']))?trim($_POST['vam_wf']):'';
-		$vam_qf = (isset($_POST['vam_qf']))?trim($_POST['vam_qf']):'';
+		$vam_wf = (isset($_POST['vam_wf']))?trim(sanitize_text_field($_POST['vam_wf'])):'';
+		$vam_qf = (isset($_POST['vam_qf']))?trim(sanitize_text_field($_POST['vam_qf'])):'';
 		
 		$mo_um = false;
-		if(isset($_POST['mo_um']) && $_POST['mo_um'] == 'true'){
+		if(isset($_POST['mo_um']) && sanitize_text_field($_POST['mo_um']) == 'true'){
 			$mo_um = true;
 		}
 		
 		$map_count = (int) $MSQS_QL->AutoMapVariationWfQf($vam_wf,$vam_qf,$mo_um);
 		//echo 'Success';
-		echo 'Total Variation Mapped: '.$map_count;
+		echo 'Total Variation Mapped: ' . absint($map_count);
 	}	
 	wp_die();
 }
@@ -741,7 +783,7 @@ function mw_wc_qbo_sync_get_nqc_time_diff(){
 		$next_queue_cron_run = wp_next_scheduled( 'mw_qbo_sync_queue_cron_hook' );
 
 		$s_ncrt_cdt_diff = $next_queue_cron_run-strtotime($cdt);
-		echo $s_ncrt_cdt_diff;
+		echo esc_html($s_ncrt_cdt_diff);
 	}	
 	wp_die();
 }
@@ -752,7 +794,7 @@ function mw_wc_qbo_sync_rg_all_inc_variation_names(){
 		global $MSQS_QL;		
 		//$tot_vn_updated =  $MSQS_QL->Fix_All_WooCommerce_Variations_Names();
 		$tot_vn_updated = 0;
-		echo 'Total number of variations name updated: '.$tot_vn_updated;
+		echo 'Total number of variations name updated: ' . absint($tot_vn_updated);
 	}	
 	wp_die();
 }
@@ -760,7 +802,7 @@ function mw_wc_qbo_sync_rg_all_inc_variation_names(){
 /**/
 function mw_wc_qbo_sync_redirect_deactivation_popup() {
 
-	if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'myworks_wc_qbo_sync_deactivate_feedback_nonce' ) ) {
+	if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'myworks_wc_qbo_sync_deactivate_feedback_nonce' ) ) {
 		wp_send_json_error();
 	}
 
@@ -771,19 +813,19 @@ function mw_wc_qbo_sync_redirect_deactivation_popup() {
 	$deactivation_license_key = '';
 
 	if ( ! empty( $_POST['deactivation_reason'] ) ) {
-		$deactivation_reason = $_POST['deactivation_reason'];
+		$deactivation_reason = sanitize_text_field($_POST['deactivation_reason']);
 	}	
 
 	if ( ! empty( $_POST['deactivation_domain'] ) ) {
-		$deactivation_domain = $_POST['deactivation_domain'];
+		$deactivation_domain = sanitize_text_field($_POST['deactivation_domain']);
 	}
 
 	if ( ! empty( $_POST['deactivation_license_key'] ) ) {
-		$deactivation_license_key = $_POST['deactivation_license_key'];
+		$deactivation_license_key = sanitize_text_field($_POST['deactivation_license_key']);
 	}
 
 	if ( ! empty( $_POST['email'] ) ) {
-		$email = $_POST['email'];
+		$email = sanitize_email($_POST['email']);
 	}	
 
 	wp_remote_post($feedback_url, [
@@ -838,7 +880,7 @@ function mw_wc_qbo_sync_odpage_qbsync(){
 
 function mw_wc_qbo_sync_odpage_sync_status(){
 	if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_odpage_syncstatus', 'odpage_syncstatus' ) ) {
-		$ord_ids = $_POST['ord_ids'];
+		$ord_ids = (isset($_POST['ord_ids']) && is_array($_POST['ord_ids'])) ? array_map('absint', $_POST['ord_ids']) : array();
 		global $MSQS_QL;
 		
 		$n_ord_ids = array();
@@ -863,7 +905,15 @@ function mw_wc_qbo_sync_odpage_sync_status(){
 				if($MSQS_QL->option_checked('mw_wc_qbo_sync_use_qb_next_ord_num_iowon') && !$MSQS_QL->get_qbo_company_setting('is_custom_txn_num_allowed')){
 					$is_qb_next_ord_num = true;
 					if($oi){
-						$ord_no = get_post_meta($oi,'_mw_qbo_sync_ord_doc_no',true);
+						// HPOS Compatible order meta retrieval
+						if (get_option('woocommerce_custom_orders_table_enabled') === 'yes') {
+							// HPOS enabled - use WooCommerce order object
+							$order = wc_get_order($oi);
+							$ord_no = $order ? $order->get_meta('_mw_qbo_sync_ord_doc_no', true) : '';
+						} else {
+							// Legacy - use post meta
+							$ord_no = get_post_meta($oi,'_mw_qbo_sync_ord_doc_no',true);
+						}
 						$ord_no = trim($ord_no);					
 					}				
 				}
@@ -917,5 +967,61 @@ function mw_wc_qbo_sync_odpage_sync_status(){
 		echo json_encode($r_arr);
 	}
 	
+	wp_die();
+}
+
+function mw_wc_qbo_sync_settings_refresh_qb_data(){
+	if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_settings_refresh_qb_data', 'settings_refresh_qb_data' ) ) {	
+		global $MSQS_QL;
+		if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
+			$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true);
+			
+		}
+
+		if($MSQS_QL->is_connected()){
+			# Preferences & Company Info
+			update_option('mw_wc_qbo_sync_app_data_new_qbo_preferences_object','');			
+			update_option('mw_wc_qbo_sync_app_data_new_qbo_companyinfo_object','');
+			$MSQS_QL->refresh_preferences_and_company_info();
+
+			# Classes
+			update_option('mw_wc_qbo_sync_app_data_new_qbo_classes','');
+			$MSQS_QL->save_all_classes();
+
+			# Payment Methods
+			update_option('mw_wc_qbo_sync_app_data_new_qbo_paymentmethods','');
+			$MSQS_QL->save_all_payment_methods();
+
+			# Terms
+			update_option('mw_wc_qbo_sync_app_data_new_qbo_terms','');
+			$MSQS_QL->save_all_terms();
+
+			# Taxcodes
+			update_option('mw_wc_qbo_sync_app_data_new_qbo_taxcodes','');
+			$MSQS_QL->save_all_taxcodes();
+
+			# Departments
+			update_option('mw_wc_qbo_sync_app_data_new_qbo_departments','');
+			$MSQS_QL->save_all_departments();
+
+			# Customer Types
+			update_option('mw_wc_qbo_sync_app_data_new_qbo_customertypes','');
+			$MSQS_QL->save_all_customertypes();		
+
+			# Accounts
+			update_option('mw_wc_qbo_sync_app_data_new_qbo_accounts','');
+			$MSQS_QL->save_all_accounts();
+
+			# Categories
+			update_option('mw_wc_qbo_sync_app_data_new_qbo_categories','');
+			$MSQS_QL->save_all_categories();
+
+			# Vendors
+			update_option('mw_wc_qbo_sync_app_data_new_qbo_vendors','');
+			$MSQS_QL->save_all_vendors();
+
+			echo 'Success';
+		}		
+	}
 	wp_die();
 }

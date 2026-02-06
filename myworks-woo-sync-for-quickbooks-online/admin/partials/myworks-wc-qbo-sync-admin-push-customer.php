@@ -42,7 +42,7 @@ if($show_sync_status && is_array($cl_push_data) && count($cl_push_data)){
 	.sstchc{display:none;}
 </style>
 <div class="container">
-	<div class="page_title"><h4><?php _e( 'Customer Push', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Customer Push', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card qo-push-responsive">
 		<div class="card-content">
 			<div class="">
@@ -53,7 +53,7 @@ if($show_sync_status && is_array($cl_push_data) && count($cl_push_data)){
 						             <div class="mw_wc_filter">
 									  <span class="search_text">Search</span>
 									  &nbsp;
-									  <input type="text" id="cl_push_search" placeholder="NAME / EMAIL / COMPANY / ID" value="<?php echo $cl_push_search;?>">
+									  <input type="text" id="cl_push_search" placeholder="NAME / EMAIL / COMPANY / ID" value="<?php echo esc_attr($cl_push_search);?>">
 									  &nbsp;		
 									  <button onclick="javascript:search_item();" class="btn btn-info">Filter</button>
 									  &nbsp;
@@ -62,8 +62,8 @@ if($show_sync_status && is_array($cl_push_data) && count($cl_push_data)){
 									  <span class="filter-right-sec">
 										  <span class="entries">Show entries</span>
 										  &nbsp;
-										  <select style="width:50px;" onchange="javascript:window.location='<?php echo $page_url;?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-											<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+										  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_js($MSQS_QL->per_page_keyword);?>='+this.value;">
+											<?php echo wp_kses($MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 										 </select>
 									 </span>
 									 </div>
@@ -72,9 +72,9 @@ if($show_sync_status && is_array($cl_push_data) && count($cl_push_data)){
 									 <?php if($total_records > 0):?>
 									 <div class="row">
 										<div class="input-field col s12 m12 14">
-											<button id="push_selected_customer_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo __('Push Selected Clients','mw_wc_qbo_sync')?></button>
-											<button id="push_all_customer_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo __('Push All Clients','mw_wc_qbo_sync')?></button>
-											<button disabled="disabled" id="push_all_unsynced_customer_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo __('Push Un-synced Clients','mw_wc_qbo_sync')?></button>
+											<button id="push_selected_customer_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo esc_html__('Push Selected Clients','mw_wc_qbo_sync')?></button>
+											<button id="push_all_customer_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo esc_html__('Push All Clients','mw_wc_qbo_sync')?></button>
+											<button disabled="disabled" id="push_all_unsynced_customer_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo esc_html__('Push Un-synced Clients','mw_wc_qbo_sync')?></button>
 										</div>
 									</div>
 									<br />
@@ -94,7 +94,7 @@ if($show_sync_status && is_array($cl_push_data) && count($cl_push_data)){
 														<th width="15%">Last Name</th>
 														<th width="15%">Email</th>
 														<th width="29%">Company</th>
-														<th width="5%" <?php echo $sstchc;?>>Sync</br>Status</th>
+														<th width="5%" <?php echo esc_attr($sstchc);?>><?php echo wp_kses( __( 'Sync<br>Status', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
 													</tr>
 												</thead>
 												<tbody>
@@ -116,14 +116,14 @@ if($show_sync_status && is_array($cl_push_data) && count($cl_push_data)){
 												
 												?>
 												<tr>
-													<td><input type="checkbox" id="cl_push_<?php echo $data['ID']?>"></td>
-													<td><?php echo $data['ID']?></td>
-													<td><a href="<?php echo admin_url('user-edit.php?user_id=').$data['ID'] ?>" target="_blank"><?php echo $data['display_name']?></a></td>
-													<td><?php echo $data['first_name']?></td>
-													<td><?php echo $data['last_name']?></td>
-													<td><?php echo $data['user_email']?></td>
-													<td><?php echo $data['billing_company']?></td>
-													<td <?php echo $sstchc;?>><?php echo $sync_status_html;?></td>
+													<td><input type="checkbox" id="cl_push_<?php echo esc_attr($data['ID'])?>"></td>
+													<td><?php echo esc_html($data['ID'])?></td>
+													<td><a href="<?php echo esc_url(admin_url('user-edit.php?user_id=').$data['ID']) ?>" target="_blank"><?php echo esc_html($data['display_name'])?></a></td>
+													<td><?php echo esc_html($data['first_name'] ?? '')?></td>
+													<td><?php echo esc_html($data['last_name'] ?? '')?></td>
+													<td><?php echo esc_html($data['user_email'] ?? '')?></td>
+													<td><?php echo esc_html($data['billing_company'] ?? '')?></td>
+													<td <?php echo esc_attr($sstchc);?>><?php echo !empty($sync_status_html) ? $sync_status_html : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
 												</tr>
 												<?php endforeach;?>
 												<?php else:?>
@@ -139,11 +139,11 @@ if($show_sync_status && is_array($cl_push_data) && count($cl_push_data)){
 											</table>
 										</div>
 									</div>
-						           <?php echo $pagination_links?>
+						           <?php echo !empty($pagination_links) ? $pagination_links : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 								   
 								   <?php if(empty($cl_push_data)):?>
 								   <h4 class="mw_mlp_ndf">
-										<?php _e( 'No available customers to display.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'No available customers to display.', 'mw_wc_qbo_sync' );?>
 									</h4>
 									<?php endif;?>
 						        </div>
@@ -159,14 +159,14 @@ if($show_sync_status && is_array($cl_push_data) && count($cl_push_data)){
 	function search_item(){		
 		var cl_push_search = jQuery('#cl_push_search').val();
 		if(cl_push_search!=''){			
-			window.location = '<?php echo $page_url;?>&cl_push_search='+cl_push_search;
+			window.location = '<?php echo esc_url_raw($page_url);?>&cl_push_search='+cl_push_search;
 		}else{
-			alert('<?php echo __('Please enter search keyword.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_html__('Please enter search keyword.','mw_wc_qbo_sync')?>');
 		}
 	}
 
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&cl_push_search=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&cl_push_search=';
 	}
 	
 	jQuery(document).ready(function($) {
@@ -191,23 +191,23 @@ if($show_sync_status && is_array($cl_push_data) && count($cl_push_data)){
 			}
 			
 			if(item_checked==0){
-				alert('<?php echo __('Please select at least one item.','mw_wc_qbo_sync');?>');
+				alert('<?php echo esc_html__('Please select at least one item.','mw_wc_qbo_sync');?>');
 				return false;
 			}
 			
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_customer_push',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=push&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_customer_push',0,0,650,350);
 			return false;
 		});
 		
 		$('#push_all_customer_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&sync_all=1&item_type='+item_type,'mw_qs_customer_push',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=push&sync_all=1&item_type='+item_type,'mw_qs_customer_push',0,0,650,350);
 			return false;
 		});
 		
 		$('#push_all_unsynced_customer_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&sync_unsynced=1&item_type='+item_type,'mw_qs_customer_push',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=push&sync_unsynced=1&item_type='+item_type,'mw_qs_customer_push',0,0,650,350);
 			return false;
 		});
 	});
  </script>
- <?php echo $MWQS_OF->get_tablesorter_js('#mwqs_customer_push_table');?>
+ <?php echo wp_kses( $MWQS_OF->get_tablesorter_js('#mwqs_customer_push_table'), array('script' => array('src' => array(), 'type' => array(), 'crossorigin' => array(), 'onerror' => array()), 'style' => array()) );?>

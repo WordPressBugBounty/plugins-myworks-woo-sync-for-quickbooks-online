@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) )
 exit;
 
 /**
- * Update Estimate Into Quickbooks Online.
+ * Update Estimate Into QuickBooks Online.
  *
  * @since    1.0.9
  * Last Updated: 2019-01-25
@@ -18,6 +18,9 @@ if($include_this_function){
 	}
 
 	if($this->is_connected()){
+		// Round all monetary values in invoice data to 2 decimal places
+		$invoice_data = $this->round_invoice_monetary_data($invoice_data);
+		
 		$wc_inv_id = $this->get_array_isset($invoice_data,'wc_inv_id',0);
 		$wc_inv_num = $this->get_array_isset($invoice_data,'wc_inv_num','');
 		$wc_cus_id = $this->get_array_isset($invoice_data,'wc_cus_id','');
@@ -134,9 +137,9 @@ if($include_this_function){
 				$qbo_date = ''; $is_line_item_date = false;
 				if(is_array($qbo_inv_items) && count($qbo_inv_items)){
 					foreach($qbo_inv_items as $qbo_item){
-						$total_line_subtotal+=$qbo_item['line_subtotal'];
+						$total_line_subtotal+=floatval($qbo_item['line_subtotal']);
 						if($this->wacs_base_cur_enabled()){
-							$line_subtotal_base_currency+=$qbo_item['line_subtotal_base_currency'];
+							$line_subtotal_base_currency+=floatval($qbo_item['line_subtotal_base_currency']);
 						}
 						if(empty($qbo_date) && isset($qbo_item['Date_QF'])){
 							$qbo_date = $qbo_item['Date_QF'];
@@ -904,7 +907,7 @@ if($include_this_function){
 						# && !empty($invoice_data['used_coupons'])
 						if($sdioli_isli && !$is_sync_discount_line && isset($invoice_data['used_coupons'])){
 							if($qbo_item['line_subtotal'] > $qbo_item['line_total']){
-								$line_discount = (float) $qbo_item['line_subtotal'] - $qbo_item['line_total'];
+								$line_discount = floatval($qbo_item['line_subtotal']) - floatval($qbo_item['line_total']);
 								if($line_discount > 0){
 									$di_ioli = true;
 									$line_D = new QuickBooks_IPP_Object_Line();
@@ -958,6 +961,12 @@ if($include_this_function){
 							
 							$Amount = $UnitPrice;
 						}
+
+						// QuickBooks Fix Error:6070 [Amount calculation incorrect in the request., Amount is not equal to UnitPrice * Qty]
+						$calculated_amount = $qbo_item['Qty']*$UnitPrice;
+						if($calculated_amount !== $Amount) {
+							$Amount = $calculated_amount;
+						}
 						
 						$line->setAmount($Amount);
 						
@@ -1001,19 +1010,19 @@ if($include_this_function){
 								$TaxCodeRef = ($qbo_company_country=='US')?'TAX':$qbo_tax_code_fli;
 
 								if($is_inclusive){
-									$TaxInclusiveAmt = ($qbo_item['line_subtotal']+$qbo_item['line_subtotal_tax']);
+									$TaxInclusiveAmt = (floatval($qbo_item['line_subtotal'])+floatval($qbo_item['line_subtotal_tax']));
 									if($this->option_checked('mw_wc_qbo_sync_no_ad_discount_li')){
-										$TaxInclusiveAmt = ($qbo_item['line_total']+$qbo_item['line_tax']);
+										$TaxInclusiveAmt = (floatval($qbo_item['line_total'])+floatval($qbo_item['line_tax']));
 									}
 									
 									if($use_lt_if_ist_l_item){
-										$TaxInclusiveAmt = ($qbo_item['line_total']+$qbo_item['line_tax']);
+										$TaxInclusiveAmt = (floatval($qbo_item['line_total'])+floatval($qbo_item['line_tax']));
 									}
 									
 									//
 									$TaxInclusiveAmt = $this->trim_after_decimal_place($TaxInclusiveAmt,7);
 									
-									$NetAmountTaxable += $qbo_item['line_total'];
+									$NetAmountTaxable += floatval($qbo_item['line_total']);
 									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt);
 								}
 
@@ -1472,7 +1481,27 @@ if($include_this_function){
 								if($TaxCodeRef!=''){
 									$salesItemLineDetail->setTaxCodeRef($TaxCodeRef);
 								}
+								
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
 							}else{
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
+								
 								$zero_rated_tax_code = $this->get_qbo_zero_rated_tax_code($qbo_company_country);
 								$salesItemLineDetail->setTaxCodeRef($zero_rated_tax_code);
 							}
@@ -1484,7 +1513,27 @@ if($include_this_function){
 								if($TaxCodeRef!=''){
 									$salesItemLineDetail->setTaxCodeRef($TaxCodeRef);
 								}
+								
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
 							}else{
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
+								
 								$zero_rated_tax_code = $this->get_qbo_zero_rated_tax_code($qbo_company_country);
 								$salesItemLineDetail->setTaxCodeRef($zero_rated_tax_code);
 							}
@@ -1563,7 +1612,27 @@ if($include_this_function){
 								if($TaxCodeRef!=''){
 									$salesItemLineDetail->setTaxCodeRef($TaxCodeRef);
 								}
+								
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
 							}else{
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
+								
 								$zero_rated_tax_code = $this->get_qbo_zero_rated_tax_code($qbo_company_country);
 								$salesItemLineDetail->setTaxCodeRef($zero_rated_tax_code);
 							}
@@ -2862,7 +2931,7 @@ if($include_this_function){
 					$order->add_order_note($o_note);
 					
 					/*Send Estimate*/
-					if($this->option_checked('mw_wc_qbo_sync_send_inv_sr_afsi_qb')){
+					if($this->get_option('mw_wc_qbo_sync_send_inv_sr_afsi_qb_option') != 'd_n_e'){
 						//BillEmail
 						/*
 						if((!empty($bill_email_addr) || !empty($_billing_email)) && $estimate->getEmailStatus() == 'NeedToSend'){

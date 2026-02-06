@@ -36,7 +36,21 @@ if ( ! defined( 'ABSPATH' ) )
 	//
 	if(isset($_GET['id']) && isset($_GET['d_key']) && (int) $_GET['id'] > 0 && $_GET['d_key'] == 'myworks' ){
 		$d_oid = (int) $_GET['id'];
-		$MSQS_QL->_p($MSQS_QL->get_wc_order_details_from_order($d_oid,get_post($d_oid)));
+		
+		// Use HPOS-compatible order retrieval
+		if ($MSQS_QL->is_hpos_enabled()) {
+			$order = wc_get_order($d_oid);
+		} else {
+			$order = get_post($d_oid);
+		}
+		
+		if($order) {
+			echo '<h2>Order Debug Data for Order #' . esc_html($d_oid) . '</h2>';
+			$MSQS_QL->_p($MSQS_QL->get_wc_order_details_from_order($d_oid, $order));
+		} else {
+			echo '<h2>Order Not Found</h2>';
+			echo '<p>Order #' . esc_html($d_oid) . ' could not be found.</p>';
+		}
 	}
 	
 	/*Other Debug*/
@@ -44,7 +58,7 @@ if ( ! defined( 'ABSPATH' ) )
 	
 	if(isset($_GET['lkd'])){
 		if(isset($_GET['l_key']) && !empty($_GET['l_key'])){
-			$l_key = $MSQS_QL->sanitize($_GET['l_key']);
+			$l_key = sanitize_text_field(wp_unslash($_GET['l_key']));
 		}else{
 			$l_key = $MSQS_QL->get_option('mw_wc_qbo_sync_license');
 		}
@@ -59,7 +73,7 @@ if ( ! defined( 'ABSPATH' ) )
 			}
 			
 			$lcr = $MWQS_OF->lcf_debug_f($l_key,$llk,true,$orc);
-			echo 'License Key: '.$l_key;
+			echo 'License Key: ' . esc_html($l_key);
 			$MSQS_QL->_p($lcr);
 		}		
 		
@@ -77,7 +91,7 @@ if(isset($_GET['run_queue_sync'])){
  $plugin_version = MyWorks_WC_QBO_Sync_Admin::return_plugin_version();
  ?>
  <div class="qcpp_cnt">
-	 <img width="300"  alt="mw-qbo-sync" src="<?php echo plugins_url( 'myworks-woo-sync-for-quickbooks-online/admin/image/mwd-logo.png' ) ?>" class="mw-qbo-sync-logo">
+	 <img width="300"  alt="mw-qbo-sync" src="<?php echo esc_url( plugins_url( 'myworks-woo-sync-for-quickbooks-online/admin/image/mwd-logo.png' ) ) ?>" class="mw-qbo-sync-logo">
  </div>
  
  
@@ -85,13 +99,13 @@ if(isset($_GET['run_queue_sync'])){
  <!--Graph-->
 <div id="mw_wc_qbo_sync_grph_div" style="background:white;">
 <div class="page_title">
-	<!-- <h3 title="<?php echo $plugin_version;?>"><?php esc_html_e( 'Dashboard', 'mw_wc_qbo_sync' );?></h3> -->
+	<!-- <h3 title="<?php echo esc_attr($plugin_version);?>"><?php esc_html_e( 'Dashboard', 'mw_wc_qbo_sync' );?></h3> -->
 	<div class="dashboard_main_buttons">
 	<?php wp_nonce_field( 'myworks_wc_qbo_sync_clear_all_mappings', 'clear_all_mappings' ); ?>
 	<button title="<?php esc_attr_e( 'Clear all data from map tables', 'mw_wc_qbo_sync' );?>" id="mwqs_clear_all_mappings"><?php esc_html_e( 'Clear All Mappings', 'mw_wc_qbo_sync' );?></button>
 	&nbsp;
 
-	<a id="mwqs_refresh_data_from_qbo" target="_blank" href="<?php echo site_url('index.php?mw_qbo_sync_public_quick_refresh=1');?>">
+	<a id="mwqs_refresh_data_from_qbo" target="_blank" href="<?php echo esc_url(site_url('index.php?mw_qbo_sync_public_quick_refresh=1'));?>">
 	<button title="<?php esc_attr_e( 'Refresh your sync to recognize the latest customers and products currently in QuickBooks.', 'mw_wc_qbo_sync' );?>"><?php esc_html_e( 'Refresh Customers & Products', 'mw_wc_qbo_sync' );?></button>
 	</a>
 	<div id="mwqs_dashboard_ajax_loader"></div>
@@ -99,7 +113,17 @@ if(isset($_GET['run_queue_sync'])){
 </div>
 
 <div id="mw_wc_qbo_sync_grph_div_new">
-<?php echo $db_graph;?>
+<?php 
+// Allow script tags for chart functionality - this is trusted content from our own plugin
+$allowed_html = wp_kses_allowed_html('post');
+$allowed_html['script'] = array();
+$allowed_html['canvas'] = array(
+    'id' => array(),
+    'height' => array(),
+    'width' => array()
+);
+echo wp_kses($db_graph, $allowed_html);
+?>
 </div>
 
 </div>
@@ -109,8 +133,8 @@ if(isset($_GET['run_queue_sync'])){
 	//$MSQS_QL->_p($dashboard_status_data);
 ?>
 <div class="dash-bottm mwqs_db_status_cont">
-     <div class="col-sm3 module-stat">
-         <h3>Sync Status</h3>
+     <div class="col-sm3 mapping-stat module-stat">
+         <!-- <h3>Sync Status</h3>
          <ul>
          	<li>
 				<a <?php if(!$MSQS_QL->get_array_isset($dashboard_status_data,'quickbooks_connection',false)){echo ' class="dbst_err"';}?>>
@@ -135,7 +159,27 @@ if(isset($_GET['run_queue_sync'])){
 					Mapping Active
 				</a>
 			</li>
-         </ul>
+         </ul> -->
+		 <h3>QuickBooks Status</h3>
+		 <ul>
+         	<li>
+				<a <?php if(!$MSQS_QL->get_array_isset($dashboard_status_data,'quickbooks_connection',false)){echo ' class="dbst_err"';}?>>
+					QuickBooks Connection
+				</a>
+			</li>
+         	<li>
+				<a>
+					<b>QuickBooks Customers</b>
+					<span class="right-btnn"><?php echo esc_html($MSQS_QL->get_array_isset($dashboard_status_data,'customer_synced',0));?></span>
+				</a>
+			</li>
+         	<li>
+				<a>
+					<b>QuickBooks Products</b>
+					<span class="right-btnn"><?php echo esc_html($MSQS_QL->get_array_isset($dashboard_status_data,'product_synced',0));?></span>
+				</a>
+			</li>
+		 </ul>
      </div>
      <div class="col-sm3 mapping-stat map-sta-a">
      	<h3>Mapping Status</h3>
@@ -143,28 +187,28 @@ if(isset($_GET['run_queue_sync'])){
          	<li>
 				<a>
 					<b>Customers Mapped</b>
-					<span class="right-btnn"><?php echo $MSQS_QL->get_array_isset($dashboard_status_data,'customer_mapped',0)?></span>
+					<span class="right-btnn"><?php echo esc_html($MSQS_QL->get_array_isset($dashboard_status_data,'customer_mapped',0));?></span>
 				</a>
 			</li>
 			
 			<li>
 				<a>
 					<b>Products Mapped</b>
-					<span class="right-btnn"><?php echo $MSQS_QL->get_array_isset($dashboard_status_data,'product_mapped',0)?></span>
+					<span class="right-btnn"><?php echo esc_html($MSQS_QL->get_array_isset($dashboard_status_data,'product_mapped',0));?></span>
 				</a>
 			</li>
 			
 			<li>
 				<a>
 					<b>Variations Mapped</b>
-					<span class="right-btnn"><?php echo $MSQS_QL->get_array_isset($dashboard_status_data,'variation_mapped',0)?></span>
+					<span class="right-btnn"><?php echo esc_html($MSQS_QL->get_array_isset($dashboard_status_data,'variation_mapped',0));?></span>
 				</a>
 			</li>
 			
 			<li>
 				<a>
 					<b>Gateways Mapped</b>
-					<span class="right-btnn"><?php echo $MSQS_QL->get_array_isset($dashboard_status_data,'gateway_mapped',0)?></span>
+					<span class="right-btnn"><?php echo esc_html($MSQS_QL->get_array_isset($dashboard_status_data,'gateway_mapped',0))?></span>
 				</a>
 			</li>
 			
@@ -176,28 +220,28 @@ if(isset($_GET['run_queue_sync'])){
 			<li>
 				<a>
 					<b>Customers</b>
-					<span class="right-btnn"><?php echo $MSQS_QL->get_array_isset($dashboard_status_data,'wc_total_customer',0)?></span>
+					<span class="right-btnn"><?php echo esc_html($MSQS_QL->get_array_isset($dashboard_status_data,'wc_total_customer',0))?></span>
 				</a>
 			</li>
 			
 			<li>
 				<a>
 					<b>Products</b>
-					<span class="right-btnn"><?php echo $MSQS_QL->get_array_isset($dashboard_status_data,'wc_total_product',0)?></span>
+					<span class="right-btnn"><?php echo esc_html($MSQS_QL->get_array_isset($dashboard_status_data,'wc_total_product',0))?></span>
 				</a>
 			</li>
 			
 			<li>
 				<a>
 					<b>Variations</b>
-					<span class="right-btnn"><?php echo $MSQS_QL->get_array_isset($dashboard_status_data,'wc_total_variation',0)?></span>
+					<span class="right-btnn"><?php echo esc_html($MSQS_QL->get_array_isset($dashboard_status_data,'wc_total_variation',0))?></span>
 				</a>
 			</li>
 			
 			<li>
 				<a>
 					<b>Active Gateways</b>
-					<span class="right-btnn"><?php echo $MSQS_QL->get_array_isset($dashboard_status_data,'wc_total_gateway',0)?></span>
+					<span class="right-btnn"><?php echo esc_html($MSQS_QL->get_array_isset($dashboard_status_data,'wc_total_gateway',0))?></span>
 				</a>
 			</li>
          </ul>  
@@ -218,7 +262,7 @@ if($file_size > 0){
 ?>
 <div style="margin:20px 20px 0px 0px;">
 <h5>Debug Add/Update Error Log File</h5>
-<textarea readonly="true" style="height:600px;background:white;"><?php echo $log_content;?></textarea>
+<textarea readonly="true" style="height:600px;background:white;"><?php echo esc_textarea($log_content);?></textarea>
 </div>
 <?php
  fclose($logfile);
@@ -239,7 +283,7 @@ if($file_size > 0){
 ?>
 <div style="margin:20px 20px 0px 0px;">
 <h5>Debug Add/Update Success Log File</h5>
-<textarea readonly="true" style="height:600px;background:white;"><?php echo $log_content;?></textarea>
+<textarea readonly="true" style="height:600px;background:white;"><?php echo esc_textarea($log_content);?></textarea>
 </div>
 <?php
  fclose($logfile);
@@ -277,12 +321,12 @@ function mw_wc_qbo_sync_refresh_log_chart(period){
 
 jQuery(document).ready(function($){
 	$('#mwqs_refresh_data_from_qbo').click(function(event){
-		if(!confirm('<?php echo __('This will update the data in our sync with the latest Customers & Products in your QuickBooks company. No data will be synced at this time.','mw_wc_qbo_sync')?>')){
+		if(!confirm('<?php echo esc_html__('This will update the data in our sync with the latest Customers & Products in your QuickBooks company. No data will be synced at this time.','mw_wc_qbo_sync')?>')){
 			event.preventDefault();
 		}
 	});
 	$('#mwqs_clear_all_mappings').click(function(){
-		if(confirm('<?php echo __('Are you sure you want to clear your mappings?','mw_wc_qbo_sync')?>')){
+		if(confirm('<?php echo esc_html__('Are you sure you want to clear your mappings?','mw_wc_qbo_sync')?>')){
 			var loading_msg = 'Loading...';
 			jQuery('#mwqs_dashboard_ajax_loader').html(loading_msg);
 			var data = {
@@ -313,7 +357,7 @@ jQuery(document).ready(function($){
 	});
 	
 	jQuery('#qcpp_btn_id').click(function(){
-		if(confirm('<?php echo __('Are you sure you want to change syncing status?','mw_wc_qbo_sync')?>')){
+		if(confirm('<?php echo esc_html__('Are you sure you want to change syncing status?','mw_wc_qbo_sync')?>')){
 			var loading_msg = 'Loading...';
 			//jQuery('#qcpp_msg_id').html(loading_msg);
 			jQuery('#qcpp_btn_id').html(loading_msg);

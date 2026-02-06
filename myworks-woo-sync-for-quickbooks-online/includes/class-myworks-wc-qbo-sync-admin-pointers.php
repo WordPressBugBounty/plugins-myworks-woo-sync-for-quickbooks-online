@@ -52,15 +52,15 @@ class MyWorks_WC_QBO_Sync_Admin_Pointers {
        foreach ( $admin_pointers as $pointer => $array ) {
           if ( $array['active'] ) {
              ?>
-             $( '<?php echo $array['anchor_id']; ?>' ).pointer( {
-                content: '<?php echo $array['content']; ?>',
+             $( '<?php echo esc_js($array['anchor_id']); ?>' ).pointer( {
+                content: '<?php echo wp_kses_post($array['content']); ?>',
                 position: {
-                edge: '<?php echo $array['edge']; ?>',
-                align: '<?php echo $array['align']; ?>'
+                edge: '<?php echo esc_js($array['edge']); ?>',
+                align: '<?php echo esc_js($array['align']); ?>'
              },
                 close: function() {
                    $.post( ajaxurl, {
-                      pointer: '<?php echo $pointer; ?>',
+                      pointer: '<?php echo esc_js($pointer); ?>',
                       action: 'dismiss-wp-pointer'
                    } );
                 }

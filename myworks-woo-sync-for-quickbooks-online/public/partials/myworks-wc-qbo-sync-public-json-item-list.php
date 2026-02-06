@@ -38,18 +38,18 @@ if($is_valid_user){
 	global $wpdb;
 	
 	if($allow_without_conn || $MSQS_QL->is_connected()){
-		$item = (isset($_GET['item']))?$_GET['item']:'';
+		$item = (isset($_GET['item'])) ? sanitize_text_field($_GET['item']) : '';
 		
-		$search = (isset($_GET['q']))?$_GET['q']:'';		
+		$search = (isset($_GET['q'])) ? sanitize_text_field($_GET['q']) : '';		
 		$search = $MSQS_QL->sanitize($search);
 		
 		$limit = ' LIMIT 0,50';
 		
 		if($item=='qbo_product'){
 			
-			$query = "SELECT `itemid` as `id`, `name` as `text` FROM `{$wpdb->prefix}mw_wc_qbo_sync_qbo_items` WHERE `name` LIKE '%%%s%%'  OR `sku` LIKE '%%%s%%' ORDER BY `name` ASC {$limit} ";
-			
-			$query = $wpdb->prepare($query,$search,$search);
+			$table_name = esc_sql($wpdb->prefix . 'mw_wc_qbo_sync_qbo_items');
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped with esc_sql() above, limit is hardcoded string
+			$query = $wpdb->prepare("SELECT `itemid` as `id`, `name` as `text` FROM `{$table_name}` WHERE `name` LIKE %s OR `sku` LIKE %s ORDER BY `name` ASC {$limit}", '%' . $wpdb->esc_like($search) . '%', '%' . $wpdb->esc_like($search) . '%');
 			header('Content-Type: application/json');
 			$q_data = $MSQS_QL->get_data($query);
 			$q_data = $MSQS_QL->stripslash_get_data($q_data,array('text'));
@@ -58,18 +58,20 @@ if($is_valid_user){
 		
 		if($item=='qbo_customer'){
 			
-			$query = "SELECT `qbo_customerid` as `id`, `dname` as `text` FROM `{$wpdb->prefix}mw_wc_qbo_sync_qbo_customers` WHERE `dname` LIKE '%%%s%%'  OR `email` LIKE '%%%s%%'  OR `first` LIKE '%%%s%%'  OR `last` LIKE '%%%s%%'  OR `company` LIKE '%%%s%%' ORDER BY `dname` ASC {$limit} ";
-			
-			$query = $wpdb->prepare($query,$search,$search,$search,$search,$search);
+			$table_name = esc_sql($wpdb->prefix . 'mw_wc_qbo_sync_qbo_customers');
+			$search_term = '%' . $wpdb->esc_like($search) . '%';
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped with esc_sql() above, limit is hardcoded string
+			$query = $wpdb->prepare("SELECT `qbo_customerid` as `id`, `dname` as `text` FROM `{$table_name}` WHERE `dname` LIKE %s OR `email` LIKE %s OR `first` LIKE %s OR `last` LIKE %s OR `company` LIKE %s ORDER BY `dname` ASC {$limit}", $search_term, $search_term, $search_term, $search_term, $search_term);
 			header('Content-Type: application/json');
 			echo json_encode($MSQS_QL->get_data($query));
 		}
 		
 		if($item=='qbo_vendor' && $MSQS_QL->is_wq_vendor_pm_enable()){
 			
-			$query = "SELECT `qbo_vendorid` as `id`, `dname` as `text` FROM `{$wpdb->prefix}mw_wc_qbo_sync_qbo_vendors` WHERE `dname` LIKE '%%%s%%'  OR `email` LIKE '%%%s%%'  OR `first` LIKE '%%%s%%'  OR `last` LIKE '%%%s%%'  OR `company` LIKE '%%%s%%' ORDER BY `dname` ASC {$limit} ";
-			
-			$query = $wpdb->prepare($query,$search,$search,$search,$search,$search);
+			$table_name = esc_sql($wpdb->prefix . 'mw_wc_qbo_sync_qbo_vendors');
+			$search_term = '%' . $wpdb->esc_like($search) . '%';
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped with esc_sql() above, limit is hardcoded string
+			$query = $wpdb->prepare("SELECT `qbo_vendorid` as `id`, `dname` as `text` FROM `{$table_name}` WHERE `dname` LIKE %s OR `email` LIKE %s OR `first` LIKE %s OR `last` LIKE %s OR `company` LIKE %s ORDER BY `dname` ASC {$limit}", $search_term, $search_term, $search_term, $search_term, $search_term);
 			header('Content-Type: application/json');
 			echo json_encode($MSQS_QL->get_data($query));
 		}

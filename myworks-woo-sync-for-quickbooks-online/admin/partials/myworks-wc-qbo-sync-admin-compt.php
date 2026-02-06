@@ -14,6 +14,43 @@ if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
 
 $page_url = 'admin.php?page=myworks-wc-qbo-sync-compt';
 
+# New
+if($MSQS_QL->use_new_qbo_local_data('class') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_classes_data_fetched') != 'true'){
+	# Fetch and save new QBO classes into DB
+	$MSQS_QL->save_all_classes();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_classes_data_fetched','true',false);
+}
+
+if($MSQS_QL->use_new_qbo_local_data('customertype') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_customertypes_data_fetched') != 'true'){
+	# Fetch and save new QBO customer types into DB
+	$MSQS_QL->save_all_customertypes();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_customertypes_data_fetched','true',false);
+}
+
+if($MSQS_QL->use_new_qbo_local_data('department') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_departments_data_fetched') != 'true'){
+	# Fetch and save new QBO departments into DB
+	$MSQS_QL->save_all_departments();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_departments_data_fetched','true',false);
+}
+
+if($MSQS_QL->use_new_qbo_local_data('account') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_accounts_data_fetched') != 'true'){
+	# Fetch and save new QBO accounts into DB
+	$MSQS_QL->save_all_accounts();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_accounts_data_fetched','true',false);
+}
+
+if($MSQS_QL->use_new_qbo_local_data('paymentmethod') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_paymentmethods_data_fetched') != 'true'){
+	# Fetch and save new QBO payment methods into DB
+	$MSQS_QL->save_all_payment_methods();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_paymentmethods_data_fetched','true',false);
+}
+
+if($MSQS_QL->use_new_qbo_local_data('taxcode') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_taxcodes_data_fetched') != 'true'){
+	# Fetch and save new QBO tax codes into DB
+	$MSQS_QL->save_all_taxcodes();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_taxcodes_data_fetched','true',false);
+}
+
 if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_stng', 'map_wc_qbo_update_compt_stng' ) ) {
 	$fp_dps = false;
 	//$MSQS_QL->_p($_POST);die;
@@ -24,7 +61,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_enable_wc_deposit'])){
 			$mw_wc_qbo_sync_enable_wc_deposit = 'true';
 		}
-		update_option('mw_wc_qbo_sync_enable_wc_deposit',$mw_wc_qbo_sync_enable_wc_deposit);
+		update_option('mw_wc_qbo_sync_enable_wc_deposit', sanitize_text_field($mw_wc_qbo_sync_enable_wc_deposit));
 	}	
 	
 	//Visual Products Configurator
@@ -33,7 +70,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_enable_wc_vpc_epod'])){
 			$mw_wc_qbo_sync_enable_wc_vpc_epod = 'true';
 		}
-		update_option('mw_wc_qbo_sync_enable_wc_vpc_epod',$mw_wc_qbo_sync_enable_wc_vpc_epod);
+		update_option('mw_wc_qbo_sync_enable_wc_vpc_epod', sanitize_text_field($mw_wc_qbo_sync_enable_wc_vpc_epod));
 	}	
 	
 	//WooCommerce EU VAT Number
@@ -42,7 +79,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_enable_wc_wevc_cvn'])){
 			$mw_wc_qbo_sync_enable_wc_wevc_cvn = 'true';
 		}
-		//update_option('mw_wc_qbo_sync_enable_wc_wevc_cvn',$mw_wc_qbo_sync_enable_wc_wevc_cvn);
+		//update_option('mw_wc_qbo_sync_enable_wc_wevc_cvn', sanitize_text_field($mw_wc_qbo_sync_enable_wc_wevc_cvn));
 	}	
 	
 	//WooCommerce Subscriptions
@@ -51,7 +88,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_enable_wc_subs_rnord_sync'])){
 			$mw_wc_qbo_sync_enable_wc_subs_rnord_sync = 'true';
 		}
-		update_option('mw_wc_qbo_sync_enable_wc_subs_rnord_sync',$mw_wc_qbo_sync_enable_wc_subs_rnord_sync);
+		update_option('mw_wc_qbo_sync_enable_wc_subs_rnord_sync', sanitize_text_field($mw_wc_qbo_sync_enable_wc_subs_rnord_sync));
 		
 		//
 		$wc_p_methods = array();
@@ -63,7 +100,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 				}		
 			}
 		}
-		update_option('mw_wc_qbo_sync_available_gateways',$wc_p_methods);
+		update_option('wc_p_methods', sanitize_text_field($wc_p_methods));
 	}
 	
 	//WooCommerce Measurement Price Calculator
@@ -72,7 +109,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_measurement_qty'])){
 			$mw_wc_qbo_sync_measurement_qty = 'true';
 		}
-		update_option('mw_wc_qbo_sync_measurement_qty',$mw_wc_qbo_sync_measurement_qty);
+		update_option('mw_wc_qbo_sync_measurement_qty', sanitize_text_field($mw_wc_qbo_sync_measurement_qty));
 	}	
 	
 	//WooCommerce AvaTax	
@@ -81,13 +118,13 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_wc_avatax_support'])){
 			$mw_wc_qbo_sync_wc_avatax_support = 'true';
 		}
-		update_option('mw_wc_qbo_sync_wc_avatax_support',$mw_wc_qbo_sync_wc_avatax_support);
+		update_option('mw_wc_qbo_sync_wc_avatax_support', sanitize_text_field($mw_wc_qbo_sync_wc_avatax_support));
 		
 		$mw_wc_qbo_sync_wc_avatax_map_qbo_product = '';
 		if(isset($_POST['mw_wc_qbo_sync_wc_avatax_map_qbo_product'])){			
-			$mw_wc_qbo_sync_wc_avatax_map_qbo_product = (int) $_POST['mw_wc_qbo_sync_wc_avatax_map_qbo_product'];
+			$mw_wc_qbo_sync_wc_avatax_map_qbo_product = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_wc_avatax_map_qbo_product'])));
 		}
-		update_option('mw_wc_qbo_sync_wc_avatax_map_qbo_product',$mw_wc_qbo_sync_wc_avatax_map_qbo_product);
+		update_option('mw_wc_qbo_sync_wc_avatax_map_qbo_product', sanitize_text_field($mw_wc_qbo_sync_wc_avatax_map_qbo_product));
 	}	
 	
 	//Taxify for WooCommerce
@@ -97,13 +134,13 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_wc_taxify_support'])){
 			$mw_wc_qbo_sync_wc_taxify_support = 'true';
 		}
-		update_option('mw_wc_qbo_sync_wc_taxify_support',$mw_wc_qbo_sync_wc_taxify_support);
+		update_option('mw_wc_qbo_sync_wc_taxify_support', sanitize_text_field($mw_wc_qbo_sync_wc_taxify_support));
 		
 		$mw_wc_qbo_sync_wc_taxify_map_qbo_product = '';
 		if(isset($_POST['mw_wc_qbo_sync_wc_taxify_map_qbo_product'])){			
-			$mw_wc_qbo_sync_wc_taxify_map_qbo_product = (int) $_POST['mw_wc_qbo_sync_wc_taxify_map_qbo_product'];
+			$mw_wc_qbo_sync_wc_taxify_map_qbo_product = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_wc_taxify_map_qbo_product'])));
 		}
-		update_option('mw_wc_qbo_sync_wc_taxify_map_qbo_product',$mw_wc_qbo_sync_wc_taxify_map_qbo_product);
+		update_option('mw_wc_qbo_sync_wc_taxify_map_qbo_product', sanitize_text_field($mw_wc_qbo_sync_wc_taxify_map_qbo_product));
 	}
 	*/
 	
@@ -113,7 +150,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_w_shp_track'])){
 			$mw_wc_qbo_sync_w_shp_track = 'true';
 		}
-		update_option('mw_wc_qbo_sync_w_shp_track',$mw_wc_qbo_sync_w_shp_track);
+		update_option('mw_wc_qbo_sync_w_shp_track', sanitize_text_field($mw_wc_qbo_sync_w_shp_track));
 	}	
 	
 	//WooCommerce Cost of Goods
@@ -122,7 +159,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_wcogs_fiels'])){
 			$mw_wc_qbo_sync_wcogs_fiels = 'true';
 		}
-		update_option('mw_wc_qbo_sync_wcogs_fiels',$mw_wc_qbo_sync_wcogs_fiels);
+		update_option('mw_wc_qbo_sync_wcogs_fiels', sanitize_text_field($mw_wc_qbo_sync_wcogs_fiels));
 	}
 	
 	//WooCommerce Wholesale Prices
@@ -131,7 +168,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_wwpfps_qb'])){
 			$mw_wc_qbo_sync_wwpfps_qb = 'true';
 		}
-		update_option('mw_wc_qbo_sync_wwpfps_qb',$mw_wc_qbo_sync_wwpfps_qb);
+		update_option('mw_wc_qbo_sync_wwpfps_qb', sanitize_text_field($mw_wc_qbo_sync_wwpfps_qb));
 	}
 	
 	//QuickBooks Automated Sales Tax (NP)
@@ -140,13 +177,13 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_fotali_waste'])){
 			$mw_wc_qbo_sync_fotali_waste = 'true';
 		}
-		update_option('mw_wc_qbo_sync_fotali_waste',$mw_wc_qbo_sync_fotali_waste);
+		update_option('mw_wc_qbo_sync_fotali_waste', sanitize_text_field($mw_wc_qbo_sync_fotali_waste));
 		
 		$mw_wc_qbo_sync_otli_qbo_product = '';
 		if(isset($_POST['mw_wc_qbo_sync_otli_qbo_product'])){			
-			$mw_wc_qbo_sync_otli_qbo_product = (int) $_POST['mw_wc_qbo_sync_otli_qbo_product'];
+			$mw_wc_qbo_sync_otli_qbo_product = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_otli_qbo_product'])));
 		}
-		update_option('mw_wc_qbo_sync_otli_qbo_product',$mw_wc_qbo_sync_otli_qbo_product);
+		update_option('mw_wc_qbo_sync_otli_qbo_product', sanitize_text_field($mw_wc_qbo_sync_otli_qbo_product));
 	}
 	
 	//WooCommerce - Payment Gateways Discounts and Fees
@@ -156,14 +193,14 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_gf_qbo_is'])){
 			$mw_wc_qbo_sync_compt_gf_qbo_is = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_gf_qbo_is',$mw_wc_qbo_sync_compt_gf_qbo_is);
+		update_option('mw_wc_qbo_sync_compt_gf_qbo_is', sanitize_text_field($mw_wc_qbo_sync_compt_gf_qbo_is));
 		
 		$mw_wc_qbo_sync_compt_gf_qbo_item = '';
 		if(isset($_POST['mw_wc_qbo_sync_compt_gf_qbo_item'])){
 			$fp_dps = true;
-			$mw_wc_qbo_sync_compt_gf_qbo_item = (int) $_POST['mw_wc_qbo_sync_compt_gf_qbo_item'];
+			$mw_wc_qbo_sync_compt_gf_qbo_item = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_gf_qbo_item'])));
 		}
-		update_option('mw_wc_qbo_sync_compt_gf_qbo_item',$mw_wc_qbo_sync_compt_gf_qbo_item);
+		update_option('mw_wc_qbo_sync_compt_gf_qbo_item', sanitize_text_field($mw_wc_qbo_sync_compt_gf_qbo_item));
 		*/
 	}	
 	
@@ -173,13 +210,13 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_wpbs'])){
 			$mw_wc_qbo_sync_compt_wpbs = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_wpbs',$mw_wc_qbo_sync_compt_wpbs);
+		update_option('mw_wc_qbo_sync_compt_wpbs', sanitize_text_field($mw_wc_qbo_sync_compt_wpbs));
 		
 		$mw_wc_qbo_sync_compt_wpbs_ap_item = '';
 		if(isset($_POST['mw_wc_qbo_sync_compt_wpbs_ap_item'])){			
-			$mw_wc_qbo_sync_compt_wpbs_ap_item = (int) $_POST['mw_wc_qbo_sync_compt_wpbs_ap_item'];
+			$mw_wc_qbo_sync_compt_wpbs_ap_item = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_wpbs_ap_item'])));
 		}
-		update_option('mw_wc_qbo_sync_compt_wpbs_ap_item',$mw_wc_qbo_sync_compt_wpbs_ap_item);
+		update_option('mw_wc_qbo_sync_compt_wpbs_ap_item', sanitize_text_field($mw_wc_qbo_sync_compt_wpbs_ap_item));
 	}
 	
 	//WooCommerce Order Fee Line Item (NP)
@@ -188,21 +225,21 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_np_oli_fee_sync'])){
 			$mw_wc_qbo_sync_compt_np_oli_fee_sync = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_np_oli_fee_sync',$mw_wc_qbo_sync_compt_np_oli_fee_sync);
+		update_option('mw_wc_qbo_sync_compt_np_oli_fee_sync', sanitize_text_field($mw_wc_qbo_sync_compt_np_oli_fee_sync));
 		
 		$mw_wc_qbo_sync_compt_gf_qbo_item = '';
 		if(isset($_POST['mw_wc_qbo_sync_compt_gf_qbo_item'])){
 			$fp_dps = true;
-			$mw_wc_qbo_sync_compt_gf_qbo_item = (int) $_POST['mw_wc_qbo_sync_compt_gf_qbo_item'];
+			$mw_wc_qbo_sync_compt_gf_qbo_item = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_gf_qbo_item'])));
 		}
-		update_option('mw_wc_qbo_sync_compt_gf_qbo_item',$mw_wc_qbo_sync_compt_gf_qbo_item);
+		update_option('mw_wc_qbo_sync_compt_gf_qbo_item', sanitize_text_field($mw_wc_qbo_sync_compt_gf_qbo_item));
 		
 		//
 		$mw_wc_qbo_sync_compt_np_oli_fee_qb_class = '';
 		if(isset($_POST['mw_wc_qbo_sync_compt_np_oli_fee_qb_class'])){
-			$mw_wc_qbo_sync_compt_np_oli_fee_qb_class = trim($_POST['mw_wc_qbo_sync_compt_np_oli_fee_qb_class']);
+			$mw_wc_qbo_sync_compt_np_oli_fee_qb_class = sanitize_text_field(trim(wp_unslash($_POST['mw_wc_qbo_sync_compt_np_oli_fee_qb_class']))); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
-		update_option('mw_wc_qbo_sync_compt_np_oli_fee_qb_class',$mw_wc_qbo_sync_compt_np_oli_fee_qb_class);
+		update_option('mw_wc_qbo_sync_compt_np_oli_fee_qb_class', $mw_wc_qbo_sync_compt_np_oli_fee_qb_class);
 		
 		$mw_wc_qbo_sync_compt_np_nfli_asli = '';
 		if(isset($_POST['mw_wc_qbo_sync_compt_np_nfli_asli'])){
@@ -219,11 +256,11 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_gf_qbo_is_gbf'])){
 			$mw_wc_qbo_sync_compt_gf_qbo_is_gbf = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_gf_qbo_is_gbf',$mw_wc_qbo_sync_compt_gf_qbo_is_gbf);		
+		update_option('mw_wc_qbo_sync_compt_gf_qbo_is_gbf', sanitize_text_field($mw_wc_qbo_sync_compt_gf_qbo_is_gbf));		
 		
 		if(!$fp_dps && isset($_POST['mw_wc_qbo_sync_compt_gf_qbo_item'])){
-			$mw_wc_qbo_sync_compt_gf_qbo_item = (int) $_POST['mw_wc_qbo_sync_compt_gf_qbo_item'];
-			update_option('mw_wc_qbo_sync_compt_gf_qbo_item',$mw_wc_qbo_sync_compt_gf_qbo_item);
+			$mw_wc_qbo_sync_compt_gf_qbo_item = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_gf_qbo_item'])));
+			update_option('mw_wc_qbo_sync_compt_gf_qbo_item', sanitize_text_field($mw_wc_qbo_sync_compt_gf_qbo_item));
 		}
 		*/
 	}	
@@ -234,16 +271,16 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_wdotocac_fee_li_ed'])){
 			$mw_wc_qbo_sync_compt_wdotocac_fee_li_ed = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_wdotocac_fee_li_ed',$mw_wc_qbo_sync_compt_wdotocac_fee_li_ed);		
+		update_option('mw_wc_qbo_sync_compt_wdotocac_fee_li_ed', sanitize_text_field($mw_wc_qbo_sync_compt_wdotocac_fee_li_ed));		
 		
 		if(isset($_POST['mw_wc_qbo_sync_compt_dntp_qbo_item'])){
-			$mw_wc_qbo_sync_compt_dntp_qbo_item = (int) $_POST['mw_wc_qbo_sync_compt_dntp_qbo_item'];
-			update_option('mw_wc_qbo_sync_compt_dntp_qbo_item',$mw_wc_qbo_sync_compt_dntp_qbo_item);
+			$mw_wc_qbo_sync_compt_dntp_qbo_item = absint(wp_unslash($_POST['mw_wc_qbo_sync_compt_dntp_qbo_item']));
+			update_option('mw_wc_qbo_sync_compt_dntp_qbo_item', $mw_wc_qbo_sync_compt_dntp_qbo_item);
 		}
 		
 		if(isset($_POST['mw_wc_qbo_sync_compt_dntp_fn_itxt'])){
-			$mw_wc_qbo_sync_compt_dntp_fn_itxt = trim($_POST['mw_wc_qbo_sync_compt_dntp_fn_itxt']);
-			update_option('mw_wc_qbo_sync_compt_dntp_fn_itxt',$mw_wc_qbo_sync_compt_dntp_fn_itxt);
+			$mw_wc_qbo_sync_compt_dntp_fn_itxt = sanitize_text_field(trim(wp_unslash($_POST['mw_wc_qbo_sync_compt_dntp_fn_itxt']))); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			update_option('mw_wc_qbo_sync_compt_dntp_fn_itxt', $mw_wc_qbo_sync_compt_dntp_fn_itxt);
 		}		
 	}	
 	
@@ -254,11 +291,11 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_woacfp_fee_li_ed'])){
 			$mw_wc_qbo_sync_compt_woacfp_fee_li_ed = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_woacfp_fee_li_ed',$mw_wc_qbo_sync_compt_woacfp_fee_li_ed);		
+		update_option('mw_wc_qbo_sync_compt_woacfp_fee_li_ed', sanitize_text_field($mw_wc_qbo_sync_compt_woacfp_fee_li_ed));		
 		
 		if(!$fp_dps && isset($_POST['mw_wc_qbo_sync_compt_gf_qbo_item'])){
-			$mw_wc_qbo_sync_compt_gf_qbo_item = (int) $_POST['mw_wc_qbo_sync_compt_gf_qbo_item'];
-			update_option('mw_wc_qbo_sync_compt_gf_qbo_item',$mw_wc_qbo_sync_compt_gf_qbo_item);
+			$mw_wc_qbo_sync_compt_gf_qbo_item = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_gf_qbo_item'])));
+			update_option('mw_wc_qbo_sync_compt_gf_qbo_item', sanitize_text_field($mw_wc_qbo_sync_compt_gf_qbo_item));
 		}
 		*/
 	}
@@ -271,11 +308,11 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_wcpffcp_fee_li_ed'])){
 			$mw_wc_qbo_sync_compt_wcpffcp_fee_li_ed = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_wcpffcp_fee_li_ed',$mw_wc_qbo_sync_compt_wcpffcp_fee_li_ed);		
+		update_option('mw_wc_qbo_sync_compt_wcpffcp_fee_li_ed', sanitize_text_field($mw_wc_qbo_sync_compt_wcpffcp_fee_li_ed));		
 		
 		if(!$fp_dps && isset($_POST['mw_wc_qbo_sync_compt_gf_qbo_item'])){
-			$mw_wc_qbo_sync_compt_gf_qbo_item = (int) $_POST['mw_wc_qbo_sync_compt_gf_qbo_item'];
-			update_option('mw_wc_qbo_sync_compt_gf_qbo_item',$mw_wc_qbo_sync_compt_gf_qbo_item);
+			$mw_wc_qbo_sync_compt_gf_qbo_item = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_gf_qbo_item'])));
+			update_option('mw_wc_qbo_sync_compt_gf_qbo_item', sanitize_text_field($mw_wc_qbo_sync_compt_gf_qbo_item));
 		}
 		*/
 	}
@@ -287,17 +324,17 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_wccf_fee'])){
 			$mw_wc_qbo_sync_compt_wccf_fee = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_wccf_fee',$mw_wc_qbo_sync_compt_wccf_fee);
+		update_option('mw_wc_qbo_sync_compt_wccf_fee', sanitize_text_field($mw_wc_qbo_sync_compt_wccf_fee));
 		*/
 		
 		$mw_wc_qbo_sync_compt_wccf_fee_wf_qi_map = '';
 		$wqm_arr = array();
 		if(isset($_POST['wccf_pid']) && is_array($_POST['wccf_pid']) && !empty($_POST['wccf_pid'])){
-			$wccf_pid_arr = $_POST['wccf_pid'];
+			$wccf_pid_arr = array_map('absint', wp_unslash($_POST['wccf_pid']));
 			foreach($wccf_pid_arr as $wpk => $wpid){
-				if(is_array($_POST['wccf_qbp']) && isset($_POST['wccf_qbp'][$wpk])){
-					$qbpid = (int) $_POST['wccf_qbp'][$wpk];
-					$wpid = (int) $wpid;
+				if(isset($_POST['wccf_qbp']) && is_array($_POST['wccf_qbp']) && isset($_POST['wccf_qbp'][$wpk])){
+					$qbpid = absint(wp_unslash($_POST['wccf_qbp'][$wpk]));
+					$wpid = absint($wpid);
 					if($qbpid && $wpid){
 						$wqm_arr[$wpid] = $qbpid;
 					}
@@ -308,7 +345,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 			}
 		}
 		//$MSQS_QL->_p($wqm_arr);die;
-		update_option('mw_wc_qbo_sync_compt_wccf_fee_wf_qi_map',$mw_wc_qbo_sync_compt_wccf_fee_wf_qi_map);
+		update_option('mw_wc_qbo_sync_compt_wccf_fee_wf_qi_map', sanitize_text_field($mw_wc_qbo_sync_compt_wccf_fee_wf_qi_map));
 	}	
 	
 	//WooCommerce Checkout Field Editor Pro
@@ -318,17 +355,17 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_wcfep_add_fld'])){
 			$mw_wc_qbo_sync_wcfep_add_fld = 'true';
 		}
-		update_option('mw_wc_qbo_sync_wcfep_add_fld',$mw_wc_qbo_sync_wcfep_add_fld);
+		update_option('mw_wc_qbo_sync_wcfep_add_fld', sanitize_text_field($mw_wc_qbo_sync_wcfep_add_fld));
 		*/
 		
 		$mw_wc_qbo_sync_compt_wcfep_price_wf_qi_map = '';
 		$wqm_arr = array();
 		if(isset($_POST['wcfep_pid']) && is_array($_POST['wcfep_pid']) && !empty($_POST['wcfep_pid'])){
-			$wcfep_pid_arr = $_POST['wcfep_pid'];
+			$wcfep_pid_arr = wp_unslash($_POST['wcfep_pid']); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			foreach($wcfep_pid_arr as $wpk => $wpid){
-				if(is_array($_POST['wcfep_qbp']) && isset($_POST['wcfep_qbp'][$wpk])){
-					$qbpid = (int) $_POST['wcfep_qbp'][$wpk];
-					$wpid = trim($wpid);
+				if(isset($_POST['wcfep_qbp']) && is_array($_POST['wcfep_qbp']) && isset($_POST['wcfep_qbp'][$wpk])){
+					$qbpid = absint(wp_unslash($_POST['wcfep_qbp'][$wpk]));
+					$wpid = sanitize_text_field(trim($wpid));
 					if($qbpid && $wpid!=''){
 						$wqm_arr[$wpid] = $qbpid;
 					}
@@ -339,7 +376,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 			}
 		}
 		//$MSQS_QL->_p($wqm_arr);die;
-		update_option('mw_wc_qbo_sync_compt_wcfep_price_wf_qi_map',$mw_wc_qbo_sync_compt_wcfep_price_wf_qi_map);
+		update_option('mw_wc_qbo_sync_compt_wcfep_price_wf_qi_map', sanitize_text_field($mw_wc_qbo_sync_compt_wcfep_price_wf_qi_map));
 	}	
 	
 	//WooCommerce Checkout Field Editor
@@ -348,15 +385,15 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed'])){
 			$mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed',$mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed);
+		update_option('mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed', sanitize_text_field($mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed));
 		
 		$mw_wc_qbo_sync_wcfe_cf_rep_qc_map = '';
 		$wcfe_rfcfsr_qc_map_arr = array();
 		if(isset($_POST['wcfe_cf_wsr']) && is_array($_POST['wcfe_cf_wsr']) && !empty($_POST['wcfe_cf_wsr'])){
-			$wcfe_cf_wsr_arr = $_POST['wcfe_cf_wsr'];
+			$wcfe_cf_wsr_arr = array_map('sanitize_text_field', wp_unslash($_POST['wcfe_cf_wsr']));
 			foreach($wcfe_cf_wsr_arr as $wck => $wcv){
 				if(is_array($_POST['wcfe_cf_rep_qc_map']) && isset($_POST['wcfe_cf_rep_qc_map'][$wck])){
-					$qbqcid = trim($_POST['wcfe_cf_rep_qc_map'][$wck]);
+					$qbqcid = sanitize_text_field(trim($_POST['wcfe_cf_rep_qc_map'][$wck])); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 					$wcv = trim($wcv);
 					if($qbqcid && $wcv!=''){
 						$wcfe_rfcfsr_qc_map_arr[$wcv] = $qbqcid;
@@ -369,11 +406,11 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		}
 		
 		//$MSQS_QL->_p($wcfe_rfcfsr_qc_map_arr);die;
-		update_option('mw_wc_qbo_sync_wcfe_cf_rep_qc_map',$mw_wc_qbo_sync_wcfe_cf_rep_qc_map);
+		update_option('mw_wc_qbo_sync_wcfe_cf_rep_qc_map', sanitize_text_field($mw_wc_qbo_sync_wcfe_cf_rep_qc_map));
 		
 		/**/
-		$wcfe_srqcm_wfn = (isset($_POST['wcfe_srqcm_wfn']) && !is_array($_POST['wcfe_srqcm_wfn']))?$_POST['wcfe_srqcm_wfn']:'';
-		update_option('mw_wc_qbo_sync_wcfe_srqcm_wfn',$wcfe_srqcm_wfn);
+		$wcfe_srqcm_wfn = (isset($_POST['wcfe_srqcm_wfn']) && !is_array($_POST['wcfe_srqcm_wfn']))?sanitize_text_field(wp_unslash($_POST['wcfe_srqcm_wfn'])):'';
+		update_option('wcfe_srqcm_wfn', sanitize_text_field($wcfe_srqcm_wfn));
 	}
 	
 	//WooCommerce User Role -> QuickBooks Location and Class Map (NP)
@@ -383,16 +420,16 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_np_wurqbld_ed'])){
 			$mw_wc_qbo_sync_compt_np_wurqbld_ed = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_np_wurqbld_ed',$mw_wc_qbo_sync_compt_np_wurqbld_ed);
+		update_option('mw_wc_qbo_sync_compt_np_wurqbld_ed', sanitize_text_field($mw_wc_qbo_sync_compt_np_wurqbld_ed));
 		
 		$mw_wc_qbo_sync_wurqbld_wur_qbld_map = '';$mw_wc_qbo_sync_wurqbcls_wur_qbcls_map = '';
 		$mw_wc_qbo_sync_wurqbct_wur_qbct_map = '';
 		$wurqbld_wur_qbld_map_arr = array();$wurqbcls_wur_qbcls_map_arr = array();$wurqbct_wur_qbct_map_arr = array();
 		if(isset($_POST['wurqbld_wur']) && is_array($_POST['wurqbld_wur']) && !empty($_POST['wurqbld_wur'])){
-			$wurqbld_wur_arr = $_POST['wurqbld_wur'];
+			$wurqbld_wur_arr = array_map('sanitize_text_field', wp_unslash($_POST['wurqbld_wur']));
 			foreach($wurqbld_wur_arr as $wck => $wcv){
 				if(is_array($_POST['wurqbld_wur_qbld_map']) && isset($_POST['wurqbld_wur_qbld_map'][$wck])){
-					$qb_ld_id = trim($_POST['wurqbld_wur_qbld_map'][$wck]);
+					$qb_ld_id = sanitize_text_field(trim($_POST['wurqbld_wur_qbld_map'][$wck])); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 					$wcv = trim($wcv);
 					if($qb_ld_id && $wcv!=''){
 						$wurqbld_wur_qbld_map_arr[$wcv] = $qb_ld_id;
@@ -401,7 +438,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 				
 				//
 				if(is_array($_POST['wurqbcls_wur_qbcls_map']) && isset($_POST['wurqbcls_wur_qbcls_map'][$wck])){
-					$qb_cls_id = trim($_POST['wurqbcls_wur_qbcls_map'][$wck]);
+					$qb_cls_id = sanitize_text_field(trim($_POST['wurqbcls_wur_qbcls_map'][$wck])); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 					$wcv = trim($wcv);
 					if($qb_cls_id && $wcv!=''){
 						$wurqbcls_wur_qbcls_map_arr[$wcv] = $qb_cls_id;
@@ -410,7 +447,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 				
 				//
 				if(is_array($_POST['wurqbct_wur_qbct_map']) && isset($_POST['wurqbct_wur_qbct_map'][$wck])){
-					$qb_ct_id = trim($_POST['wurqbct_wur_qbct_map'][$wck]);
+					$qb_ct_id = sanitize_text_field(trim($_POST['wurqbct_wur_qbct_map'][$wck])); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 					$wcv = trim($wcv);
 					if($qb_ct_id && $wcv!=''){
 						$wurqbct_wur_qbct_map_arr[$wcv] = $qb_ct_id;
@@ -434,9 +471,9 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		}
 		
 		//$MSQS_QL->_p($wurqbct_wur_qbct_map_arr);die;
-		update_option('mw_wc_qbo_sync_wurqbld_wur_qbld_map',$mw_wc_qbo_sync_wurqbld_wur_qbld_map);
-		update_option('mw_wc_qbo_sync_wurqbcls_wur_qbcls_map',$mw_wc_qbo_sync_wurqbcls_wur_qbcls_map);
-		update_option('mw_wc_qbo_sync_wurqbct_wur_qbct_map',$mw_wc_qbo_sync_wurqbct_wur_qbct_map);
+		update_option('mw_wc_qbo_sync_wurqbld_wur_qbld_map', sanitize_text_field($mw_wc_qbo_sync_wurqbld_wur_qbld_map));
+		update_option('mw_wc_qbo_sync_wurqbcls_wur_qbcls_map', sanitize_text_field($mw_wc_qbo_sync_wurqbcls_wur_qbcls_map));
+		update_option('mw_wc_qbo_sync_wurqbct_wur_qbct_map', sanitize_text_field($mw_wc_qbo_sync_wurqbct_wur_qbct_map));
 	}	
 	
 	//WooCommerce Hear About Us
@@ -445,17 +482,17 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_wchau_enable'])){
 			$mw_wc_qbo_sync_compt_wchau_enable = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_wchau_enable',$mw_wc_qbo_sync_compt_wchau_enable);
+		update_option('mw_wc_qbo_sync_compt_wchau_enable', sanitize_text_field($mw_wc_qbo_sync_compt_wchau_enable));
 		
 		$mw_wc_qbo_sync_compt_wchau_wf_qi_map = '';
 		$wqm_arr = array();
 		if(isset($_POST['wchau_pid']) && is_array($_POST['wchau_pid']) && !empty($_POST['wchau_pid'])){
-			$wchau_pid_arr = $_POST['wchau_pid'];
+			$wchau_pid_arr = array_map('absint', wp_unslash($_POST['wchau_pid']));
 			foreach($wchau_pid_arr as $wpk => $wpid){
 				if(is_array($_POST['wchau_qbp']) && isset($_POST['wchau_qbp'][$wpk])){
-					$qbpid = (int) $_POST['wchau_qbp'][$wpk];
+					$qbpid = absint(sanitize_text_field(wp_unslash($_POST['wchau_qbp'])))[$wpk];
 					$wpid = trim($wpid);
-					$wpid = base64_encode($wpid);
+					$wpid = base64_encode(sanitize_text_field($wpid));
 					if($qbpid && $wpid!=''){
 						$wqm_arr[$wpid] = $qbpid;
 					}
@@ -466,7 +503,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 			}
 		}
 		//$MSQS_QL->_p($wqm_arr);die;
-		update_option('mw_wc_qbo_sync_compt_wchau_wf_qi_map',$mw_wc_qbo_sync_compt_wchau_wf_qi_map);
+		update_option('mw_wc_qbo_sync_compt_wchau_wf_qi_map', sanitize_text_field($mw_wc_qbo_sync_compt_wchau_wf_qi_map));
 	}	
 	
 	//WooCommerce Admin Custom Order Fields
@@ -475,23 +512,23 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_p_wacof'])){
 			$mw_wc_qbo_sync_compt_p_wacof = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_p_wacof',$mw_wc_qbo_sync_compt_p_wacof);
+		update_option('mw_wc_qbo_sync_compt_p_wacof', sanitize_text_field($mw_wc_qbo_sync_compt_p_wacof));
 		
 		$mw_wc_qbo_sync_compt_p_wacof_m_field = 0;
-		if(isset($_POST['mw_wc_qbo_sync_compt_p_wacof_m_field']) && (int) $_POST['mw_wc_qbo_sync_compt_p_wacof_m_field']){
-			$mw_wc_qbo_sync_compt_p_wacof_m_field = (int) $_POST['mw_wc_qbo_sync_compt_p_wacof_m_field'];
+		if(isset($_POST['mw_wc_qbo_sync_compt_p_wacof_m_field']) && absint(wp_unslash($_POST['mw_wc_qbo_sync_compt_p_wacof_m_field']))){
+			$mw_wc_qbo_sync_compt_p_wacof_m_field = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_p_wacof_m_field'])));
 		}
-		update_option('mw_wc_qbo_sync_compt_p_wacof_m_field',$mw_wc_qbo_sync_compt_p_wacof_m_field);
+		update_option('mw_wc_qbo_sync_compt_p_wacof_m_field', sanitize_text_field($mw_wc_qbo_sync_compt_p_wacof_m_field));
 		
 		$mw_wc_qbo_sync_compt_acof_wf_qi_map = '';
 		$wqm_arr = array();
 		if($mw_wc_qbo_sync_compt_p_wacof_m_field && isset($_POST['acof_pid']) && is_array($_POST['acof_pid']) && !empty($_POST['acof_pid'])){
-			$acof_pid_arr = $_POST['acof_pid'];
+			$acof_pid_arr = array_map('absint', wp_unslash($_POST['acof_pid']));
 			foreach($acof_pid_arr as $wpk => $wpid){
 				if(is_array($_POST['acof_qbp']) && isset($_POST['acof_qbp'][$wpk])){
-					$qbpid = (int) $_POST['acof_qbp'][$wpk];
+					$qbpid = absint(sanitize_text_field(wp_unslash($_POST['acof_qbp'])))[$wpk];
 					$wpid = trim($wpid);
-					$wpid = base64_encode($wpid);
+					$wpid = base64_encode(sanitize_text_field($wpid));
 					if($qbpid && $wpid!=''){
 						$wqm_arr[$wpid] = $qbpid;
 					}
@@ -502,7 +539,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 			}
 		}
 		//$MSQS_QL->_p($wqm_arr);die;
-		update_option('mw_wc_qbo_sync_compt_acof_wf_qi_map',$mw_wc_qbo_sync_compt_acof_wf_qi_map);
+		update_option('mw_wc_qbo_sync_compt_acof_wf_qi_map', sanitize_text_field($mw_wc_qbo_sync_compt_acof_wf_qi_map));
 	}
 	
 	//WooCommerce Order Delivery
@@ -511,7 +548,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_p_wod'])){
 			$mw_wc_qbo_sync_compt_p_wod = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_p_wod',$mw_wc_qbo_sync_compt_p_wod);
+		update_option('mw_wc_qbo_sync_compt_p_wod', sanitize_text_field($mw_wc_qbo_sync_compt_p_wod));
 	}
 	
 	//WooCommerce Sequential Order Numbers Pro
@@ -520,7 +557,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_p_wsnop'])){
 			$mw_wc_qbo_sync_compt_p_wsnop = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_p_wsnop',$mw_wc_qbo_sync_compt_p_wsnop);
+		update_option('mw_wc_qbo_sync_compt_p_wsnop', sanitize_text_field($mw_wc_qbo_sync_compt_p_wsnop));
 	}
 	
 	//Custom Order Numbers for WooCommerce
@@ -529,7 +566,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_p_wsnop'])){
 			$mw_wc_qbo_sync_compt_p_wsnop = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_p_wsnop',$mw_wc_qbo_sync_compt_p_wsnop);
+		update_option('mw_wc_qbo_sync_compt_p_wsnop', sanitize_text_field($mw_wc_qbo_sync_compt_p_wsnop));
 	}
 	
 	if(isset($_POST['comp_wsnop_fb_omk'])){
@@ -537,12 +574,12 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_p_wsnop'])){
 			$mw_wc_qbo_sync_compt_p_wsnop = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_p_wsnop',$mw_wc_qbo_sync_compt_p_wsnop);
+		update_option('mw_wc_qbo_sync_compt_p_wsnop', sanitize_text_field($mw_wc_qbo_sync_compt_p_wsnop));
 		
 		$mw_wc_qbo_sync_compt_p_wconmkn = '';
 		if(isset($_POST['mw_wc_qbo_sync_compt_p_wconmkn'])){
-			$mw_wc_qbo_sync_compt_p_wconmkn = trim($_POST['mw_wc_qbo_sync_compt_p_wconmkn']);
-			update_option('mw_wc_qbo_sync_compt_p_wconmkn',$mw_wc_qbo_sync_compt_p_wconmkn);
+			$mw_wc_qbo_sync_compt_p_wconmkn = sanitize_text_field(trim(wp_unslash($_POST['mw_wc_qbo_sync_compt_p_wconmkn']))); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			update_option('mw_wc_qbo_sync_compt_p_wconmkn', sanitize_text_field($mw_wc_qbo_sync_compt_p_wconmkn));
 		}
 	}
 	
@@ -552,7 +589,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_p_wtmepo'])){
 			$mw_wc_qbo_sync_compt_p_wtmepo = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_p_wtmepo',$mw_wc_qbo_sync_compt_p_wtmepo);
+		update_option('mw_wc_qbo_sync_compt_p_wtmepo', sanitize_text_field($mw_wc_qbo_sync_compt_p_wtmepo));
 	}
 	
 	//WooCommerce Product Add-ons
@@ -561,7 +598,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_p_wapao'])){
 			$mw_wc_qbo_sync_compt_p_wapao = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_p_wapao',$mw_wc_qbo_sync_compt_p_wapao);
+		update_option('mw_wc_qbo_sync_compt_p_wapao', sanitize_text_field($mw_wc_qbo_sync_compt_p_wapao));
 	}	
 	
 	//WooCommerce Appointments
@@ -570,7 +607,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_wapnt_li_date'])){
 			$mw_wc_qbo_sync_compt_wapnt_li_date = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_wapnt_li_date',$mw_wc_qbo_sync_compt_wapnt_li_date);
+		update_option('mw_wc_qbo_sync_compt_wapnt_li_date', sanitize_text_field($mw_wc_qbo_sync_compt_wapnt_li_date));
 	}
 	
 	//WooCommerce USER  ==> QuickBooks Online Vendor (NP)
@@ -579,13 +616,13 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_np_wuqbovendor_ms'])){
 			$mw_wc_qbo_sync_compt_np_wuqbovendor_ms = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_np_wuqbovendor_ms',$mw_wc_qbo_sync_compt_np_wuqbovendor_ms);
+		update_option('mw_wc_qbo_sync_compt_np_wuqbovendor_ms', sanitize_text_field($mw_wc_qbo_sync_compt_np_wuqbovendor_ms));
 		
 		$mw_wc_qbo_sync_compt_np_wuqbovendor_wcur = '';
 		if(isset($_POST['mw_wc_qbo_sync_compt_np_wuqbovendor_wcur']) && is_array($_POST['mw_wc_qbo_sync_compt_np_wuqbovendor_wcur']) && !empty($_POST['mw_wc_qbo_sync_compt_np_wuqbovendor_wcur'])){
-			$mw_wc_qbo_sync_compt_np_wuqbovendor_wcur = implode(',',$_POST['mw_wc_qbo_sync_compt_np_wuqbovendor_wcur']);
+			$mw_wc_qbo_sync_compt_np_wuqbovendor_wcur = implode(',', array_map('sanitize_text_field', wp_unslash($_POST['mw_wc_qbo_sync_compt_np_wuqbovendor_wcur'])));
 		}
-		update_option('mw_wc_qbo_sync_compt_np_wuqbovendor_wcur',$mw_wc_qbo_sync_compt_np_wuqbovendor_wcur);
+		update_option('mw_wc_qbo_sync_compt_np_wuqbovendor_wcur', sanitize_text_field($mw_wc_qbo_sync_compt_np_wuqbovendor_wcur));
 	}
 	
 	//WooCommerce Product ==> QuickBooks Online Product (NP)
@@ -594,7 +631,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_np_wcprdqpef'])){
 			$mw_wc_qbo_sync_compt_np_wcprdqpef = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_np_wcprdqpef',$mw_wc_qbo_sync_compt_np_wcprdqpef);
+		update_option('mw_wc_qbo_sync_compt_np_wcprdqpef', sanitize_text_field($mw_wc_qbo_sync_compt_np_wcprdqpef));
 	}
 	
 	//Aelia Currency Switcher for WooCommerce
@@ -603,7 +640,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_wacs_base_cur_support'])){
 			$mw_wc_qbo_sync_wacs_base_cur_support = 'true';
 		}
-		update_option('mw_wc_qbo_sync_wacs_base_cur_support',$mw_wc_qbo_sync_wacs_base_cur_support);
+		update_option('mw_wc_qbo_sync_wacs_base_cur_support', sanitize_text_field($mw_wc_qbo_sync_wacs_base_cur_support));
 	}
 	
 	//Aelia Currency Switcher for WooCommerce
@@ -612,15 +649,15 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_wacs_satoc_cb'])){
 			$mw_wc_qbo_sync_wacs_satoc_cb = 'true';
 		}
-		update_option('mw_wc_qbo_sync_wacs_satoc_cb',$mw_wc_qbo_sync_wacs_satoc_cb);
+		update_option('mw_wc_qbo_sync_wacs_satoc_cb', sanitize_text_field($mw_wc_qbo_sync_wacs_satoc_cb));
 		
 		$mw_wc_qbo_sync_wacs_satoc_map_cur_cus = '';
 		$satoc_map_arr = array();
 		if(isset($_POST['wacs_satoc_cur']) && is_array($_POST['wacs_satoc_cur']) && !empty($_POST['wacs_satoc_cur'])){
-			$wacs_satoc_cur_arr = $_POST['wacs_satoc_cur'];
+			$wacs_satoc_cur_arr = array_map('sanitize_text_field', wp_unslash($_POST['wacs_satoc_cur']));
 			foreach($wacs_satoc_cur_arr as $wck => $wcv){
 				if(is_array($_POST['wacs_satoc_map_cc']) && isset($_POST['wacs_satoc_map_cc'][$wck])){
-					$qbcid = trim($_POST['wacs_satoc_map_cc'][$wck]);
+					$qbcid = sanitize_text_field(trim($_POST['wacs_satoc_map_cc'][$wck])); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 					$wcv = trim($wcv);
 					if($qbcid && $wcv!=''){
 						$satoc_map_arr[$wcv] = $qbcid;
@@ -633,16 +670,16 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		}
 		
 		//$MSQS_QL->_p($satoc_map_arr);die;
-		update_option('mw_wc_qbo_sync_wacs_satoc_map_cur_cus',$mw_wc_qbo_sync_wacs_satoc_map_cur_cus);
+		update_option('mw_wc_qbo_sync_wacs_satoc_map_cur_cus', sanitize_text_field($mw_wc_qbo_sync_wacs_satoc_map_cur_cus));
 		
 		//
 		$mw_wc_qbo_sync_wacs_satoc_skip_c_roles = '';
 		if(isset($_POST['mw_wc_qbo_sync_wacs_satoc_skip_c_roles'])){
 			if(is_array($_POST['mw_wc_qbo_sync_wacs_satoc_skip_c_roles']) && !empty($_POST['mw_wc_qbo_sync_wacs_satoc_skip_c_roles'])){
-				$mw_wc_qbo_sync_wacs_satoc_skip_c_roles = implode(',',$_POST['mw_wc_qbo_sync_wacs_satoc_skip_c_roles']);
+				$mw_wc_qbo_sync_wacs_satoc_skip_c_roles = implode(',', array_map('sanitize_text_field', wp_unslash($_POST['mw_wc_qbo_sync_wacs_satoc_skip_c_roles'])));
 			}
 		}
-		update_option('mw_wc_qbo_sync_wacs_satoc_skip_c_roles',$mw_wc_qbo_sync_wacs_satoc_skip_c_roles);
+		update_option('mw_wc_qbo_sync_wacs_satoc_skip_c_roles', sanitize_text_field($mw_wc_qbo_sync_wacs_satoc_skip_c_roles));
 		
 	}
 	
@@ -652,22 +689,22 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_yithwgcp_gpc_ed'])){
 			$mw_wc_qbo_sync_compt_yithwgcp_gpc_ed = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_yithwgcp_gpc_ed',$mw_wc_qbo_sync_compt_yithwgcp_gpc_ed);
+		update_option('mw_wc_qbo_sync_compt_yithwgcp_gpc_ed', sanitize_text_field($mw_wc_qbo_sync_compt_yithwgcp_gpc_ed));
 		
 		if(isset($_POST['mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_acc'])){
-			$mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_acc = (int) $_POST['mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_acc'];
-			update_option('mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_acc',$mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_acc);
+			$mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_acc = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_acc'])));
+			update_option('mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_acc', sanitize_text_field($mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_acc));
 		}
 		
 		$mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl = '';
 		if(isset($_POST['mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl'])){
-			$mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl = $MSQS_QL->sanitize($_POST['mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl']);
-			update_option('mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl',$mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl);
+			$mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl = $MSQS_QL->sanitize(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl'])));
+			update_option('mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl', sanitize_text_field($mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl));
 		}
 		
 		if(isset($_POST['mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_pmethod'])){
-			$mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_pmethod = (int) $_POST['mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_pmethod'];
-			update_option('mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_pmethod',$mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_pmethod);
+			$mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_pmethod = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_pmethod'])));
+			update_option('mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_pmethod', sanitize_text_field($mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_pmethod));
 		}		
 	}
 	
@@ -677,16 +714,16 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_wc_ebay_sync_qb_loc_s_ed'])){
 			$mw_wc_qbo_sync_wc_ebay_sync_qb_loc_s_ed = 'true';
 		}
-		update_option('mw_wc_qbo_sync_wc_ebay_sync_qb_loc_s_ed',$mw_wc_qbo_sync_wc_ebay_sync_qb_loc_s_ed);
+		update_option('mw_wc_qbo_sync_wc_ebay_sync_qb_loc_s_ed', sanitize_text_field($mw_wc_qbo_sync_wc_ebay_sync_qb_loc_s_ed));
 		
 		if(isset($_POST['mw_wc_qbo_sync_compt_wes_ebay_ord_qb_loc'])){
-			$mw_wc_qbo_sync_compt_wes_ebay_ord_qb_loc = (int) $_POST['mw_wc_qbo_sync_compt_wes_ebay_ord_qb_loc'];
-			update_option('mw_wc_qbo_sync_compt_wes_ebay_ord_qb_loc',$mw_wc_qbo_sync_compt_wes_ebay_ord_qb_loc);
+			$mw_wc_qbo_sync_compt_wes_ebay_ord_qb_loc = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_wes_ebay_ord_qb_loc'])));
+			update_option('mw_wc_qbo_sync_compt_wes_ebay_ord_qb_loc', sanitize_text_field($mw_wc_qbo_sync_compt_wes_ebay_ord_qb_loc));
 		}
 		
 		if(isset($_POST['mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc'])){
-			$mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc = (int) $_POST['mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc'];
-			update_option('mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc',$mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc);
+			$mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc = absint(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc'])));
+			update_option('mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc', sanitize_text_field($mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc));
 		}
 	}
 	
@@ -701,7 +738,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		$mw_wc_qbo_sync_compt_pwwgc_gpc_qbo_item = '';
 		if(isset($_POST['mw_wc_qbo_sync_compt_pwwgc_gpc_qbo_item'])){
 			$fp_dps = true;
-			$mw_wc_qbo_sync_compt_pwwgc_gpc_qbo_item = intval($_POST['mw_wc_qbo_sync_compt_pwwgc_gpc_qbo_item']);
+			$mw_wc_qbo_sync_compt_pwwgc_gpc_qbo_item = intval(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_pwwgc_gpc_qbo_item'])));
 		}
 		update_option('mw_wc_qbo_sync_compt_pwwgc_gpc_qbo_item',$mw_wc_qbo_sync_compt_pwwgc_gpc_qbo_item,false);		
 	}
@@ -717,7 +754,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		$mw_wc_qbo_sync_compt_wgcp_gpc_qbo_item = '';
 		if(isset($_POST['mw_wc_qbo_sync_compt_wgcp_gpc_qbo_item'])){
 			$fp_dps = true;
-			$mw_wc_qbo_sync_compt_wgcp_gpc_qbo_item = intval($_POST['mw_wc_qbo_sync_compt_wgcp_gpc_qbo_item']);
+			$mw_wc_qbo_sync_compt_wgcp_gpc_qbo_item = intval(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_wgcp_gpc_qbo_item'])));
 		}
 		update_option('mw_wc_qbo_sync_compt_wgcp_gpc_qbo_item',$mw_wc_qbo_sync_compt_wgcp_gpc_qbo_item,false);		
 	}	
@@ -733,7 +770,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		$mw_wc_qbo_sync_compt_wsc_dis_qbo_item = '';
 		if(isset($_POST['mw_wc_qbo_sync_compt_wsc_dis_qbo_item'])){
 			$fp_dps = true;
-			$mw_wc_qbo_sync_compt_wsc_dis_qbo_item = intval($_POST['mw_wc_qbo_sync_compt_wsc_dis_qbo_item']);
+			$mw_wc_qbo_sync_compt_wsc_dis_qbo_item = intval(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_compt_wsc_dis_qbo_item'])));
 		}
 		update_option('mw_wc_qbo_sync_compt_wsc_dis_qbo_item',$mw_wc_qbo_sync_compt_wsc_dis_qbo_item,false);		
 	}
@@ -744,14 +781,14 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_mwrqldm_ed'])){
 			$mw_wc_qbo_sync_mwrqldm_ed = 'true';
 		}
-		update_option('mw_wc_qbo_sync_mwrqldm_ed',$mw_wc_qbo_sync_mwrqldm_ed);
+		update_option('mw_wc_qbo_sync_mwrqldm_ed', sanitize_text_field($mw_wc_qbo_sync_mwrqldm_ed));
 		
 		//
 		$mw_wc_qbo_sync_compt_mwrqldm_mv = '';
 		$mwrqldm_map_arr = array();
 		if(isset($_POST['mwrqldm_wf']) && is_array($_POST['mwrqldm_wf']) && isset($_POST['mwrqldm_qf']) && is_array($_POST['mwrqldm_qf'])){
-			$mwrqldm_wf = $_POST['mwrqldm_wf'];
-			$mwrqldm_qf = $_POST['mwrqldm_qf'];
+			$mwrqldm_wf = array_map('sanitize_text_field', wp_unslash($_POST['mwrqldm_wf']));
+			$mwrqldm_qf = array_map('sanitize_text_field', wp_unslash($_POST['mwrqldm_qf']));
 			if(is_array($mwrqldm_wf) && !empty($mwrqldm_wf) && is_array($mwrqldm_qf) && !empty($mwrqldm_qf) && count($mwrqldm_wf) == count($mwrqldm_qf)){
 				foreach($mwrqldm_wf as $k => $v){
 					$mwrqldm_map_arr[$v] = (isset($mwrqldm_qf[$k]))?$mwrqldm_qf[$k]:'';
@@ -762,7 +799,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(!empty($mwrqldm_map_arr)){
 			$mw_wc_qbo_sync_compt_mwrqldm_mv = $mwrqldm_map_arr;
 		}
-		update_option('mw_wc_qbo_sync_compt_mwrqldm_mv',$mw_wc_qbo_sync_compt_mwrqldm_mv);
+		update_option('mw_wc_qbo_sync_compt_mwrqldm_mv', sanitize_text_field($mw_wc_qbo_sync_compt_mwrqldm_mv));
 	}
 	
 	//Shipping US State / Canadian Province QuickBooks Location Map Compatibility
@@ -771,16 +808,16 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_cucsp_qbl_map_ed'])){
 			$mw_wc_qbo_sync_compt_cucsp_qbl_map_ed = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_cucsp_qbl_map_ed',$mw_wc_qbo_sync_compt_cucsp_qbl_map_ed);
+		update_option('mw_wc_qbo_sync_compt_cucsp_qbl_map_ed', sanitize_text_field($mw_wc_qbo_sync_compt_cucsp_qbl_map_ed));
 		
 		/*USA*/
 		$mw_wc_qbo_sync_cucsp_ship_us_st_qb_loc_map = '';
 		$sus_qbloc_m_arr = array();
 		if(isset($_POST['susqblocm_us']) && is_array($_POST['susqblocm_us']) && !empty($_POST['susqblocm_us'])){
-			$susqblocm_us = $_POST['susqblocm_us'];
+			$susqblocm_us = array_map('sanitize_text_field', wp_unslash($_POST['susqblocm_us']));
 			foreach($susqblocm_us as $wck => $wcv){
 				if(is_array($_POST['ship_us_st_qb_loc_map']) && isset($_POST['ship_us_st_qb_loc_map'][$wck])){
-					$qblocid = trim($_POST['ship_us_st_qb_loc_map'][$wck]);
+					$qblocid = sanitize_text_field(trim($_POST['ship_us_st_qb_loc_map'][$wck])); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 					$wcv = trim($wcv);
 					if($qblocid && $wcv!=''){
 						$sus_qbloc_m_arr[$wcv] = $qblocid;
@@ -793,16 +830,16 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		}
 		
 		//$MSQS_QL->_p($sus_qbloc_m_arr);
-		update_option('mw_wc_qbo_sync_cucsp_ship_us_st_qb_loc_map',$mw_wc_qbo_sync_cucsp_ship_us_st_qb_loc_map);
+		update_option('mw_wc_qbo_sync_cucsp_ship_us_st_qb_loc_map', sanitize_text_field($mw_wc_qbo_sync_cucsp_ship_us_st_qb_loc_map));
 		
 		/*Canada*/
 		$mw_wc_qbo_sync_cucsp_ship_ca_pv_qb_loc_map = '';
 		$sca_qbloc_m_arr = array();
 		if(isset($_POST['scpqblocm_ca']) && is_array($_POST['scpqblocm_ca']) && !empty($_POST['scpqblocm_ca'])){
-			$scpqblocm_ca = $_POST['scpqblocm_ca'];
+			$scpqblocm_ca = array_map('sanitize_text_field', wp_unslash($_POST['scpqblocm_ca']));
 			foreach($scpqblocm_ca as $wck => $wcv){
 				if(is_array($_POST['ship_ca_pv_qb_loc_map']) && isset($_POST['ship_ca_pv_qb_loc_map'][$wck])){
-					$qblocid = trim($_POST['ship_ca_pv_qb_loc_map'][$wck]);
+					$qblocid = sanitize_text_field(trim($_POST['ship_ca_pv_qb_loc_map'][$wck])); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 					$wcv = trim($wcv);
 					if($qblocid && $wcv!=''){
 						$sca_qbloc_m_arr[$wcv] = $qblocid;
@@ -815,7 +852,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		}
 		
 		//$MSQS_QL->_p($sca_qbloc_m_arr);
-		update_option('mw_wc_qbo_sync_cucsp_ship_ca_pv_qb_loc_map',$mw_wc_qbo_sync_cucsp_ship_ca_pv_qb_loc_map);
+		update_option('mw_wc_qbo_sync_cucsp_ship_ca_pv_qb_loc_map', sanitize_text_field($mw_wc_qbo_sync_cucsp_ship_ca_pv_qb_loc_map));
 	}
 	
 	//Shipping Country, QuickBooks Location Map Compatibility
@@ -824,16 +861,16 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		if(isset($_POST['mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed'])){
 			$mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed = 'true';
 		}
-		update_option('mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed',$mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed);
+		update_option('mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed', sanitize_text_field($mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed));
 		
 		
 		$mw_wc_qbo_sync_oshcntry_qb_loc_map = '';
 		$oshcntry_qbloc_m_arr = array();
 		if(isset($_POST['oshcntry_c']) && is_array($_POST['oshcntry_c']) && !empty($_POST['oshcntry_c'])){
-			$oshcntry_c = $_POST['oshcntry_c'];
+			$oshcntry_c = array_map('sanitize_text_field', wp_unslash($_POST['oshcntry_c']));
 			foreach($oshcntry_c as $wck => $wcv){
 				if(is_array($_POST['ship_oshcntry_qb_loc_map']) && isset($_POST['ship_oshcntry_qb_loc_map'][$wck])){
-					$qblocid = trim($_POST['ship_oshcntry_qb_loc_map'][$wck]);
+					$qblocid = sanitize_text_field(trim($_POST['ship_oshcntry_qb_loc_map'][$wck])); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 					$wcv = trim($wcv);
 					if($qblocid && $wcv!=''){
 						$oshcntry_qbloc_m_arr[$wcv] = $qblocid;
@@ -846,7 +883,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 		}
 		
 		//$MSQS_QL->_p($oshcntry_qbloc_m_arr);
-		update_option('mw_wc_qbo_sync_oshcntry_qb_loc_map',$mw_wc_qbo_sync_oshcntry_qb_loc_map);
+		update_option('mw_wc_qbo_sync_oshcntry_qb_loc_map', sanitize_text_field($mw_wc_qbo_sync_oshcntry_qb_loc_map));
 		
 	}	
 	
@@ -857,7 +894,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_save_compt_s
 
 /*
 $fee_compt_enable = false;
-$fee_li_chk_arr = $MSQS_QL->get_row("SELECT `order_item_id` FROM {$wpdb->prefix}woocommerce_order_items WHERE `order_item_type` = 'fee' AND `order_item_name` != '' AND `order_id` > 0 LIMIT 0, 1");
+$fee_li_chk_arr = $wpdb->get_row($wpdb->prepare("SELECT order_item_id FROM {$wpdb->prefix}woocommerce_order_items WHERE order_item_type = %s AND order_item_name != %s AND order_id > %d LIMIT %d, %d", "fee", "", 0, 0, 1));
 if(is_array($fee_li_chk_arr) && !empty($fee_li_chk_arr)){
 	$fee_compt_enable = true;
 }
@@ -963,7 +1000,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 	}
 </style>
 
-<?php if(!$disable_section && isset($_GET['debug']) && $_GET['debug'] ==1):?>
+<?php if(!$disable_section && isset($_GET['debug']) && absint(wp_unslash($_GET['debug'])) == 1):?>
 	<div style="margin:10px;">
 		<!--<h2>Available Addons</h2>-->
 		<div style="background:white;padding:5px;">
@@ -978,14 +1015,14 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 <h2 class="compt_addon_heading">Compatibility Included / Addons</h2> <!-- + Addons-->
 
 <div class="container map-coupon-code-outer qo-compatibility-addons">
-	<form method="post" action="<?php echo $page_url;?>">
+	<form method="post" action="<?php echo esc_url($page_url);?>">
 	<?php wp_nonce_field( 'myworks_wc_qbo_sync_save_compt_stng', 'map_wc_qbo_update_compt_stng' ); ?>
 		
 		<!--WooCommerce Measurement Price Calculator-->
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-measurement-price-calculator')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-measurement-price-calculator"><?php _e( 'WooCommerce Measurement Price Calculator', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-measurement-price-calculator"><?php esc_html_e( 'WooCommerce Measurement Price Calculator', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -994,18 +1031,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Measurement Qty', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Measurement Qty', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_measurement_qty" id="mw_wc_qbo_sync_measurement_qty" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_measurement_qty']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_measurement_qty" id="mw_wc_qbo_sync_measurement_qty" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_measurement_qty']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Measurement Price Calculator', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Measurement Price Calculator', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1026,7 +1063,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-deposits','woocommmerce-deposits')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-deposits"><?php _e( 'WooCommerce Deposits', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-deposits"><?php esc_html_e( 'WooCommerce Deposits', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -1035,18 +1072,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Deposit Support', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Deposit Support', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_enable_wc_deposit" id="mw_wc_qbo_sync_enable_wc_deposit" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_enable_wc_deposit']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_enable_wc_deposit" id="mw_wc_qbo_sync_enable_wc_deposit" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_enable_wc_deposit']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Deposits', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Deposits', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1067,7 +1104,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('visual-product-configurator','vpc')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="visual-product-configurator"><?php _e( 'Visual Products Configurator', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="visual-product-configurator"><?php esc_html_e( 'Visual Products Configurator', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -1076,18 +1113,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Extra Product Options', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Extra Product Options', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_enable_wc_vpc_epod" id="mw_wc_qbo_sync_enable_wc_vpc_epod" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_enable_wc_vpc_epod']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_enable_wc_vpc_epod" id="mw_wc_qbo_sync_enable_wc_vpc_epod" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_enable_wc_vpc_epod']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Visual Products Configurator', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Visual Products Configurator', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1108,7 +1145,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($this_section=false && $MSQS_QL->is_plugin_active('woocommerce-eu-vat-number')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-eu-vat-number"><?php _e( 'WooCommerce EU VAT Number', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-eu-vat-number"><?php esc_html_e( 'WooCommerce EU VAT Number', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -1117,18 +1154,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Customer VAT Number Sync', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Customer VAT Number Sync', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_enable_wc_wevc_cvn" id="mw_wc_qbo_sync_enable_wc_wevc_cvn" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_enable_wc_wevc_cvn']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_enable_wc_wevc_cvn" id="mw_wc_qbo_sync_enable_wc_wevc_cvn" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_enable_wc_wevc_cvn']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce EU VAT Number', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce EU VAT Number', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1149,7 +1186,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-subscriptions','woocommerce-subscriptions')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-subscriptions"><?php _e( 'WooCommerce Subscriptions', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-subscriptions"><?php esc_html_e( 'WooCommerce Subscriptions', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -1158,18 +1195,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Renewal Orders Sync', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Renewal Orders Sync', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_enable_wc_subs_rnord_sync" id="mw_wc_qbo_sync_enable_wc_subs_rnord_sync" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_enable_wc_subs_rnord_sync']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_enable_wc_subs_rnord_sync" id="mw_wc_qbo_sync_enable_wc_subs_rnord_sync" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_enable_wc_subs_rnord_sync']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Syncing renewal orders automatically to QB', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Syncing renewal orders automatically to QB', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1190,7 +1227,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-product-bundles')):?>
 		<?php $is_compt=true;?>
 			<div class="page_title">
-			<h4 title="woocommerce-product-bundles"><?php _e( 'WooCommerce Product Bundles', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-product-bundles"><?php esc_html_e( 'WooCommerce Product Bundles', 'mw_wc_qbo_sync' );?></h4>
 			</div>
 			
 			<div class="card">
@@ -1200,25 +1237,25 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 						<tr>
 							<td colspan="3">
-								<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+								<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 							</td>
 						</tr>
 						<tr>
-							<td><?php _e( 'Enable bundle product support', 'mw_wc_qbo_sync' );?>:</td>
+							<td><?php esc_html_e( 'Enable bundle product support', 'mw_wc_qbo_sync' );?>:</td>
 							<td>
-								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wpbs" id="mw_wc_qbo_sync_compt_wpbs" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_wpbs']=='true') echo 'checked' ?>>
+								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wpbs" id="mw_wc_qbo_sync_compt_wpbs" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_wpbs']=='true') echo 'checked="checked"' ?>>
 							</td>
 							<td>
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'Enable support for syncing orders that contain bundled products.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Enable support for syncing orders that contain bundled products.', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
 						</tr>
 						
 						<tr>
-							<td><?php _e( 'QuickBooks product used to keep line item total accurate', 'mw_wc_qbo_sync' );?>:</td>
+							<td><?php esc_html_e( 'QuickBooks product used to keep line item total accurate', 'mw_wc_qbo_sync' );?>:</td>
 							<td>
 								<?php
 									$dd_options = '<option value=""></option>';
@@ -1229,21 +1266,21 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 											$itemid = (int) $admin_settings_data['mw_wc_qbo_sync_compt_wpbs_ap_item'];
 											$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 											if($qb_item_name!=''){
-												$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+												$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 											}
 										}
 									}else{
 										$dd_options.=$mw_qbo_product_list;
 									}
 								?>
-								<select name="mw_wc_qbo_sync_compt_wpbs_ap_item" id="mw_wc_qbo_sync_compt_wpbs_ap_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-									<?php echo $dd_options;?>
+								<select name="mw_wc_qbo_sync_compt_wpbs_ap_item" id="mw_wc_qbo_sync_compt_wpbs_ap_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+									<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 								</select>
 							</td>
 							<td>
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'Select a QuickBooks Product that will be inserted as the last line of a bundle in QuickBooks if the WooCommerce line item total for a bundle does not match the QuickBooks bundle total - and this product will be used as an adjustment line item to ensure the line item total is correct.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Select a QuickBooks Product that will be inserted as the last line of a bundle in QuickBooks if the WooCommerce line item total for a bundle does not match the QuickBooks bundle total - and this product will be used as an adjustment line item to ensure the line item total is correct.', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
@@ -1264,7 +1301,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($enable_this=true && $fee_compt_enable):?>
 		<?php $is_compt=true;?>
 			<div class="page_title">
-			<h4 title=""><?php _e( 'WooCommerce Order Fee Line Items', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title=""><?php esc_html_e( 'WooCommerce Order Fee Line Items', 'mw_wc_qbo_sync' );?></h4>
 			</div>			
 			
 			<div class="card">
@@ -1274,25 +1311,25 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 						<tr>
 							<td colspan="3">
-								<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+								<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 							</td>
 						</tr>
 						<tr>
-							<td><?php _e( 'Sync fee line items in a WooCommerce Order to QuickBooks', 'mw_wc_qbo_sync' );?>:</td>
+							<td><?php esc_html_e( 'Sync fee line items in a WooCommerce Order to QuickBooks', 'mw_wc_qbo_sync' );?>:</td>
 							<td>
-								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_np_oli_fee_sync" id="mw_wc_qbo_sync_compt_np_oli_fee_sync" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_np_oli_fee_sync']=='true') echo 'checked' ?>>
+								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_np_oli_fee_sync" id="mw_wc_qbo_sync_compt_np_oli_fee_sync" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_np_oli_fee_sync']=='true') echo 'checked="checked"' ?>>
 							</td>
 							<td>
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'Enable/Disable syncing "fee" line items in WooCommerce Orders to QuickBooks line items.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Enable/Disable syncing "fee" line items in WooCommerce Orders to QuickBooks line items.', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
 						</tr>
 						
 						<tr>
-							<td><?php _e( 'QuickBooks product for fee line item', 'mw_wc_qbo_sync' );?>:</td>
+							<td><?php esc_html_e( 'QuickBooks product for fee line item', 'mw_wc_qbo_sync' );?>:</td>
 							<td>
 								<?php
 									$dd_options = '<option value=""></option>';
@@ -1303,21 +1340,21 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 											$itemid = (int) $admin_settings_data['mw_wc_qbo_sync_compt_gf_qbo_item'];
 											$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 											if($qb_item_name!=''){
-												$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+												$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 											}
 										}
 									}else{
 										$dd_options.=$mw_qbo_product_list;
 									}
 								?>
-								<select name="mw_wc_qbo_sync_compt_gf_qbo_item" id="mw_wc_qbo_sync_compt_gf_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-									<?php echo $dd_options;?>
+								<select name="mw_wc_qbo_sync_compt_gf_qbo_item" id="mw_wc_qbo_sync_compt_gf_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+									<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 								</select>
 							</td>
 							<td>
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'Choose the QuickBooks product that will be used in QuickBooks to represent "fee" line items in WooCommerce.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Choose the QuickBooks product that will be used in QuickBooks to represent "fee" line items in WooCommerce.', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
@@ -1327,17 +1364,17 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						if(!$MSQS_QL->is_plg_lc_p_l() && ($MSQS_QL->get_qbo_company_setting('ClassTrackingPerTxn') || $MSQS_QL->get_qbo_company_setting('ClassTrackingPerTxnLine'))):
 						?>
 						<tr>
-							<td width="60%"><?php _e( 'QuickBooks class for fee line item', 'mw_wc_qbo_sync' );?> :</td>
+							<td width="60%"><?php esc_html_e( 'QuickBooks class for fee line item', 'mw_wc_qbo_sync' );?> :</td>
 							<td width="20%">							
 								<select name="mw_wc_qbo_sync_compt_np_oli_fee_qb_class" id="mw_wc_qbo_sync_compt_np_oli_fee_qb_class" class="filled-in production-option mw_wc_qbo_sync_select">
 								<option value=""></option>
-								<?php echo $mw_qbo_class_list;?>
+								<?php echo $mw_qbo_class_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 								</select>
 							</td>
 							<td width="20%">
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'Choose the QuickBooks class that will be used in QuickBooks to represent "fee" line items in WooCommerce.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Choose the QuickBooks class that will be used in QuickBooks to represent "fee" line items in WooCommerce.', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
@@ -1345,14 +1382,14 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						<?php endif;?>
 						
 						<tr>
-							<td><?php _e( 'Sync negative fees as a line item (instead of discount line) to QuickBooks', 'mw_wc_qbo_sync' );?>:</td>
+							<td><?php esc_html_e( 'Sync negative fees as a line item (instead of discount line) to QuickBooks', 'mw_wc_qbo_sync' );?>:</td>
 							<td>
-								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_np_nfli_asli" id="mw_wc_qbo_sync_compt_np_nfli_asli" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_np_nfli_asli']=='true') echo 'checked' ?>>
+								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_np_nfli_asli" id="mw_wc_qbo_sync_compt_np_nfli_asli" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_np_nfli_asli']=='true') echo 'checked="checked"' ?>>
 							</td>
 							<td>
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'Enable/Disable syncing negative "fee" line items in WooCommerce Orders to QuickBooks as line items instead of discount line.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Enable/Disable syncing negative "fee" line items in WooCommerce Orders to QuickBooks as line items instead of discount line.', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
@@ -1375,7 +1412,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($enable_this=false && $MSQS_QL->is_plugin_active('woocommerce-gateways-discounts-and-fees')):?>
 		<?php $is_compt=true;?>
 			<div class="page_title">
-			<h4 title="woocommerce-gateways-discounts-and-fees"><?php _e( 'WooCommerce - Payment Gateways Discounts and Fees', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-gateways-discounts-and-fees"><?php esc_html_e( 'WooCommerce - Payment Gateways Discounts and Fees', 'mw_wc_qbo_sync' );?></h4>
 			</div>
 			
 			<!--WooCommerce Gateway Fee Plugin-->
@@ -1386,25 +1423,25 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td><?php _e( 'Enable gateway fee as a line item to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'Enable gateway fee as a line item to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_gf_qbo_is" id="mw_wc_qbo_sync_compt_gf_qbo_is" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_gf_qbo_is']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_gf_qbo_is" id="mw_wc_qbo_sync_compt_gf_qbo_is" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_gf_qbo_is']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce - Payment Gateways Discounts and Fees', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce - Payment Gateways Discounts and Fees', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
 					</tr>
 					
 					<tr>
-						<td><?php _e( 'QuickBooks product for discounts and fees line item', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'QuickBooks product for discounts and fees line item', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
 							<?php
 								$dd_options = '<option value=""></option>';
@@ -1415,21 +1452,21 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 										$itemid = (int) $admin_settings_data['mw_wc_qbo_sync_compt_gf_qbo_item'];
 										$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 										if($qb_item_name!=''){
-											$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+											$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 										}
 									}
 								}else{
 									$dd_options.=$mw_qbo_product_list;
 								}
 							?>
-							<select name="mw_wc_qbo_sync_compt_gf_qbo_item" id="mw_wc_qbo_sync_compt_gf_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-								<?php echo $dd_options;?>
+							<select name="mw_wc_qbo_sync_compt_gf_qbo_item" id="mw_wc_qbo_sync_compt_gf_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+								<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 							</select>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1454,7 +1491,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($enable_this=false && $MSQS_QL->is_plugin_active('woocommerce-additional-fees','woocommerce_additional_fees_plugin')):?>
 		<?php $is_compt=true;?>
 			<div class="page_title">
-			<h4 title="woocommerce-additional-fees"><?php _e( 'WooCommerce Payment Gateway Based Fees', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-additional-fees"><?php esc_html_e( 'WooCommerce Payment Gateway Based Fees', 'mw_wc_qbo_sync' );?></h4>
 			</div>
 			
 			<div class="card">
@@ -1464,18 +1501,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td><?php _e( 'Enable gateway fee as a line item to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'Enable gateway fee as a line item to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_gf_qbo_is_gbf" id="mw_wc_qbo_sync_compt_gf_qbo_is_gbf" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_gf_qbo_is_gbf']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_gf_qbo_is_gbf" id="mw_wc_qbo_sync_compt_gf_qbo_is_gbf" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_gf_qbo_is_gbf']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Payment Gateway Based Fees', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Payment Gateway Based Fees', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1483,7 +1520,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<?php if(!$is_fee_plugin):?>
 					<tr>
-						<td><?php _e( 'QuickBooks product for discounts and fees line item', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'QuickBooks product for discounts and fees line item', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
 							<?php
 								$dd_options = '<option value=""></option>';
@@ -1494,21 +1531,21 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 										$itemid = (int) $admin_settings_data['mw_wc_qbo_sync_compt_gf_qbo_item'];
 										$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 										if($qb_item_name!=''){
-											$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+											$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 										}
 									}
 								}else{
 									$dd_options.=$mw_qbo_product_list;
 								}
 							?>
-							<select name="mw_wc_qbo_sync_compt_gf_qbo_item" id="mw_wc_qbo_sync_compt_gf_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-								<?php echo $dd_options;?>
+							<select name="mw_wc_qbo_sync_compt_gf_qbo_item" id="mw_wc_qbo_sync_compt_gf_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+								<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 							</select>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1532,7 +1569,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('rp-woo-donation','index')):?>
 		<?php $is_compt=true;?>
 			<div class="page_title">
-			<h4 title="rp-woo-donation"><?php _e( 'WooCommerce Donation Or Tip On Cart And Checkout', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="rp-woo-donation"><?php esc_html_e( 'WooCommerce Donation Or Tip On Cart And Checkout', 'mw_wc_qbo_sync' );?></h4>
 			</div>
 			
 			<div class="card">
@@ -1542,39 +1579,39 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td><?php _e( 'Enable tips/donations as a line item to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'Enable tips/donations as a line item to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wdotocac_fee_li_ed" id="mw_wc_qbo_sync_compt_wdotocac_fee_li_ed" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_wdotocac_fee_li_ed']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wdotocac_fee_li_ed" id="mw_wc_qbo_sync_compt_wdotocac_fee_li_ed" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_wdotocac_fee_li_ed']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Donation Or Tip On Cart And Checkout', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Donation Or Tip On Cart And Checkout', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
 					</tr>
 					
 					<tr>
-						<td><?php _e( 'Donation fee name for identifying donation fee line', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'Donation fee name for identifying donation fee line', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
-							<input type="text" class="" name="mw_wc_qbo_sync_compt_dntp_fn_itxt" id="mw_wc_qbo_sync_compt_dntp_fn_itxt" value="<?php echo $admin_settings_data['mw_wc_qbo_sync_compt_dntp_fn_itxt']?>">
+							<input type="text" class="" name="mw_wc_qbo_sync_compt_dntp_fn_itxt" id="mw_wc_qbo_sync_compt_dntp_fn_itxt" value="<?php echo esc_attr($admin_settings_data['mw_wc_qbo_sync_compt_dntp_fn_itxt'])?>"
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Donation fee name', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Donation fee name', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
 					</tr>					
 					
 					<tr>
-						<td><?php _e( 'QuickBooks product for donations/tips', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'QuickBooks product for donations/tips', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
 							<?php
 								$dd_options = '<option value=""></option>';
@@ -1585,21 +1622,21 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 										$itemid = (int) $admin_settings_data['mw_wc_qbo_sync_compt_dntp_qbo_item'];
 										$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 										if($qb_item_name!=''){
-											$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+											$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 										}
 									}
 								}else{
 									$dd_options.=$mw_qbo_product_list;
 								}
 							?>
-							<select name="mw_wc_qbo_sync_compt_dntp_qbo_item" id="mw_wc_qbo_sync_compt_dntp_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-								<?php echo $dd_options;?>
+							<select name="mw_wc_qbo_sync_compt_dntp_qbo_item" id="mw_wc_qbo_sync_compt_dntp_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+								<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 							</select>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1622,7 +1659,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($enable_this=false && $MSQS_QL->is_plugin_active('woo-add-custom-fee','woo-add-custom-fee.php')):?>
 		<?php $is_compt=true;?>
 			<div class="page_title">
-			<h4 title="woo-add-custom-fee"><?php _e( 'Woo Add Custom Fee', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woo-add-custom-fee"><?php esc_html_e( 'Woo Add Custom Fee', 'mw_wc_qbo_sync' );?></h4>
 			</div>
 			
 			<div class="card">
@@ -1632,18 +1669,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td><?php _e( 'Enable custom fee as a line item to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'Enable custom fee as a line item to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_woacfp_fee_li_ed" id="mw_wc_qbo_sync_compt_woacfp_fee_li_ed" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_woacfp_fee_li_ed']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_woacfp_fee_li_ed" id="mw_wc_qbo_sync_compt_woacfp_fee_li_ed" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_woacfp_fee_li_ed']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Woo Add Custom Fee', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Woo Add Custom Fee', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1651,7 +1688,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<?php if(!$is_fee_plugin):?>
 					<tr>
-						<td><?php _e( 'QuickBooks product for custom fee line item', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'QuickBooks product for custom fee line item', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
 							<?php
 								$dd_options = '<option value=""></option>';
@@ -1662,21 +1699,21 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 										$itemid = (int) $admin_settings_data['mw_wc_qbo_sync_compt_gf_qbo_item'];
 										$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 										if($qb_item_name!=''){
-											$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+											$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 										}
 									}
 								}else{
 									$dd_options.=$mw_qbo_product_list;
 								}
 							?>
-							<select name="mw_wc_qbo_sync_compt_gf_qbo_item" id="mw_wc_qbo_sync_compt_gf_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-								<?php echo $dd_options;?>
+							<select name="mw_wc_qbo_sync_compt_gf_qbo_item" id="mw_wc_qbo_sync_compt_gf_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+								<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 							</select>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1700,7 +1737,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($enable_this=false && $MSQS_QL->is_plugin_active('woocommerce-conditional-product-fees-for-checkout')):?>
 		<?php $is_compt=true;?>
 			<div class="page_title">
-			<h4 title="woocommerce-conditional-product-fees-for-checkout"><?php _e( 'WooCommerce Conditional Product Fees for Checkout Pro', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-conditional-product-fees-for-checkout"><?php esc_html_e( 'WooCommerce Conditional Product Fees for Checkout Pro', 'mw_wc_qbo_sync' );?></h4>
 			</div>
 			
 			<div class="card">
@@ -1710,18 +1747,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td><?php _e( 'Enable product fees as a line item to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'Enable product fees as a line item to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wcpffcp_fee_li_ed" id="mw_wc_qbo_sync_compt_wcpffcp_fee_li_ed" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_wcpffcp_fee_li_ed']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wcpffcp_fee_li_ed" id="mw_wc_qbo_sync_compt_wcpffcp_fee_li_ed" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_wcpffcp_fee_li_ed']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Conditional Product Fees for Checkout Pro', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Conditional Product Fees for Checkout Pro', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1729,7 +1766,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<?php if(!$is_fee_plugin):?>
 					<tr>
-						<td><?php _e( 'QuickBooks product for discounts and fees line item', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'QuickBooks product for discounts and fees line item', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
 							<?php
 								$dd_options = '<option value=""></option>';
@@ -1740,21 +1777,21 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 										$itemid = (int) $admin_settings_data['mw_wc_qbo_sync_compt_gf_qbo_item'];
 										$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 										if($qb_item_name!=''){
-											$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+											$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 										}
 									}
 								}else{
 									$dd_options.=$mw_qbo_product_list;
 								}
 							?>
-							<select name="mw_wc_qbo_sync_compt_gf_qbo_item" id="mw_wc_qbo_sync_compt_gf_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-								<?php echo $dd_options;?>
+							<select name="mw_wc_qbo_sync_compt_gf_qbo_item" id="mw_wc_qbo_sync_compt_gf_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+								<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 							</select>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1778,7 +1815,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-order-delivery')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-order-delivery"><?php _e( 'WooCommerce Order Delivery', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-order-delivery"><?php esc_html_e( 'WooCommerce Order Delivery', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 			<div class="card">
 				<div class="card-content">
@@ -1787,18 +1824,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable delivery date sync as QBO ship date ', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable delivery date sync as QBO ship date ', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wod" id="mw_wc_qbo_sync_compt_p_wod" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wod']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wod" id="mw_wc_qbo_sync_compt_p_wod" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wod']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Order Delivery', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Order Delivery', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -1844,7 +1881,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php $is_compt=true;?>
 		<?php $is_cwonp_np_eb = true;?>
 		<div class="page_title">
-			<h4 title="<?php echo $seq_p_file;?>"><?php _e( $seq_p_name, 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="<?php echo esc_attr($seq_p_file);?>"><?php esc_html_e( $seq_p_name, 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 			<div class="card">
 				<div class="card-content">
@@ -1853,18 +1890,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 						<tr>
 							<td colspan="3">
-								<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+								<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 							</td>
 						</tr>
 						<tr>
-							<td width="60%"><?php _e( 'Enable '.$seq_p_name.' Support', 'mw_wc_qbo_sync' );?>:</td>
+							<td width="60%"><?php esc_html_e( 'Enable '.$seq_p_name.' Support', 'mw_wc_qbo_sync' );?>:</td>
 							<td width="20%">
-								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wsnop" id="mw_wc_qbo_sync_compt_p_wsnop" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wsnop']=='true') echo 'checked' ?>>
+								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wsnop" id="mw_wc_qbo_sync_compt_p_wsnop" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wsnop']=='true') echo 'checked="checked"' ?>>
 							</td>
 							<td width="20%">
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'When enabled, orders will sync into QuickBooks using the "pretty" order number created by '.$seq_p_name.' - instead of the WooCommerce Order ID.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'When enabled, orders will sync into QuickBooks using the "pretty" order number created by '.$seq_p_name.' - instead of the WooCommerce Order ID.', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
@@ -1888,7 +1925,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php $is_compt=true;?>
 		<?php $is_cwonp_np_eb = true;?>
 		<div class="page_title">
-			<h4 title="Custom Order Number"><?php _e( 'Custom Order Number', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="Custom Order Number"><?php esc_html_e( 'Custom Order Number', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -1897,18 +1934,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 						<tr>
 							<td colspan="3">
-								<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+								<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 							</td>
 						</tr>
 						<tr>
-							<td width="60%"><?php _e( 'Enable Custom Order Number Support ', 'mw_wc_qbo_sync' );?> :</td>
+							<td width="60%"><?php esc_html_e( 'Enable Custom Order Number Support ', 'mw_wc_qbo_sync' );?> :</td>
 							<td width="20%">
-								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wsnop" id="mw_wc_qbo_sync_compt_p_wsnop" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wsnop']=='true') echo 'checked' ?>>
+								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wsnop" id="mw_wc_qbo_sync_compt_p_wsnop" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wsnop']=='true') echo 'checked="checked"' ?>>
 							</td>
 							<td width="20%">
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'Custom Order Number - Filter Hook (woocommerce_order_number)', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Custom Order Number - Filter Hook (woocommerce_order_number)', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
@@ -1932,7 +1969,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php $is_compt=true;?>
 		<?php $is_cwonp_np_eb = true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-sequential-order-numbers-pro"><?php _e( 'Custom Order Numbers for WooCommerce', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-sequential-order-numbers-pro"><?php esc_html_e( 'Custom Order Numbers for WooCommerce', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 			<div class="card">
 				<div class="card-content">
@@ -1941,18 +1978,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 						<tr>
 							<td colspan="3">
-								<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+								<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 							</td>
 						</tr>
 						<tr>
-							<td width="60%"><?php _e( 'Enable Custom Order Number ', 'mw_wc_qbo_sync' );?> :</td>
+							<td width="60%"><?php esc_html_e( 'Enable Custom Order Number ', 'mw_wc_qbo_sync' );?> :</td>
 							<td width="20%">
-								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wsnop" id="mw_wc_qbo_sync_compt_p_wsnop" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wsnop']=='true') echo 'checked' ?>>
+								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wsnop" id="mw_wc_qbo_sync_compt_p_wsnop" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wsnop']=='true') echo 'checked="checked"' ?>>
 							</td>
 							<td width="20%">
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'Custom Order Numbers for WooCommerce', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Custom Order Numbers for WooCommerce', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
@@ -1973,7 +2010,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if(!$is_cwonp_np_eb):?>
 		<?php $is_compt=true;?>		
 		<div class="page_title">
-			<h4 title="Custom Order Number"><?php _e( 'Custom Order Number Field', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="Custom Order Number"><?php esc_html_e( 'Custom Order Number Field', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -1982,32 +2019,32 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 						<tr>
 							<td colspan="3">
-								<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+								<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 							</td>
 						</tr>
 						<tr>
-							<td width="60%"><?php _e( 'Enable Custom Order Number Field Support ', 'mw_wc_qbo_sync' );?> :</td>
+							<td width="60%"><?php esc_html_e( 'Enable Custom Order Number Field Support ', 'mw_wc_qbo_sync' );?> :</td>
 							<td width="20%">
-								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wsnop" id="mw_wc_qbo_sync_compt_p_wsnop" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wsnop']=='true') echo 'checked' ?>>
+								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wsnop" id="mw_wc_qbo_sync_compt_p_wsnop" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wsnop']=='true') echo 'checked="checked"' ?>>
 							</td>
 							<td width="20%">
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'Custom Order Number Field', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Custom Order Number Field', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
 						</tr>
 						
 						<tr>
-							<td width="60%"><?php _e( 'Custom Order Number Field Meta Key Name ', 'mw_wc_qbo_sync' );?> :</td>
+							<td width="60%"><?php esc_html_e( 'Custom Order Number Field Meta Key Name ', 'mw_wc_qbo_sync' );?> :</td>
 							<td width="20%">
-								<input type="text" class="filled-in production-option" name="mw_wc_qbo_sync_compt_p_wconmkn" id="mw_wc_qbo_sync_compt_p_wconmkn" value="<?php echo $admin_settings_data['mw_wc_qbo_sync_compt_p_wconmkn'];?>">
+								<input type="text" class="filled-in production-option" name="mw_wc_qbo_sync_compt_p_wconmkn" id="mw_wc_qbo_sync_compt_p_wconmkn" value="<?php echo esc_attr($admin_settings_data['mw_wc_qbo_sync_compt_p_wconmkn']);?>"
 							</td>
 							<td width="20%">
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'Custom Order Number Field Meta Key', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Custom Order Number Field Meta Key', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
@@ -2030,7 +2067,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-custom-fields')):?>
 		<?php $is_compt=true;?>
 			<div class="page_title">
-			<h4 title="woocommerce-custom-fields"><?php _e( 'WooCommerce Custom Fields (Checkout Fields)', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-custom-fields"><?php esc_html_e( 'WooCommerce Custom Fields (Checkout Fields)', 'mw_wc_qbo_sync' );?></h4>
 			</div>
 			
 			<div class="card">
@@ -2040,18 +2077,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr style="display:none;">
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr style="display:none;">
-						<td><?php _e( 'Enable custom fee as a line item to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'Enable custom fee as a line item to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wccf_fee" id="mw_wc_qbo_sync_compt_wccf_fee" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_wccf_fee']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wccf_fee" id="mw_wc_qbo_sync_compt_wccf_fee" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_wccf_fee']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Custom Fields (Checkout Fields)', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Custom Fields (Checkout Fields)', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -2059,7 +2096,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Checkout Custom Fields List', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Checkout Custom Fields List', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					
@@ -2079,7 +2116,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					?>
 					<?php foreach($wccf_fields as $wccf):?>					
 					<tr>
-						<td><?php echo $wccf['cf_label'];?> :</td>
+						<td><?php echo esc_html($wccf['cf_label']);?> :</td>
 						<td>
 							<?php
 								$dd_options = '<option value=""></option>';
@@ -2090,22 +2127,22 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 										$itemid = (int) $f_map_arr[$wccf['ID']];
 										$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 										if($qb_item_name!=''){
-											$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+											$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 										}
 									}
 								}else{
 									$dd_options.=$mw_qbo_product_list;
 								}
 							?>
-							<input value="<?php echo $wccf['ID'];?>" type="hidden" name="wccf_pid[]" id="wccf_pid_<?php echo $wccf['ID'];?>">
-							<select name="wccf_qbp[]" id="wccf_qbp_<?php echo $wccf['ID'];?>" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-								<?php echo $dd_options;?>
+							<input value="<?php echo esc_attr($wccf['ID']);?>" type="hidden" name="wccf_pid[]" id="wccf_pid_<?php echo esc_attr($wccf['ID']);?>"
+							<select name="wccf_qbp[]" id="wccf_qbp_<?php echo esc_attr($wccf['ID']);?>" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>"
+								<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 							</select>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Map QBO Product', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Map QBO Product', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -2143,7 +2180,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 			//$MSQS_QL->_p($thwcfe_sections['additional']);			
 		?>
 			<div class="page_title">
-				<h4 title="woocommerce-checkout-field-editor-pro"><?php _e( 'WooCommerce Checkout Field Editor Pro', 'mw_wc_qbo_sync' );?></h4>
+				<h4 title="woocommerce-checkout-field-editor-pro"><?php esc_html_e( 'WooCommerce Checkout Field Editor Pro', 'mw_wc_qbo_sync' );?></h4>
 			</div>
 			<div class="card">
 				<div class="card-content">
@@ -2152,18 +2189,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 						<tr style="display:none;">
 							<td colspan="3">
-								<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+								<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 							</td>
 						</tr>
 						<tr style="display:none;">
-							<td width="60%"><?php _e( 'Enable Additional Checkout Fees Field', 'mw_wc_qbo_sync' );?> :</td>
+							<td width="60%"><?php esc_html_e( 'Enable Additional Checkout Fees Field', 'mw_wc_qbo_sync' );?> :</td>
 							<td width="20%">
-								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wcfep_add_fld" id="mw_wc_qbo_sync_wcfep_add_fld" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_wcfep_add_fld']=='true') echo 'checked' ?>>
+								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wcfep_add_fld" id="mw_wc_qbo_sync_wcfep_add_fld" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_wcfep_add_fld']=='true') echo 'checked="checked"' ?>>
 							</td>
 							<td width="20%">
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'WooCommerce Checkout Field Editor Pro', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'WooCommerce Checkout Field Editor Pro', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
@@ -2171,7 +2208,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						
 						<tr>
 							<td colspan="3">
-								<b><?php _e( 'Checkout Additional Custom Fields List (Price Fields)', 'mw_wc_qbo_sync' );?></b>
+								<b><?php esc_html_e( 'Checkout Additional Custom Fields List (Price Fields)', 'mw_wc_qbo_sync' );?></b>
 							</td>
 						</tr>
 						
@@ -2190,7 +2227,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						<?php foreach($thwcfe_sections_add as $thwcfe_add):?>
 						<?php if($thwcfe_add->price_field==1):?>
 						<tr>
-							<td><?php echo $thwcfe_add->title;?> (<?php echo $thwcfe_add->type;?>,Price:<?php echo $thwcfe_add->price;?>) :</td>
+							<td><?php echo esc_html($thwcfe_add->title);?> (<?php echo esc_html($thwcfe_add->type);?>,Price:<?php echo esc_html($thwcfe_add->price);?>) :</td>
 							
 							<td>
 								<?php
@@ -2202,23 +2239,23 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 											$itemid = (int) $wcfep_map_arr[$thwcfe_add->id];
 											$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 											if($qb_item_name!=''){
-												$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+												$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 											}
 										}
 									}else{
 										$dd_options.=$mw_qbo_product_list;
 									}
 								?>
-								<input value="<?php echo $thwcfe_add->id;?>" type="hidden" name="wcfep_pid[]" id="wcfep_pid_<?php echo $thwcfe_add->id;?>">
-								<select name="wcfep_qbp[]" id="wcfep_qbp_<?php echo $thwcfe_add->id;?>" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-									<?php echo $dd_options;?>
+								<input value="<?php echo esc_attr($thwcfe_add->id);?>" type="hidden" name="wcfep_pid[]" id="wcfep_pid_<?php echo esc_attr($thwcfe_add->id);?>">
+								<select name="wcfep_qbp[]" id="wcfep_qbp_<?php echo esc_attr($thwcfe_add->id);?>" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+									<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 								</select>
 							</td>
 							
 							<td>
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'Map QBO Product', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Map QBO Product', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>
@@ -2257,7 +2294,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php $is_compt=true;?>
 		
 		<div class="page_title">
-			<h4 title=""><?php _e( 'WooCommerce User Role -> QuickBooks Location, Class and Customer Type Map', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title=""><?php esc_html_e( 'WooCommerce User Role -> QuickBooks Location, Class and Customer Type Map', 'mw_wc_qbo_sync' );?></h4>
 		</div>
 		<div class="card">
 			<div class="card-content">
@@ -2266,21 +2303,21 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg wurqbct_tbl" width="100%">
 					<tr>
 						<td colspan="5">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					
 					<tr>
-						<td width="44%"><?php _e( 'Enable WooCommerce User Role -> QuickBooks Location, Class and Customer Type Map', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="44%"><?php esc_html_e( 'Enable WooCommerce User Role -> QuickBooks Location, Class and Customer Type Map', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="17%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_np_wurqbld_ed" id="mw_wc_qbo_sync_compt_np_wurqbld_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_np_wurqbld_ed')=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_np_wurqbld_ed" id="mw_wc_qbo_sync_compt_np_wurqbld_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_np_wurqbld_ed')=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="17%">&nbsp;</td>
 						<td width="17%">&nbsp;</td>
 						<td width="5%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce User Role -> QuickBooks Location, Class and Customer Type Map', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce User Role -> QuickBooks Location, Class and Customer Type Map', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>
@@ -2288,15 +2325,15 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<tr>
 						<td colspan="5">
-							<b><?php _e( 'WooCommerce User Role -> QuickBooks Location, Class and Customer Type Map', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'WooCommerce User Role -> QuickBooks Location, Class and Customer Type Map', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					
 					<tr>
 						<td>&nbsp;</td>
-						<td><?php _e( 'QuickBooks Location', 'mw_wc_qbo_sync' );?></td>
-						<td><?php _e( 'QuickBooks Class', 'mw_wc_qbo_sync' );?></td>
-						<td><?php _e( 'QB Customer Type', 'mw_wc_qbo_sync' );?></td>
+						<td><?php esc_html_e( 'QuickBooks Location', 'mw_wc_qbo_sync' );?></td>
+						<td><?php esc_html_e( 'QuickBooks Class', 'mw_wc_qbo_sync' );?></td>
+						<td><?php esc_html_e( 'QuickBooks Customer Type', 'mw_wc_qbo_sync' );?></td>
 						<td>&nbsp;</td>
 					</tr>
 					
@@ -2319,35 +2356,35 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<?php foreach ($wu_roles_kv_arr as $role_k => $role_v):?>
 					<tr>
-						<td><?php echo $role_v;?></td>
+						<td><?php echo $role_v; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
 						<td>
-							<input value="<?php echo $role_k;?>" type="hidden" name="wurqbld_wur[]" id="wurqbld_wur_<?php echo $role_k;?>">
-							<select name="wurqbld_wur_qbld_map[]" id="wurqbld_wur_qbld_map_<?php echo $role_k;?>" class="filled-in production-option mw_wc_qbo_sync_select wurqbct_s">
+							<input value="<?php echo esc_attr($role_k);?>" type="hidden" name="wurqbld_wur[]" id="wurqbld_wur_<?php echo esc_attr($role_k);?>">
+							<select name="wurqbld_wur_qbld_map[]" id="wurqbld_wur_qbld_map_<?php echo esc_attr($role_k);?>" class="filled-in production-option mw_wc_qbo_sync_select wurqbct_s">
 							<option value=""></option>
-							<?php echo $mw_qbo_location_list;?>
+							<?php echo $mw_qbo_location_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</select>
 						</td>
 						
 						<td>
-							<input value="<?php echo $role_k;?>" type="hidden" name="wurqbcls_wur[]" id="wurqbcls_wur_<?php echo $role_k;?>"><!--Not in Use-->
-							<select name="wurqbcls_wur_qbcls_map[]" id="wurqbcls_wur_qbcls_map_<?php echo $role_k;?>" class="filled-in production-option mw_wc_qbo_sync_select wurqbct_s">
+							<input value="<?php echo esc_attr($role_k);?>" type="hidden" name="wurqbcls_wur[]" id="wurqbcls_wur_<?php echo esc_attr($role_k);?>"><!--Not in Use-->
+							<select name="wurqbcls_wur_qbcls_map[]" id="wurqbcls_wur_qbcls_map_<?php echo esc_attr($role_k);?>" class="filled-in production-option mw_wc_qbo_sync_select wurqbct_s">
 							<option value=""></option>
-							<?php echo $mw_qbo_class_list;?>
+							<?php echo $mw_qbo_class_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</select>
 						</td>
 						
 						<td>
-							<input value="<?php echo $role_k;?>" type="hidden" name="wurqbct_wur[]" id="wurqbct_wur_<?php echo $role_k;?>">
-							<select name="wurqbct_wur_qbct_map[]" id="wurqbct_wur_qbct_map_<?php echo $role_k;?>" class="filled-in production-option mw_wc_qbo_sync_select wurqbct_s">
+							<input value="<?php echo esc_attr($role_k);?>" type="hidden" name="wurqbct_wur[]" id="wurqbct_wur_<?php echo esc_attr($role_k);?>">
+							<select name="wurqbct_wur_qbct_map[]" id="wurqbct_wur_qbct_map_<?php echo esc_attr($role_k);?>" class="filled-in production-option mw_wc_qbo_sync_select wurqbct_s">
 							<option value=""></option>
-							<?php echo $mw_qbo_customer_type_list;?>
+							<?php echo $mw_qbo_customer_type_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</select>
 						</td>
 						
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Map QuickBooks Location and Class', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Map QuickBooks Location and Class', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>
@@ -2418,7 +2455,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php $qb_sr_cm_e=true;?>
 		
 		<div class="page_title">
-			<h4 title="woocommerce-checkout-field-editor"><?php _e( 'WooCommerce Checkout Field Editor', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-checkout-field-editor"><?php esc_html_e( 'WooCommerce Checkout Field Editor', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -2427,18 +2464,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Sales Rep QuickBooks Class Map', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Sales Rep QuickBooks Class Map', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed" id="mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed')=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed" id="mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed')=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Checkout Field Editor', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Checkout Field Editor', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -2446,7 +2483,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Sales Rep Mapping (sales_rep -> select type -> additional_field)', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Sales Rep Mapping (sales_rep -> select type -> additional_field)', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					
@@ -2472,19 +2509,19 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<?php foreach($w_cf_sr_options as $wcf_k => $wcf_v):?>
 					<tr>
-						<td><?php echo $wcf_v;?></td>
+						<td><?php echo esc_attr($wcf_v);?></td>
 						<td>
-							<input value="<?php echo $wcf_k;?>" type="hidden" name="wcfe_cf_wsr[]" id="wcfe_cf_wsr_<?php echo $wcf_k;?>">
-							<select name="wcfe_cf_rep_qc_map[]" id="wcfe_cf_rep_qc_map_<?php echo md5($wcf_k);?>" class="filled-in production-option mw_wc_qbo_sync_select">
+							<input value="<?php echo esc_attr($wcf_k);?>" type="hidden" name="wcfe_cf_wsr[]" id="wcfe_cf_wsr_<?php echo esc_attr($wcf_k);?>">
+							<select name="wcfe_cf_rep_qc_map[]" id="wcfe_cf_rep_qc_map_<?php echo esc_attr(md5($wcf_k));?>" class="filled-in production-option mw_wc_qbo_sync_select">
 							<option value=""></option>
-							<?php echo $mw_qbo_class_list;?>
+							<?php echo $mw_qbo_class_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</select>
 						</td>
 						
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Map QuickBooks Class', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Map QuickBooks Class', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>
@@ -2521,7 +2558,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php $is_compt=true;?>		
 		
 		<div class="page_title">
-			<h4 title="woocommerce-checkout-field-editor"><?php _e( 'WooCommerce Checkout Field Editor', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-checkout-field-editor"><?php esc_html_e( 'WooCommerce Checkout Field Editor', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -2530,18 +2567,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Sales Rep QuickBooks Class Map', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Sales Rep QuickBooks Class Map', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed" id="mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed')=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed" id="mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_wcfe_rf_srqcm_ed')=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Checkout Field Editor', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Checkout Field Editor', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -2549,7 +2586,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Sales Rep Mapping (sales-rep -> select type -> billing_field)', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Sales Rep Mapping (sales-rep -> select type -> billing_field)', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					
@@ -2574,19 +2611,19 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<?php foreach($w_cf_sr_options as $wcf_k => $wcf_v):?>
 					<tr>
-						<td><?php echo $wcf_v;?></td>
+						<td><?php echo esc_attr($wcf_v);?></td>
 						<td>
-							<input value="<?php echo $wcf_k;?>" type="hidden" name="wcfe_cf_wsr[]" id="wcfe_cf_wsr_<?php echo $wcf_k;?>">
-							<select name="wcfe_cf_rep_qc_map[]" id="wcfe_cf_rep_qc_map_<?php echo md5($wcf_k);?>" class="filled-in production-option mw_wc_qbo_sync_select">
+							<input value="<?php echo esc_attr($wcf_k);?>" type="hidden" name="wcfe_cf_wsr[]" id="wcfe_cf_wsr_<?php echo esc_attr($wcf_k);?>">
+							<select name="wcfe_cf_rep_qc_map[]" id="wcfe_cf_rep_qc_map_<?php echo esc_attr(md5($wcf_k));?>" class="filled-in production-option mw_wc_qbo_sync_select">
 							<option value=""></option>
-							<?php echo $mw_qbo_class_list;?>
+							<?php echo $mw_qbo_class_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</select>
 						</td>
 						
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Map QuickBooks Class', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Map QuickBooks Class', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>
@@ -2621,7 +2658,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-hear-about-us') && $MSQS_QL->get_qbo_company_setting('TrackDepartments')):?>
 		<?php $is_compt=true;?>
 			<div class="page_title">
-			<h4 title="woocommerce-hear-about-us"><?php _e( 'WooCommerce Hear About Us', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-hear-about-us"><?php esc_html_e( 'WooCommerce Hear About Us', 'mw_wc_qbo_sync' );?></h4>
 			</div>
 			
 			<div class="card">
@@ -2631,18 +2668,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td><?php _e( 'Enable hear about us as location to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'Enable hear about us as location to the QuickBooks Online invoice/sales receipt', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wchau_enable" id="mw_wc_qbo_sync_compt_wchau_enable" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_wchau_enable']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wchau_enable" id="mw_wc_qbo_sync_compt_wchau_enable" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_wchau_enable']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Hear About Us', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Hear About Us', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -2650,7 +2687,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'WooCommerce Hear About Us Option List', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'WooCommerce Hear About Us Option List', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					
@@ -2674,18 +2711,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					?>
 					<?php foreach($wchau_options as $wchau_op):?>				
 					<tr>
-						<td><?php echo $wchau_op;?> :</td>
+						<td><?php echo esc_attr($wchau_op);?> :</td>
 						<td>							
-							<input value="<?php echo $wchau_op;?>" type="hidden" name="wchau_pid[]" id="wchau_pid_<?php echo md5($wchau_op);?>">
-							<select name="wchau_qbp[]" id="wchau_qbp_<?php echo md5($wchau_op);?>" class="filled-in production-option mw_wc_qbo_sync_select">
+							<input value="<?php echo esc_attr($wchau_op);?>" type="hidden" name="wchau_pid[]" id="wchau_pid_<?php echo esc_attr(md5($wchau_op));?>">
+							<select name="wchau_qbp[]" id="wchau_qbp_<?php echo esc_attr(md5($wchau_op));?>" class="filled-in production-option mw_wc_qbo_sync_select">
 								<option value=""></option>
-								<?php echo $mw_qbo_location_list;?>
+								<?php echo $mw_qbo_location_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</select>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Map QBO Department', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Map QBO Department', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -2724,7 +2761,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 			//$MSQS_QL->_p($wacof_fl);
 		?>
 			<div class="page_title">
-				<h4 title="woocommerce-admin-custom-order-fields"><?php _e( 'WooCommerce Admin Custom Order Fields', 'mw_wc_qbo_sync' );?></h4>
+				<h4 title="woocommerce-admin-custom-order-fields"><?php esc_html_e( 'WooCommerce Admin Custom Order Fields', 'mw_wc_qbo_sync' );?></h4>
 			</div>		
 			<div class="card">
 				<div class="card-content">
@@ -2733,18 +2770,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td><?php _e( 'Enable Admin Custom Order Fields Map ', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'Enable Admin Custom Order Fields Map ', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wacof" id="mw_wc_qbo_sync_compt_p_wacof" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wacof']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wacof" id="mw_wc_qbo_sync_compt_p_wacof" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wacof']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Admin Custom Order Fields', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Admin Custom Order Fields', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>					
@@ -2756,20 +2793,20 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					?>
 					<tr>
 						<td>
-							<b><?php _e( 'Select the field', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Select the field', 'mw_wc_qbo_sync' );?></b>
 						</td>
 						<td>
 						<select name="mw_wc_qbo_sync_compt_p_wacof_m_field" id="mw_wc_qbo_sync_compt_p_wacof_m_field" class="filled-in production-option mw_wc_qbo_sync_select">
 							<option value=""></option>
 							<?php foreach($wacof_fl as $aof_k => $aof):?>
-							<option <?php if($wacof_m_f==$aof_k){echo ' selected="selected"';}?> value="<?php echo $aof_k;?>"><?php echo $aof['label'].' ('.$aof['type'].')';?><option>
+							<option <?php if($wacof_m_f==$aof_k){echo ' selected="selected"';}?> value="<?php echo esc_attr($aof_k);?>"><?php echo esc_html($aof['label']) . ' (' . esc_html($aof['type']) . ')';?></option>
 							<?php endforeach;?>
 						</select>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Needs to be \'Select\' Field', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Needs to be \'Select\' Field', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>
@@ -2780,7 +2817,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					?>
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Mapping', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Mapping', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					
@@ -2798,7 +2835,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					?>
 					<?php foreach($acof_f_options as $w_acof_k => $w_acof_f):?>					
 					<tr>
-						<td><?php echo $w_acof_f['label'];?> :</td>
+						<td><?php echo esc_html($w_acof_f['label']);?> :</td>
 						<td>
 							<?php
 								$dd_options = '<option value=""></option>';
@@ -2809,22 +2846,22 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 										$itemid = (int) $f_map_arr[$w_acof_f['value']];
 										$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 										if($qb_item_name!=''){
-											$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+											$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 										}
 									}
 								}else{
 									$dd_options.=$mw_qbo_product_list;
 								}
 							?>
-							<input value="<?php echo $w_acof_f['value'];?>" type="hidden" name="acof_pid[]" id="acof_pid_<?php echo md5($w_acof_f['value']);?>">
-							<select name="acof_qbp[]" id="acof_qbp_<?php echo md5($w_acof_f['value']);?>" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-								<?php echo $dd_options;?>
+							<input value="<?php echo esc_attr($w_acof_f['value']);?>" type="hidden" name="acof_pid[]" id="acof_pid_<?php echo esc_attr(md5($w_acof_f['value']));?>">
+							<select name="acof_qbp[]" id="acof_qbp_<?php echo esc_attr(md5($w_acof_f['value']));?>" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+								<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 							</select>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Map QBO Product', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Map QBO Product', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -2842,7 +2879,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<?php else:?>
 					<tr>
 						<td colspan="3">
-							<?php _e( 'Field options not found', 'mw_wc_qbo_sync' );?>
+							<?php esc_html_e( 'Field options not found', 'mw_wc_qbo_sync' );?>
 						</td>
 					</tr>
 					<?php endif;?>
@@ -2850,7 +2887,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<?php else:?>
 					<tr>
 						<td colspan="3">
-							<?php _e( 'No field selected or invalid field - After selecting and saving a valid field you will see the map option', 'mw_wc_qbo_sync' );?>
+							<?php esc_html_e( 'No field selected or invalid field - After selecting and saving a valid field you will see the map option', 'mw_wc_qbo_sync' );?>
 						</td>
 					</tr>
 					<?php endif;?>
@@ -2859,7 +2896,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<tr>
 						<td colspan="3">
-							<?php _e( 'No fields found', 'mw_wc_qbo_sync' );?>
+							<?php esc_html_e( 'No fields found', 'mw_wc_qbo_sync' );?>
 						</td>
 					</tr>
 					<?php endif;?>
@@ -2901,7 +2938,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		?>
 		
 		<div class="page_title">
-			<h4 title="woocommerce-shipment-tracking"><?php _e( $wstp_name , 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-shipment-tracking"><?php esc_html_e( $wstp_name , 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 			<div class="card">
 				<div class="card-content">
@@ -2910,18 +2947,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Shipment Tracking', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Shipment Tracking', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_w_shp_track" id="mw_wc_qbo_sync_w_shp_track" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_w_shp_track']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_w_shp_track" id="mw_wc_qbo_sync_w_shp_track" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_w_shp_track']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Sync TrackingNum, ShipDate Into QuickBooks Online', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Sync TrackingNum, ShipDate Into QuickBooks Online', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -2942,7 +2979,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-cost-of-goods')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-cost-of-goods"><?php _e( 'WooCommerce Cost of Goods', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-cost-of-goods"><?php esc_html_e( 'WooCommerce Cost of Goods', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 			<div class="card">
 				<div class="card-content">
@@ -2951,18 +2988,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 						<tr>
 							<td colspan="3">
-								<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+								<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 							</td>
 						</tr>
 						<tr>
-							<td width="60%"><?php _e( 'Enable Cost of Goods Support', 'mw_wc_qbo_sync' );?>:</td>
+							<td width="60%"><?php esc_html_e( 'Enable Cost of Goods Support', 'mw_wc_qbo_sync' );?>:</td>
 							<td width="20%">
-								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wcogs_fiels" id="mw_wc_qbo_sync_wcogs_fiels" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_wcogs_fiels']=='true') echo 'checked' ?>>
+								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wcogs_fiels" id="mw_wc_qbo_sync_wcogs_fiels" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_wcogs_fiels']=='true') echo 'checked="checked"' ?>>
 							</td>
 							<td width="20%">
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'Enable syncing the COGS for a WooCommerce product into QuickBooks Online.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Enable syncing the COGS for a WooCommerce product into QuickBooks Online.', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
@@ -2983,7 +3020,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-avatax')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-avatax"><?php _e( 'WooCommerce AvaTax', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-avatax"><?php esc_html_e( 'WooCommerce AvaTax', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -2992,18 +3029,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 						<tr>
 							<td colspan="3">
-								<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+								<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 							</td>
 						</tr>
 						<tr>
-							<td width="60%"><?php _e( 'Enable AvaTax Support', 'mw_wc_qbo_sync' );?> :</td>
+							<td width="60%"><?php esc_html_e( 'Enable AvaTax Support', 'mw_wc_qbo_sync' );?> :</td>
 							<td width="20%">
-								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wc_avatax_support" id="mw_wc_qbo_sync_wc_avatax_support" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_wc_avatax_support']=='true') echo 'checked' ?>>
+								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wc_avatax_support" id="mw_wc_qbo_sync_wc_avatax_support" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_wc_avatax_support']=='true') echo 'checked="checked"' ?>>
 							</td>
 							<td width="20%">
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'WooCommerce AvaTax', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'WooCommerce AvaTax', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
@@ -3015,7 +3052,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						?>
 						<tr>
 							<td colspan="3">
-								<b><?php _e( 'Mapping', 'mw_wc_qbo_sync' );?></b>
+								<b><?php esc_html_e( 'Mapping', 'mw_wc_qbo_sync' );?></b>
 							</td>
 						</tr>
 						
@@ -3032,22 +3069,22 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 											$itemid = (int) $admin_settings_data['mw_wc_qbo_sync_wc_avatax_map_qbo_product'];
 											$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 											if($qb_item_name!=''){
-												$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+												$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 											}
 										}
 									}else{
 										$dd_options.=$mw_qbo_product_list;
 									}
 								?>
-								<select name="mw_wc_qbo_sync_wc_avatax_map_qbo_product" id="mw_wc_qbo_sync_wc_avatax_map_qbo_product" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-									<?php echo $dd_options;?>
+								<select name="mw_wc_qbo_sync_wc_avatax_map_qbo_product" id="mw_wc_qbo_sync_wc_avatax_map_qbo_product" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+									<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 								</select>
 							</td>
 							
 							<td>
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'QBO Product', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'QBO Product', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>
@@ -3069,7 +3106,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if(!$disable_section && $MSQS_QL->is_plugin_active('taxify-for-woocommerce','woocommerce-taxify')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="taxify-for-woocommerce"><?php _e( 'Taxify for WooCommerce', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="taxify-for-woocommerce"><?php esc_html_e( 'Taxify for WooCommerce', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -3077,18 +3114,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Taxify Support', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Taxify Support', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wc_taxify_support" id="mw_wc_qbo_sync_wc_taxify_support" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_wc_taxify_support']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wc_taxify_support" id="mw_wc_qbo_sync_wc_taxify_support" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_wc_taxify_support']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Taxify for WooCommerce', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Taxify for WooCommerce', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -3098,7 +3135,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					?>
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Mapping', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Mapping', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					
@@ -3115,22 +3152,22 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 										$itemid = (int) $admin_settings_data['mw_wc_qbo_sync_wc_taxify_map_qbo_product'];
 										$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 										if($qb_item_name!=''){
-											$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+											$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 										}
 									}
 								}else{
 									$dd_options.=$mw_qbo_product_list;
 								}
 							?>
-							<select name="mw_wc_qbo_sync_wc_taxify_map_qbo_product" id="mw_wc_qbo_sync_wc_taxify_map_qbo_product" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-								<?php echo $dd_options;?>
+							<select name="mw_wc_qbo_sync_wc_taxify_map_qbo_product" id="mw_wc_qbo_sync_wc_taxify_map_qbo_product" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+								<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 							</select>
 						</td>
 						
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'QBO Product', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'QBO Product', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>
@@ -3151,7 +3188,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-tm-extra-product-options','tm-woo-extra-product-options')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-tm-extra-product-options"><?php _e( 'WooCommerce TM Extra Product Options', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-tm-extra-product-options"><?php esc_html_e( 'WooCommerce TM Extra Product Options', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 			<div class="card">
 				<div class="card-content">
@@ -3160,18 +3197,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Extra Product Options', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Extra Product Options', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wtmepo" id="mw_wc_qbo_sync_compt_p_wtmepo" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wtmepo']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wtmepo" id="mw_wc_qbo_sync_compt_p_wtmepo" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wtmepo']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce TM Extra Product Options', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce TM Extra Product Options', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -3192,7 +3229,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-product-addons')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-product-addons"><?php _e( 'WooCommerce Product Add-ons', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-product-addons"><?php esc_html_e( 'WooCommerce Product Add-ons', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 			<div class="card">
 				<div class="card-content">
@@ -3201,18 +3238,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Product Add-ons', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Product Add-ons', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wapao" id="mw_wc_qbo_sync_compt_p_wapao" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wapao']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_p_wapao" id="mw_wc_qbo_sync_compt_p_wapao" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_p_wapao']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Product Add-ons', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Product Add-ons', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -3233,7 +3270,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-appointments')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-appointments"><?php _e( 'WooCommerce Appointments', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-appointments"><?php esc_html_e( 'WooCommerce Appointments', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 			<div class="card">
 				<div class="card-content">
@@ -3242,18 +3279,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Line Item Date', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Line Item Date', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wapnt_li_date" id="mw_wc_qbo_sync_compt_wapnt_li_date" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_wapnt_li_date']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wapnt_li_date" id="mw_wc_qbo_sync_compt_wapnt_li_date" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_wapnt_li_date']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Add line item date as qbo invoice/salesreceipt txn date', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Add line item date as qbo invoice/salesreceipt txn date', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -3275,7 +3312,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($wc_prd_qbo_prd_ext_fld_compt && $MSQS_QL->is_plugin_active('atum-stock-manager-for-woocommerce')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title=""><?php _e( 'WooCommerce Product ==> QuickBooks Online Product - ATUM - Rosemaria', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title=""><?php esc_html_e( 'WooCommerce Product ==> QuickBooks Online Product - ATUM - Rosemaria', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -3284,18 +3321,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'When syncing WooCommerce products to QuickBooks, include the following field mappings', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'When syncing WooCommerce products to QuickBooks, include the following field mappings', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_np_wcprdqpef" id="mw_wc_qbo_sync_compt_np_wcprdqpef" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_np_wcprdqpef']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_np_wcprdqpef" id="mw_wc_qbo_sync_compt_np_wcprdqpef" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_np_wcprdqpef']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Product extra fields', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Product extra fields', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -3303,7 +3340,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Fields', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Fields', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					
@@ -3346,7 +3383,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php $is_compt=true;?>
 		
 		<div class="page_title">
-			<h4 title=""><?php _e( 'WooCommerce USER  ==> QuickBooks Online Vendor - ATUM - Rosemaria', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title=""><?php esc_html_e( 'WooCommerce USER  ==> QuickBooks Online Vendor - ATUM - Rosemaria', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -3355,25 +3392,25 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Allow pushing WooCommerce Users (in specific role) to QuickBooks as a vendor', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Allow pushing WooCommerce Users (in specific role) to QuickBooks as a vendor', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_np_wuqbovendor_ms" id="mw_wc_qbo_sync_compt_np_wuqbovendor_ms" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_np_wuqbovendor_ms']=='true') echo 'checked' ?>>							
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_np_wuqbovendor_ms" id="mw_wc_qbo_sync_compt_np_wuqbovendor_ms" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_np_wuqbovendor_ms']=='true') echo 'checked="checked"' ?>>							
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Allow pushing WooCommerce Users (in specific role) to QuickBooks as a vendor', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Allow pushing WooCommerce Users (in specific role) to QuickBooks as a vendor', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
 					</tr>
 					
 					<tr>
-						<td width="60%"><?php _e( 'Select WooCommerce User Roles', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Select WooCommerce User Roles', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
 							<?php
 							$role_dd_options = '';
@@ -3396,13 +3433,13 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 							
 							?>
 							<select name="mw_wc_qbo_sync_compt_np_wuqbovendor_wcur[]" id="mw_wc_qbo_sync_compt_np_wuqbovendor_wcur" class="filled-in production-option mw_wc_qbo_sync_select" multiple="multiple">
-								<?php echo $role_dd_options;?>
+								<?php echo $role_dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</select>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce user roles sync as vendors', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce user roles sync as vendors', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -3424,7 +3461,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-aelia-currencyswitcher')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-aelia-currencyswitcher"><?php _e( 'Aelia Currency Switcher for WooCommerce', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-aelia-currencyswitcher"><?php esc_html_e( 'Aelia Currency Switcher for WooCommerce', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -3433,18 +3470,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Base Currency Support', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Base Currency Support', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wacs_base_cur_support" id="mw_wc_qbo_sync_wacs_base_cur_support" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_wacs_base_cur_support')=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wacs_base_cur_support" id="mw_wc_qbo_sync_wacs_base_cur_support" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_wacs_base_cur_support')=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Base Currency Support', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Base Currency Support', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -3466,7 +3503,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-wholesale-prices','woocommerce-wholesale-prices.bootstrap')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-wholesale-prices"><?php _e( 'WooCommerce Wholesale Prices', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-wholesale-prices"><?php esc_html_e( 'WooCommerce Wholesale Prices', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 			<div class="card">
 				<div class="card-content">
@@ -3475,18 +3512,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 						<tr>
 							<td colspan="3">
-								<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+								<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 							</td>
 						</tr>
 						<tr>
-							<td width="60%"><?php _e( 'Enable to Use Wholesale Price When Syncing Product', 'mw_wc_qbo_sync' );?>:</td>
+							<td width="60%"><?php esc_html_e( 'Enable to Use Wholesale Price When Syncing Product', 'mw_wc_qbo_sync' );?>:</td>
 							<td width="20%">
-								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wwpfps_qb" id="mw_wc_qbo_sync_wwpfps_qb" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_wwpfps_qb']=='true') echo 'checked' ?>>
+								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wwpfps_qb" id="mw_wc_qbo_sync_wwpfps_qb" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_wwpfps_qb']=='true') echo 'checked="checked"' ?>>
 							</td>
 							<td width="20%">
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'Enable syncing the wholesale price as price for a WooCommerce product into QuickBooks Online.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'Enable syncing the wholesale price as price for a WooCommerce product into QuickBooks Online.', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
@@ -3507,7 +3544,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->get_qbo_company_setting('is_automated_sales_tax')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title=""><?php _e( 'QuickBooks Automated Sales Tax', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title=""><?php esc_html_e( 'QuickBooks Automated Sales Tax', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 			<div class="card">
 				<div class="card-content">
@@ -3516,19 +3553,19 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 						<tr>
 							<td colspan="3">
-								<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+								<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 							</td>
 						</tr>
 						
 						<tr>
-							<td width="60%"><?php _e( 'Sync WooCommerce Order Tax as a Line Item', 'mw_wc_qbo_sync' );?>:</td>
+							<td width="60%"><?php esc_html_e( 'Sync WooCommerce Order Tax as a Line Item', 'mw_wc_qbo_sync' );?>:</td>
 							<td width="20%">
-								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_fotali_waste" id="mw_wc_qbo_sync_fotali_waste" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_fotali_waste']=='true') echo 'checked' ?>>
+								<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_fotali_waste" id="mw_wc_qbo_sync_fotali_waste" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_fotali_waste']=='true') echo 'checked="checked"' ?>>
 							</td>
 							<td width="20%">
 								<div class="material-icons tooltipped tooltip">?
 									<span class="tooltiptext">
-										<?php _e( 'If enabled, this will override/invalidate any tax mappings set in MyWorks Sync > Map > Taxes, and sync order tax as a line item instead of assigning it to a rate in QuickBooks.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'If enabled, this will override/invalidate any tax mappings set in MyWorks Sync > Map > Taxes, and sync order tax as a line item instead of assigning it to a rate in QuickBooks.', 'mw_wc_qbo_sync' );?>
 									</span>
 								</div>
 							</td>						
@@ -3536,7 +3573,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 						
 						<tr>
 							<td>
-								<?php echo __('QuickBooks Product for Sales Tax line item','mw_wc_qbo_sync') ?>
+								<?php echo esc_html__('QuickBooks Product for Sales Tax line item','mw_wc_qbo_sync') ?>
 							</td>
 							<td>
 								<div class="row">
@@ -3551,15 +3588,15 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 														$itemid = (int) $admin_settings_data['mw_wc_qbo_sync_otli_qbo_product'];
 														$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 														if($qb_item_name!=''){
-															$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+															$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 														}
 													}
 												}else{
 													$dd_options.=$mw_qbo_product_list;
 												}
 											?>
-											<select name="mw_wc_qbo_sync_otli_qbo_product" id="mw_wc_qbo_sync_otli_qbo_product" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-												<?php echo $dd_options;?>
+											<select name="mw_wc_qbo_sync_otli_qbo_product" id="mw_wc_qbo_sync_otli_qbo_product" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+												<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 											</select>
 										</p>
 									</div>
@@ -3567,8 +3604,8 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 							</td>
 							
 							<td>
-								<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-							  <span class="tooltiptext"><?php echo __('Choose a QuickBooks Product that will be the line item in the QuickBooks Invoice/Sales Receipt to represent the sales tax from the WooCommerce Order.','mw_wc_qbo_sync') ?></span>
+								<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+							  <span class="tooltiptext"><?php echo esc_html__('Choose a QuickBooks Product that will be the line item in the QuickBooks Invoice/Sales Receipt to represent the sales tax from the WooCommerce Order.','mw_wc_qbo_sync') ?></span>
 							</div>
 							</td>
 						</tr>
@@ -3589,7 +3626,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('yith-woocommerce-gift-cards-premium','init')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="yith-woocommerce-gift-cards-premium"><?php _e( 'YITH WooCommerce Gift Cards Premium', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="yith-woocommerce-gift-cards-premium"><?php esc_html_e( 'YITH WooCommerce Gift Cards Premium', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -3598,66 +3635,66 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable Gift Payment Compatibility', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Gift Payment Compatibility', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_yithwgcp_gpc_ed" id="mw_wc_qbo_sync_compt_yithwgcp_gpc_ed" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_yithwgcp_gpc_ed']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_yithwgcp_gpc_ed" id="mw_wc_qbo_sync_compt_yithwgcp_gpc_ed" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_compt_yithwgcp_gpc_ed']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'YITH WooCommerce Gift Cards Premium', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'YITH WooCommerce Gift Cards Premium', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
 					</tr>
 					
 					<tr>
-						<td width="60%"><?php _e( 'Gift Cards Payment Account', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Gift Cards Payment Account', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">							
 							<select name="mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_acc" id="mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_acc" class="filled-in production-option mw_wc_qbo_sync_select">
 							<option value=""></option>
-							<?php echo $mw_qbo_account_list;?>
+							<?php echo $mw_qbo_account_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</select>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'QuickBooks Account for Gift Cards Payment', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'QuickBooks Account for Gift Cards Payment', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
 					</tr>
 					
 					<tr style="display:none">
-						<td width="60%"><?php _e( 'Payment Method Label', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Payment Method Label', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">						
-							<input type="text" name="mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl" id="mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl" value="<?php echo $admin_settings_data['mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl']?>">
+							<input type="text" name="mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl" id="mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl" value="<?php echo esc_attr($admin_settings_data['mw_wc_qbo_sync_compt_yithwgcp_gcp_pm_lbl'])?>">
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Payment Method Label ', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Payment Method Label ', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
 					</tr>
 					
 					<tr>
-						<td width="60%"><?php _e( 'Gift Cards Payment QuickBooks Online Payment Method', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Gift Cards Payment QuickBooks Online Payment Method', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">							
 							<select name="mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_pmethod" id="mw_wc_qbo_sync_compt_yithwgcp_gcp_qb_pmethod" class="filled-in production-option mw_wc_qbo_sync_select">
 							<option value=""></option>
-							<?php echo $qbo_payment_method_options;?>
+							<?php echo $qbo_payment_method_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</select>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'QuickBooks Online Payment Method for Gift Cards Payment', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'QuickBooks Online Payment Method for Gift Cards Payment', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -3679,7 +3716,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if(($MSQS_QL->is_plugin_active('ebaylink') || $MSQS_QL->is_plugin_active('woocommerce-ebay-sync')) && $MSQS_QL->get_qbo_company_setting('TrackDepartments')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="woocommerce-ebay-sync/ebaylink"><?php _e( 'WooCommerce eBay Sync', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-ebay-sync/ebaylink"><?php esc_html_e( 'WooCommerce eBay Sync', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -3688,52 +3725,52 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable E-bay Order QuickBooks Location Settings', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable E-bay Order QuickBooks Location Settings', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wc_ebay_sync_qb_loc_s_ed" id="mw_wc_qbo_sync_wc_ebay_sync_qb_loc_s_ed" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_wc_ebay_sync_qb_loc_s_ed']=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wc_ebay_sync_qb_loc_s_ed" id="mw_wc_qbo_sync_wc_ebay_sync_qb_loc_s_ed" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_wc_ebay_sync_qb_loc_s_ed']=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'E-bay Order QuickBooks Location Settings', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'E-bay Order QuickBooks Location Settings', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
 					</tr>
 					
 					<tr>
-						<td width="60%"><?php _e( 'QuickBooks Location for E-bay Orders', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'QuickBooks Location for E-bay Orders', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">							
 							<select name="mw_wc_qbo_sync_compt_wes_ebay_ord_qb_loc" id="mw_wc_qbo_sync_compt_wes_ebay_ord_qb_loc" class="filled-in production-option mw_wc_qbo_sync_select">
 							<option value=""></option>
-							<?php echo $mw_qbo_location_list;?>
+							<?php echo $mw_qbo_location_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</select>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'E-bay Orders QuickBooks Location ', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'E-bay Orders QuickBooks Location ', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
 					</tr>
 					
 					<tr>
-						<td width="60%"><?php _e( 'QuickBooks Location for Non E-bay Orders', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'QuickBooks Location for Non E-bay Orders', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">							
 							<select name="mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc" id="mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc" class="filled-in production-option mw_wc_qbo_sync_select">
 							<option value=""></option>
-							<?php echo $mw_qbo_location_list;?>
+							<?php echo $mw_qbo_location_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</select>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Non E-bay Orders QuickBooks Location ', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Non E-bay Orders QuickBooks Location ', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -3762,7 +3799,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 			}			
 		?>
 			<div class="page_title">
-			<h4 title="<?php echo $pwgc_pf;?>"><?php _e( $pwgc_pt, 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="<?php echo esc_attr($pwgc_pf);?>"><?php esc_html_e( $pwgc_pt, 'mw_wc_qbo_sync' );?></h4>
 			</div>
 			
 			<div class="card">
@@ -3771,25 +3808,25 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td><?php _e( 'Enable Gift Payment Compatibility', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'Enable Gift Payment Compatibility', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_pwwgc_gpc_ed" id="mw_wc_qbo_sync_compt_pwwgc_gpc_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_pwwgc_gpc_ed')=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_pwwgc_gpc_ed" id="mw_wc_qbo_sync_compt_pwwgc_gpc_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_pwwgc_gpc_ed')=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'PW WooCommerce Gift Cards', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'PW WooCommerce Gift Cards', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
 					</tr>					
 					
 					<tr>
-						<td><?php _e( 'QuickBooks product for gift card payment line item', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'QuickBooks product for gift card payment line item', 'mw_wc_qbo_sync' );?> :</td>
 						<td>							
 							<?php
 								$dd_options = '<option value=""></option>';
@@ -3800,21 +3837,21 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 										$itemid = (int) $admin_settings_data['mw_wc_qbo_sync_compt_pwwgc_gpc_qbo_item'];
 										$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 										if($qb_item_name!=''){
-											$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+											$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 										}
 									}
 								}else{
 									$dd_options.=$mw_qbo_product_list;
 								}
 								?>
-							<select name="mw_wc_qbo_sync_compt_pwwgc_gpc_qbo_item" id="mw_wc_qbo_sync_compt_pwwgc_gpc_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-								<?php echo $dd_options;?>
+							<select name="mw_wc_qbo_sync_compt_pwwgc_gpc_qbo_item" id="mw_wc_qbo_sync_compt_pwwgc_gpc_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+								<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 							</select>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -3835,7 +3872,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-gift-cards')):?>
 		<?php $is_compt=true;?>
 			<div class="page_title">
-			<h4 title="woocommerce-gift-cards"><?php _e( 'WooCommerce Gift Cards', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-gift-cards"><?php esc_html_e( 'WooCommerce Gift Cards', 'mw_wc_qbo_sync' );?></h4>
 			</div>
 			
 			<div class="card">
@@ -3844,25 +3881,25 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td><?php _e( 'Enable Gift Payment Compatibility', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'Enable Gift Payment Compatibility', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wgcp_gpc_ed" id="mw_wc_qbo_sync_compt_wgcp_gpc_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_wgcp_gpc_ed')=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wgcp_gpc_ed" id="mw_wc_qbo_sync_compt_wgcp_gpc_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_wgcp_gpc_ed')=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Gift Cards', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Gift Cards', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
 					</tr>					
 					
 					<tr>
-						<td><?php _e( 'QuickBooks product for gift card payment line item', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'QuickBooks product for gift card payment line item', 'mw_wc_qbo_sync' );?> :</td>
 						<td>							
 							<?php
 								$dd_options = '<option value=""></option>';
@@ -3873,21 +3910,21 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 										$itemid = (int) $admin_settings_data['mw_wc_qbo_sync_compt_wgcp_gpc_qbo_item'];
 										$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 										if($qb_item_name!=''){
-											$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+											$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 										}
 									}
 								}else{
 									$dd_options.=$mw_qbo_product_list;
 								}
 							?>
-							<select name="mw_wc_qbo_sync_compt_wgcp_gpc_qbo_item" id="mw_wc_qbo_sync_compt_wgcp_gpc_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-								<?php echo $dd_options;?>
+							<select name="mw_wc_qbo_sync_compt_wgcp_gpc_qbo_item" id="mw_wc_qbo_sync_compt_wgcp_gpc_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+								<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 							</select>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -3908,7 +3945,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('woocommerce-smart-coupons')):?>
 		<?php $is_compt=true;?>
 			<div class="page_title">
-			<h4 title="woocommerce-smart-coupons"><?php _e( 'WooCommerce Smart Coupons', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-smart-coupons"><?php esc_html_e( 'WooCommerce Smart Coupons', 'mw_wc_qbo_sync' );?></h4>
 			</div>
 			
 			<div class="card">
@@ -3917,25 +3954,25 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td><?php _e( 'Enable Smart Coupons Compatibility', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'Enable Smart Coupons Compatibility', 'mw_wc_qbo_sync' );?> :</td>
 						<td>
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wsc_dis_ed" id="mw_wc_qbo_sync_compt_wsc_dis_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_wsc_dis_ed')=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_wsc_dis_ed" id="mw_wc_qbo_sync_compt_wsc_dis_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_wsc_dis_ed')=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce Smart Coupons', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce Smart Coupons', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
 					</tr>					
 					
 					<tr>
-						<td><?php _e( 'QuickBooks product for smart coupon discount line item', 'mw_wc_qbo_sync' );?> :</td>
+						<td><?php esc_html_e( 'QuickBooks product for smart coupon discount line item', 'mw_wc_qbo_sync' );?> :</td>
 						<td>							
 							<?php
 								$dd_options = '<option value=""></option>';
@@ -3946,21 +3983,21 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 										$itemid = (int) $admin_settings_data['mw_wc_qbo_sync_compt_wsc_dis_qbo_item'];
 										$qb_item_name = $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_qbo_items','name','itemid',$itemid);
 										if($qb_item_name!=''){
-											$dd_options = '<option value="'.$itemid.'">'.$qb_item_name.'</option>';
+											$dd_options = '<option value="'.esc_attr($itemid).'">'.esc_html($qb_item_name).'</option>';
 										}
 									}
 								}else{
 									$dd_options.=$mw_qbo_product_list;
 								}
 							?>
-							<select name="mw_wc_qbo_sync_compt_wsc_dis_qbo_item" id="mw_wc_qbo_sync_compt_wsc_dis_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-								<?php echo $dd_options;?>
+							<select name="mw_wc_qbo_sync_compt_wsc_dis_qbo_item" id="mw_wc_qbo_sync_compt_wsc_dis_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+								<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized with esc_attr/esc_html in dropdown generation ?>
 							</select>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'QuickBooks product for the above option', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -3993,7 +4030,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		?>
 		
 		<div class="page_title">
-			<h4 title="woocommerce-aelia-currencyswitcher"><?php _e( 'Aelia Currency Switcher for WooCommerce', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="woocommerce-aelia-currencyswitcher"><?php esc_html_e( 'Aelia Currency Switcher for WooCommerce', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -4001,18 +4038,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Sync all orders to one QBD Customer Based On Currency', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Sync all orders to one QBD Customer Based On Currency', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wacs_satoc_cb" id="mw_wc_qbo_sync_wacs_satoc_cb" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_wacs_satoc_cb')=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_wacs_satoc_cb" id="mw_wc_qbo_sync_wacs_satoc_cb" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_wacs_satoc_cb')=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Currency Based Customer Support', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Currency Based Customer Support', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -4020,7 +4057,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Currency -> Customer Mapping', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Currency -> Customer Mapping', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 
@@ -4031,7 +4068,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<?php foreach($aelia_enabled_currencies as $aec):?>
 					<tr>
-						<td><?php echo $aec;?></td>
+						<td><?php echo esc_attr($aec);?></td>
 						<td>
 							<?php
 							$custId = 0;
@@ -4047,16 +4084,16 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 								$dd_options.=$qbo_customer_options;												
 							}										
 							?>
-							<input value="<?php echo $aec;?>" type="hidden" name="wacs_satoc_cur[]" id="wacs_satoc_cur_<?php echo $aec;?>">
-							<select name="wacs_satoc_map_cc[]" id="wacs_satoc_map_cc_<?php echo $aec;?>" class="filled-in production-option mw_wc_qbo_sync_select_cus <?php echo $dd_ext_class;?>">
-							<?php echo $dd_options;?>
+							<input value="<?php echo esc_attr($aec);?>" type="hidden" name="wacs_satoc_cur[]" id="wacs_satoc_cur_<?php echo esc_attr($aec);?>">
+							<select name="wacs_satoc_map_cc[]" id="wacs_satoc_map_cc_<?php echo esc_attr($aec);?>" class="filled-in production-option mw_wc_qbo_sync_select_cus <?php echo esc_attr($dd_ext_class);?>">
+							<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</select>
 						</td>
 						
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Map QBD Customer', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Map QBD Customer', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>
@@ -4093,7 +4130,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<tr>
 						<th class="title-description">
-							<?php echo __('Skip This For These WooCommerce User Roles','mw_wc_qbo_sync') ?>
+							<?php echo esc_html__('Skip This For These WooCommerce User Roles','mw_wc_qbo_sync') ?>
 							
 						</th>
 						<td>
@@ -4101,14 +4138,14 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 								<div class="input-field col s12 m12 l12">
 									<select name="mw_wc_qbo_sync_wacs_satoc_skip_c_roles[]" id="mw_wc_qbo_sync_wacs_satoc_skip_c_roles" class="mw_wc_qbo_sync_select mqs_multi" multiple="multiple">
 									<option value=""></option>									
-									<?php echo $role_dd_options;?>
+									<?php echo $role_dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 									</select>
 								</div>
 							</div>
 						</td>
 						<td>
-							<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-							  <span class="tooltiptext"><?php echo __('Allow sync customer in QuickBooks for these user roles.','mw_wc_qbo_sync') ?></span>
+							<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+							  <span class="tooltiptext"><?php echo esc_html__('Allow sync customer in QuickBooks for these user roles.','mw_wc_qbo_sync') ?></span>
 							</div>
 						</td>
 					</tr>
@@ -4130,7 +4167,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if($MSQS_QL->is_plugin_active('myworks-warehouse-routing','mw_warehouse_routing')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="myworks-warehouse-routing"><?php _e( 'WooCommerce MultiLocation Inventory & Order Routing', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="myworks-warehouse-routing"><?php esc_html_e( 'WooCommerce MultiLocation Inventory & Order Routing', 'mw_wc_qbo_sync' );?></h4>
 		</div>		
 		<div class="card">
 			<div class="card-content">
@@ -4138,18 +4175,18 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					<tr>
-						<td width="60%"><?php _e( 'Enable MultiLocation QuickBooks Location/Department Support', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable MultiLocation QuickBooks Location/Department Support', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_mwrqldm_ed" id="mw_wc_qbo_sync_mwrqldm_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_mwrqldm_ed')=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_mwrqldm_ed" id="mw_wc_qbo_sync_mwrqldm_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_mwrqldm_ed')=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'WooCommerce MultiLocation QuickBooks Location/Department Support Support', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'WooCommerce MultiLocation QuickBooks Location/Department Support Support', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -4171,7 +4208,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'WooCommerce Inventory Locations', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'WooCommerce Inventory Locations', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					
@@ -4181,23 +4218,23 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					?>
 					<tr>
 						<td>
-						<?php echo $wf_v;?>
-						<input type="hidden" name="mwrqldm_wf[]" value="<?php echo $wf_k;?>">
+						<?php echo esc_attr($wf_v);?>
+						<input type="hidden" name="mwrqldm_wf[]" value="<?php echo esc_attr($wf_k);?>">
 						</td>
 						<td>
-						<select id="mwrqldm_tp_<?php echo $wf_k;?>" name="mwrqldm_qf[]" class="filled-in production-option mw_wc_qbo_sync_select">
+						<select id="mwrqldm_tp_<?php echo esc_attr($wf_k);?>" name="mwrqldm_qf[]" class="filled-in production-option mw_wc_qbo_sync_select">
 							<option value=""></option>
 							<?php 
 								$sv = (is_array($mw_wc_qbo_sync_compt_mwrqldm_mv) && isset($mw_wc_qbo_sync_compt_mwrqldm_mv[$wf_k]))?$mw_wc_qbo_sync_compt_mwrqldm_mv[$wf_k]:'';
 								$list_selected.='jQuery(\'#mwrqldm_tp_'.$wf_k.'\').val(\''.$sv.'\');';
 							?>							
-							<?php echo $mw_qbo_location_list;?>
+							<?php echo $mw_qbo_location_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 						</select>
 						</td>
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'QuickBooks Location/Department', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'QuickBooks Location/Department', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>
@@ -4220,7 +4257,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<?php if(!$MSQS_QL->is_plugin_active('custom-us-ca-sp-loc-map-for-myworks-qbo-sync')):?>
 		<?php $is_compt=true;?>
 		<div class="page_title">
-			<h4 title="Shipping US State / Canadian Province, QuickBooks Location Map"><?php _e( 'Shipping US State / Canadian Province, QuickBooks Location Map', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="Shipping US State / Canadian Province, QuickBooks Location Map"><?php esc_html_e( 'Shipping US State / Canadian Province, QuickBooks Location Map', 'mw_wc_qbo_sync' );?></h4>
 		</div>
 		
 		<div class="card">
@@ -4229,19 +4266,19 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">					
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					
 					<tr>
-						<td width="60%"><?php _e( 'Enable Shipping US State / Canadian Province, QuickBooks Location Map', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Shipping US State / Canadian Province, QuickBooks Location Map', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_cucsp_qbl_map_ed" id="mw_wc_qbo_sync_compt_cucsp_qbl_map_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_cucsp_qbl_map_ed')=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_cucsp_qbl_map_ed" id="mw_wc_qbo_sync_compt_cucsp_qbl_map_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_cucsp_qbl_map_ed')=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Shipping US State / Canadian Province, QuickBooks Location Map', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Shipping US State / Canadian Province, QuickBooks Location Map', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -4250,7 +4287,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<!---->
 					<tr class="tr_c_bus_qcm" <?php if(!$MSQS_QL->get_option('mw_wc_qbo_sync_compt_cucsp_qbl_map_ed') =='true') echo 'style="display:none;"' ?>>
 						<td colspan="3">
-							<b><?php _e( 'Shipping US State, QuickBooks Location Map', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Shipping US State, QuickBooks Location Map', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 
@@ -4261,19 +4298,19 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<?php foreach($us_state_list as $wcr_k => $wcr_v):?>
 					<tr class="tr_c_sus_qcusm" <?php if(!$MSQS_QL->get_option('mw_wc_qbo_sync_compt_cucsp_qbl_map_ed') =='true') echo 'style="display:none;"' ?>>
-						<td><?php echo $wcr_v;?></td>
+						<td><?php echo esc_attr($wcr_v);?></td>
 						<td>
-							<input value="<?php echo $wcr_k;?>" type="hidden" name="susqblocm_us[]" id="susqblocm_us_<?php echo $wcr_k;?>">
-							<select name="ship_us_st_qb_loc_map[]" id="ship_us_st_qb_loc_map_<?php echo $wcr_k;?>" class="filled-in production-option mw_wc_qbo_sync_select">
+							<input value="<?php echo esc_attr($wcr_k);?>" type="hidden" name="susqblocm_us[]" id="susqblocm_us_<?php echo esc_attr($wcr_k);?>">
+							<select name="ship_us_st_qb_loc_map[]" id="ship_us_st_qb_loc_map_<?php echo esc_attr($wcr_k);?>" class="filled-in production-option mw_wc_qbo_sync_select">
 							<option value=""></option>
-							<?php echo $mw_qbo_location_list;?>
+							<?php echo $mw_qbo_location_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</select>
 						</td>
 						
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Map QuickBooks Location', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Map QuickBooks Location', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>
@@ -4294,7 +4331,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<!---->
 					<tr class="tr_c_bus_qcm" <?php if(!$MSQS_QL->get_option('mw_wc_qbo_sync_compt_cucsp_qbl_map_ed') =='true') echo 'style="display:none;"' ?>>
 						<td colspan="3">
-							<b><?php _e( 'Shipping Canadian Province, QuickBooks Location Map', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Shipping Canadian Province, QuickBooks Location Map', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 
@@ -4305,19 +4342,19 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<?php foreach($ca_state_list as $wcr_k => $wcr_v):?>
 					<tr class="tr_c_sus_qcusm" <?php if(!$MSQS_QL->get_option('mw_wc_qbo_sync_compt_cucsp_qbl_map_ed') =='true') echo 'style="display:none;"' ?>>
-						<td><?php echo $wcr_v;?></td>
+						<td><?php echo esc_attr($wcr_v);?></td>
 						<td>
-							<input value="<?php echo $wcr_k;?>" type="hidden" name="scpqblocm_ca[]" id="scpqblocm_ca_<?php echo $wcr_k;?>">
-							<select name="ship_ca_pv_qb_loc_map[]" id="ship_ca_pv_qb_loc_map_<?php echo $wcr_k;?>" class="filled-in production-option mw_wc_qbo_sync_select">
+							<input value="<?php echo esc_attr($wcr_k);?>" type="hidden" name="scpqblocm_ca[]" id="scpqblocm_ca_<?php echo esc_attr($wcr_k);?>">
+							<select name="ship_ca_pv_qb_loc_map[]" id="ship_ca_pv_qb_loc_map_<?php echo esc_attr($wcr_k);?>" class="filled-in production-option mw_wc_qbo_sync_select">
 							<option value=""></option>
-							<?php echo $mw_qbo_location_list;?>
+							<?php echo $mw_qbo_location_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped?>
 							</select>
 						</td>
 						
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Map QuickBooks Location', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Map QuickBooks Location', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>
@@ -4353,7 +4390,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		if($sc_qb_loc_map_c):
 		?>
 		<div class="page_title">
-			<h4 title="Shipping Country, QuickBooks Location Map"><?php _e( 'Shipping Country, QuickBooks Location Map', 'mw_wc_qbo_sync' );?></h4>
+			<h4 title="Shipping Country, QuickBooks Location Map"><?php esc_html_e( 'Shipping Country, QuickBooks Location Map', 'mw_wc_qbo_sync' );?></h4>
 		</div>
 		
 		<div class="card">
@@ -4362,19 +4399,19 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<table class="mw-qbo-sync-settings-table menu-blue-bg" width="100%">					
 					<tr>
 						<td colspan="3">
-							<b><?php _e( 'Settings', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Settings', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					
 					<tr>
-						<td width="60%"><?php _e( 'Enable Shipping Country, QuickBooks Location Map', 'mw_wc_qbo_sync' );?> :</td>
+						<td width="60%"><?php esc_html_e( 'Enable Shipping Country, QuickBooks Location Map', 'mw_wc_qbo_sync' );?> :</td>
 						<td width="20%">
-							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed" id="mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed')=='true') echo 'checked' ?>>
+							<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed" id="mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed" value="true" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed')=='true') echo 'checked="checked"' ?>>
 						</td>
 						<td width="20%">
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Shipping Country, QuickBooks Location Map', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Shipping Country, QuickBooks Location Map', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>						
@@ -4383,7 +4420,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					<!---->
 					<tr class="tr_oshcntry_qcusm"  <?php if(!$MSQS_QL->get_option('mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed') =='true') echo 'style="display:none;"' ?>>
 						<td colspan="3">
-							<b><?php _e( 'Shipping Country, QuickBooks Location Map', 'mw_wc_qbo_sync' );?></b>
+							<b><?php esc_html_e( 'Shipping Country, QuickBooks Location Map', 'mw_wc_qbo_sync' );?></b>
 						</td>
 					</tr>
 					
@@ -4394,19 +4431,19 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 					
 					<?php foreach($countries_list as $wcr_k => $wcr_v):?>
 					<tr class="tr_oshcntry_qcusm"  <?php if(!$MSQS_QL->get_option('mw_wc_qbo_sync_compt_oshcntry_qbl_map_ed') =='true') echo 'style="display:none;"' ?>>
-						<td><?php echo $wcr_v;?></td>
+						<td><?php echo esc_attr($wcr_v);?></td>
 						<td>
-							<input value="<?php echo $wcr_k;?>" type="hidden" name="oshcntry_c[]" id="oshcntry_c<?php echo $wcr_k;?>">
-							<select name="ship_oshcntry_qb_loc_map[]" id="ship_oshcntry_qb_loc_map_<?php echo $wcr_k;?>" class="filled-in production-option mw_wc_qbo_sync_select">
+							<input value="<?php echo esc_attr($wcr_k);?>" type="hidden" name="oshcntry_c[]" id="oshcntry_c<?php echo esc_attr($wcr_k);?>">
+							<select name="ship_oshcntry_qb_loc_map[]" id="ship_oshcntry_qb_loc_map_<?php echo esc_attr($wcr_k);?>" class="filled-in production-option mw_wc_qbo_sync_select">
 							<option value=""></option>
-							<?php echo $mw_qbo_location_list;?>
+							<?php echo $mw_qbo_location_list; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped?>
 							</select>
 						</td>
 						
 						<td>
 							<div class="material-icons tooltipped tooltip">?
 								<span class="tooltiptext">
-									<?php _e( 'Map QuickBooks Location', 'mw_wc_qbo_sync' );?>
+									<?php esc_html_e( 'Map QuickBooks Location', 'mw_wc_qbo_sync' );?>
 								</span>
 							</div>
 						</td>
@@ -4441,7 +4478,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 		<table width="100%">
 			<tr>
 				<td colspan="3">
-					<b><?php _e( 'No Compatibility Included.', 'mw_wc_qbo_sync' );?></b>
+					<b><?php esc_html_e( 'No Compatibility Included.', 'mw_wc_qbo_sync' );?></b>
 				</td>
 			</tr>
 		</table>
@@ -4453,7 +4490,7 @@ $list_selected.='jQuery(\'#mw_wc_qbo_sync_compt_wes_oth_ord_qb_loc\').val('.$adm
 <?php MyWorks_WC_QBO_Sync_Admin::set_setting_alert($MSQS_QL->get_session_val('compt_settings_save_msg','',true)) ?>
 <script type="text/javascript">
 jQuery(document).ready(function($){
-	<?php echo $list_selected;?>
+	<?php echo !empty($list_selected) ? $list_selected : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	jQuery('input.mwqs_st_chk').attr('data-size','small');
 	jQuery('input.mwqs_st_chk').bootstrapSwitch();
 	
@@ -4494,5 +4531,5 @@ jQuery(document).ready(function($){
 	
 });
 </script>
-<?php echo $MWQS_OF->get_select2_js('select','qbo_product');?>
-<?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select_cus','qbo_customer');?>
+<?php echo $MWQS_OF->get_select2_js('select','qbo_product'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized in get_select2_js function ?>
+<?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select_cus','qbo_customer'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized in get_select2_js function ?>

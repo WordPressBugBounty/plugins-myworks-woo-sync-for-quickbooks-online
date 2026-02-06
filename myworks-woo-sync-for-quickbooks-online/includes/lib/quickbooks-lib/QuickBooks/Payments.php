@@ -665,7 +665,8 @@ class Quickbooks_Payments
 
 		if ($this->_debug)
 		{
-			print($message . QUICKBOOKS_CRLF);
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Third-party QuickBooks library constant
+			print(esc_html($message) . QUICKBOOKS_CRLF);
 		}
 
 		if ($this->_driver)

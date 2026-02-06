@@ -46,13 +46,13 @@ if($MSQS_QL->is_connected()){
 	<?php if($MWQS_OF->is_valid_license($mw_wc_qbo_sync_license,$mw_wc_qbo_sync_localkey)):?>
 	<div class="mwqs_conection_options">
 		<h4><?php echo esc_html__('Configure License Key & Access Token','mw_wc_qbo_sync');?></h4>
-		<form method="post" action="<?php echo $page_url;?>">
+		<form method="post" action="<?php echo esc_url($page_url);?>">
 			<div class="myworks-wc-qbo-sync-table-responsive">
 				<table class="widefat fixed">
 					<tr>
 						<td width="20%"><label for="mw_wc_qbo_sync_license_update" class="mw_wc_qbo_sync_label">License Key:</label></td>
 						<td  width="50%">
-						<input class="mw_wc_qbo_sync_input" type="text" name="mw_wc_qbo_sync_license_update" id="mw_wc_qbo_sync_license_update" value="<?php echo $mw_wc_qbo_sync_license; ?>" required="required" disabled="disabled"/>
+						<input class="mw_wc_qbo_sync_input" type="text" name="mw_wc_qbo_sync_license_update" id="mw_wc_qbo_sync_license_update" value="<?php echo esc_attr($mw_wc_qbo_sync_license); ?>" required="required" disabled="disabled"/>
 						&nbsp;<span class="mw_wc_qbo_sync_span"></span>
 						</td>
 						<td  width="30%">
@@ -67,7 +67,7 @@ if($MSQS_QL->is_connected()){
 					<tr>
 						<td><label for="mw_wc_qbo_sync_access_token" class="mw_wc_qbo_sync_label">Access Token:</label></td>
 						<td>
-						<input class="mw_wc_qbo_sync_input" type="text" name="mw_wc_qbo_sync_access_token" id="mw_wc_qbo_sync_access_token" value="<?php echo $mw_wc_qbo_sync_access_token; ?>" required="required"/>
+						<input class="mw_wc_qbo_sync_input" type="text" name="mw_wc_qbo_sync_access_token" id="mw_wc_qbo_sync_access_token" value="<?php echo esc_attr($mw_wc_qbo_sync_access_token); ?>" required="required"/>
 						&nbsp;<span class="mw_wc_qbo_sync_span"></span>
 						</td>
 						<td>
@@ -99,15 +99,15 @@ if($MSQS_QL->is_connected()){
 		</h4>
 		
 		<div class="cnctin-infrmtionarea">	
-			<?php echo $local_connection_status_txt;?>
+			<?php echo esc_html($local_connection_status_txt);?>
 			<div class="com-add">
 			<?php  if($MSQS_QL->is_connected()):?>
-			<p>Realm: <?php print($realm); ?></p>
+			<p>Realm: <?php echo esc_html($realm); ?></p>
 			<?php  if(isset($quickbooks_CompanyInfo) && $quickbooks_CompanyInfo):?>
 			<p>Company: 
 			<?php
 			if($quickbooks_CompanyInfo->countCompanyName()){
-				print($quickbooks_CompanyInfo->getCompanyName());
+				echo esc_html($quickbooks_CompanyInfo->getCompanyName());
 			}	 
 			?>
 			</p>
@@ -115,7 +115,7 @@ if($MSQS_QL->is_connected()){
 			<?php
 			if($quickbooks_CompanyInfo->countEmail()){		
 				if(is_object($quickbooks_CompanyInfo->getEmail()) && $quickbooks_CompanyInfo->getEmail()->countAddress()){
-					print($quickbooks_CompanyInfo->getEmail()->getAddress());
+					echo esc_html($quickbooks_CompanyInfo->getEmail()->getAddress());
 				}
 			}	
 			?>
@@ -123,7 +123,7 @@ if($MSQS_QL->is_connected()){
 			<p>Country: 
 			<?php
 			if($quickbooks_CompanyInfo->countCountry()){
-				print($quickbooks_CompanyInfo->getCountry());
+				echo esc_html($quickbooks_CompanyInfo->getCountry());
 			}	 
 			?>
 			</p>
@@ -153,21 +153,21 @@ if($MSQS_QL->is_connected()){
 			<strong><?php echo esc_html__('Installing for the first time?','mw_wc_qbo_sync');?></strong> 
 			<?php echo esc_html__('Great! Simply enter your key below.','mw_wc_qbo_sync');?>
 			<br/>
-			<strong><?php echo __('Moving sites?','mw_wc_qbo_sync');?></strong> 
-			<?php echo __('Don\'t forget to click Change Site in your account with us.','mw_wc_qbo_sync');?>
+			<strong><?php echo esc_html__('Moving sites?','mw_wc_qbo_sync');?></strong> 
+			<?php echo esc_html__('Don\'t forget to click Change Site in your account with us.','mw_wc_qbo_sync');?>
 			<br/><br/>			
 		</p>
 		
 		<?php elseif($MWQS_OF->get_license_status()=='Expired'):?>
 		<p>
-			<?php echo __('Your license key is','mw_wc_qbo_sync');?> 
-			<strong><?php echo __('expired','mw_wc_qbo_sync');?></strong>.
-			<?php echo __('Please renew your license with us or enter a valid license key in order to continue to use the plugin.','mw_wc_qbo_sync');?>
+			<?php echo esc_html__('Your license key is','mw_wc_qbo_sync');?> 
+			<strong><?php echo esc_html__('expired','mw_wc_qbo_sync');?></strong>.
+			<?php echo esc_html__('Please renew your license with us or enter a valid license key in order to continue to use the plugin.','mw_wc_qbo_sync');?>
 		</p>
 		
 		<?php elseif($MWQS_OF->get_license_status()=='Suspended'):?>
 		<p>
-			<?php echo __('Your license key is','mw_wc_qbo_sync');?> <strong><?php echo __('suspended','mw_wc_qbo_sync');?></strong>. <?php echo __('Please either upgrade to a paid license by clicking the','mw_wc_qbo_sync');?> <strong><?php echo __('Upgrade Now','mw_wc_qbo_sync');?></strong> <?php echo __('button above, or enter a valid license key in order to continue','mw_wc_qbo_sync');?>.		
+			<?php echo esc_html__('Your license key is','mw_wc_qbo_sync');?> <strong><?php echo esc_html__('suspended','mw_wc_qbo_sync');?></strong>. <?php echo esc_html__('Please either upgrade to a paid license by clicking the','mw_wc_qbo_sync');?> <strong><?php echo esc_html__('Upgrade Now','mw_wc_qbo_sync');?></strong> <?php echo esc_html__('button above, or enter a valid license key in order to continue','mw_wc_qbo_sync');?>.		
 		</p>
 		
 		<?php else:?>
@@ -180,7 +180,7 @@ if($MSQS_QL->is_connected()){
 		<div class="mwqs_conection_license_check">
 			<form method="post" id="myworks_wc_qbo_sync_check_license">
 				<label for ="mw_wc_qbo_sync_license">License Key: </label>
-				<input type="text" placeholder = "QBOSync-000000000000000000" name="mw_wc_qbo_sync_license" id="mw_wc_qbo_sync_license" value="<?php echo $mw_wc_qbo_sync_license;?>">
+				<input type="text" placeholder = "QBOSync-000000000000000000" name="mw_wc_qbo_sync_license" id="mw_wc_qbo_sync_license" value="<?php echo esc_attr($mw_wc_qbo_sync_license);?>">
 				 <?php wp_nonce_field( 'myworks_wc_qbo_sync_check_license', 'check_plugin_license' ); ?>
 				<input size="30" type="submit" value="Enter" class="button button-primary">
 				<span id="mwqs_license_chk_loader" style="visibility:hidden;">

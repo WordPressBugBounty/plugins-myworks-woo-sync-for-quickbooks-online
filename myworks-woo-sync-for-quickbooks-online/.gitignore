@@ -1,0 +1,153 @@
+# WordPress Plugin .gitignore
+
+# WordPress specific files
+wp-config.php
+wp-config-sample.php
+wp-content/uploads/
+wp-content/cache/
+wp-content/backups/
+wp-content/upgrade/
+wp-content/w3tc-config/
+
+# Plugin specific files
+*.log
+*.tmp
+*.temp
+error_log
+debug.log
+
+# Log files
+logs/
+*.log
+
+# Cache files
+cache/
+*.cache
+
+# Temporary files
+tmp/
+temp/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*~
+
+# Database files
+*.sql
+*.sqlite
+*.db
+
+# Configuration files (if any)
+config.php
+local-config.php
+
+# Node.js (if using build tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Composer (if using PHP dependencies)
+/vendor/
+composer.lock
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.buildpath
+.DS_Store
+Thumbs.db
+
+# System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Claude AI specific files
+CLAUDE.md
+claude.md
+.claude/
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Build output
+build/
+dist/
+assets/build/
+
+# Testing
+/tests/
+phpunit.xml
+.phpunit.result.cache
+
+# Coverage reports
+coverage/
+coverage.xml
+clover.xml
+
+# Sass/CSS
+*.css.map
+*.sass.map
+*.scss.map
+
+# Image originals (keep compressed versions)
+*.psd
+*.ai
+*.sketch
+
+# Development tools
+.editorconfig
+.eslintrc*
+.prettierrc*
+.stylelintrc*
+webpack.config.js
+gulpfile.js
+Gruntfile.js
+
+# Plugin build files
+*.min.js
+*.min.css
+
+# Security files
+.htaccess
+.htpasswd
+
+# Local development
+local.json
+local-config.json
+
+# Documentation drafts
+README-dev.md
+CONTRIBUTING.md
+CHANGELOG-dev.md
+security-issues.html
+
+# Ignore everything in .github except workflows
+.github/*
+!.github/workflows/

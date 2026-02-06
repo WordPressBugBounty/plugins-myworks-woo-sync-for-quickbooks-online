@@ -312,11 +312,12 @@ class QuickBooks_WebConnector_Server
 	 */
 	protected function _headers()
 	{
-		if ($_SERVER['REQUEST_METHOD'] == 'POST')
+		$request_method = isset($_SERVER['REQUEST_METHOD']) ? sanitize_text_field($_SERVER['REQUEST_METHOD']) : '';
+		if ($request_method == 'POST')
 		{
 			header('Content-Type: text/xml');
 		}
-		else if (isset($_GET['wsdl']) or isset($_GET['WSDL']))
+		else if ((isset($_GET['wsdl']) && sanitize_text_field($_GET['wsdl'])) or (isset($_GET['WSDL']) && sanitize_text_field($_GET['WSDL'])))
 		{
 			header('Content-Type: text/xml');
 		}
@@ -363,7 +364,8 @@ class QuickBooks_WebConnector_Server
 		$input = $this->_input;
 		
 		// 
-		if ($_SERVER['REQUEST_METHOD'] == 'POST')
+		$request_method = isset($_SERVER['REQUEST_METHOD']) ? sanitize_text_field($_SERVER['REQUEST_METHOD']) : '';
+		if ($request_method == 'POST')
 		{
 			$this->_headers();
 			
@@ -457,12 +459,12 @@ class QuickBooks_WebConnector_Server
 			
 			return;
 		}
-		else if (isset($_GET['WSDL']) or isset($_GET['wsdl']))
+		else if ((isset($_GET['WSDL']) && sanitize_text_field($_GET['WSDL'])) or (isset($_GET['wsdl']) && sanitize_text_field($_GET['wsdl'])))
 		{
 			if ($contents = file_get_contents($this->_wsdl))
 			{
 				$this->_headers();
-				print($contents);
+				echo esc_html($contents);
 				exit;
 			}
 		}
@@ -470,41 +472,42 @@ class QuickBooks_WebConnector_Server
 		{
 			$this->_headers();
 
-			print(QUICKBOOKS_PACKAGE_NAME . ' Server v' . QUICKBOOKS_PACKAGE_VERSION . ' at ' . $_SERVER['REQUEST_URI'] . "\n");
-			print('   (c) ' . QUICKBOOKS_PACKAGE_AUTHOR . ' ' . "\n");
-			print('   Visit us at: ' . QUICKBOOKS_PACKAGE_WEBSITE . ' ' . "\n");
-			print("\n");
-			print('Use the QuickBooks Web Connector to access this SOAP server.' . "\n");
-			print("\n");
+			$request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field($_SERVER['REQUEST_URI']) : '?';
+			echo esc_html(QUICKBOOKS_PACKAGE_NAME . ' Server v' . QUICKBOOKS_PACKAGE_VERSION . ' at ' . $request_uri . "\n");
+			echo esc_html('   (c) ' . QUICKBOOKS_PACKAGE_AUTHOR . ' ' . "\n");
+			echo esc_html('   Visit us at: ' . QUICKBOOKS_PACKAGE_WEBSITE . ' ' . "\n");
+			echo "\n";
+			echo esc_html('Use the QuickBooks Web Connector to access this SOAP server.' . "\n");
+			echo "\n";
 			
 			if ($debug)
 			{
-				print(get_class($this) . str_replace(__CLASS__, '', __METHOD__) . '() parameters: ' . "\n");
-				print(' - $return = ' . $return . "\n");
-				print(' - $debug  = ' . $debug . "\n");
-				print("\n");
-				print('Misc. information: ' . "\n");
-				print(' - Logging: ' . $this->_loglevel . "\n");
+				echo esc_html(get_class($this) . str_replace(__CLASS__, '', __METHOD__) . '() parameters: ' . "\n");
+				echo esc_html(' - $return = ' . $return . "\n");
+				echo esc_html(' - $debug  = ' . $debug . "\n");
+				echo "\n";
+				echo esc_html('Misc. information: ' . "\n");
+				echo esc_html(' - Logging: ' . $this->_loglevel . "\n");
 				
 				if (function_exists('date_default_timezone_get'))
 				{
-					print(' - Timezone: ' . date_default_timezone_get() . ' (Auto-set: ');
+					echo esc_html(' - Timezone: ' . date_default_timezone_get() . ' (Auto-set: ');
 					
 					if (QUICKBOOKS_TIMEZONE_AUTOSET)
 					{
-						print('Yes');
+						echo esc_html('Yes');
 					}
 					
-					print(')' . "\n");
+					echo esc_html(')' . "\n");
 				}
-				print(' - Current Date/Time: ' . date('Y-m-d H:i:s') . "\n");
-				print(' - Error Reporting: ' . error_reporting() . "\n");
+				echo esc_html(' - Current Date/Time: ' . date('Y-m-d H:i:s') . "\n");
+				echo esc_html(' - Error Reporting: ' . error_reporting() . "\n");
 				
-				print("\n");
-				print('SOAP adapter: ' . "\n");
-				print(' - ' . get_class($this->_server) . "\n");
-				print("\n");
-				print('Registered handler functions: ' . "\n");
+				echo "\n";
+				echo esc_html('SOAP adapter: ' . "\n");
+				echo esc_html(' - ' . get_class($this->_server) . "\n");
+				echo "\n";
+				echo esc_html('Registered handler functions: ' . "\n");
 				print_r($this->_server->getFunctions());
 				
 				/*
@@ -518,23 +521,23 @@ class QuickBooks_WebConnector_Server
 						continue;
 					}
 					
-					print(' - ' . $hook . QUICKBOOKS_CRLF);
+					echo esc_html(' - ' . $hook . QUICKBOOKS_CRLF);
 					foreach ($arr as $x)
 					{
 						$y = current(explode("\n", print_r($x, true)));
 						
-						print('    ' . $y . QUICKBOOKS_CRLF);
+						echo esc_html('    ' . $y . QUICKBOOKS_CRLF);
 					}
 				}
 				*/
 				
-				print("\n");
-				print('Detected input: ' . "\n");
-				print($input);
-				print("\n");
-				print("\n");
-				print('Timestamp: ' . "\n");
-				print(' - ' . date('Y-m-d H:i:s') . ' -- process ' . round(microtime(true) - QUICKBOOKS_TIMESTAMP, 5) . "\n");
+				echo "\n";
+				echo esc_html('Detected input: ' . "\n");
+				echo esc_html($input);
+				echo "\n";
+				echo "\n";
+				echo esc_html('Timestamp: ' . "\n");
+				echo esc_html(' - ' . date('Y-m-d H:i:s') . ' -- process ' . round(microtime(true) - QUICKBOOKS_TIMESTAMP, 5) . "\n");
 			}
 			
 			return;

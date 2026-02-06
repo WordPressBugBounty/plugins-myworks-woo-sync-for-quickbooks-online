@@ -303,11 +303,13 @@ class QuickBooks_Driver_Sql_Mysqli extends QuickBooks_Driver_Sql
 	{
 		if ($port)
 		{
-			$this->_conn = new mysqli($host, $user, $pass, $db, $port) or die('host: ' . $host . ', user: ' . $user . ', pass: ' . $pass . ' mysqli_error(): ' . mysqli_connect_error());
+			// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_connect_error,WordPress.DB.RestrictedClasses.mysql__mysqli -- Third-party QuickBooks library database connection
+			$this->_conn = new mysqli($host, $user, $pass, $db, $port) or die('Database connection failed: ' . esc_html(mysqli_connect_error()));
 		}
 		else
 		{
-			$this->_conn = new mysqli($host, $user, $pass, $db)  or die('host: ' . $host . ', user: ' . $user . ', pass: ' . $pass . ' mysqli_error(): ' . mysqli_connect_error());
+			// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_connect_error,WordPress.DB.RestrictedClasses.mysql__mysqli -- Third-party QuickBooks library database connection
+			$this->_conn = new mysqli($host, $user, $pass, $db) or die('Database connection failed: ' . esc_html(mysqli_connect_error()));
 		}
 		
 		return true;
@@ -371,7 +373,7 @@ class QuickBooks_Driver_Sql_Mysqli extends QuickBooks_Driver_Sql
 			
 			//print($sql);
 			
-			trigger_error('Error Num.: ' . $errnum . "\n" . 'Error Msg.:' . $errmsg . "\n" . 'SQL: ' . $sql . "\n" . 'Database: ' . $this->_dbname, E_USER_ERROR);
+			trigger_error('Database query error: ' . esc_html($errmsg) . ' (Error #' . absint($errnum) . ')', E_USER_ERROR);
 			return false;
 		}
 		

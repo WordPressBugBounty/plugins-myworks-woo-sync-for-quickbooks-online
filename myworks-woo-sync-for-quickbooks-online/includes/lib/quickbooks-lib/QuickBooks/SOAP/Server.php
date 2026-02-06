@@ -135,7 +135,7 @@ class QuickBooks_SOAP_Server
 			</SOAP-ENV:Body>
 			</SOAP-ENV:Envelope>';
 			
-			print($soap);
+			print(wp_kses($soap, array('SOAP-ENV:Envelope' => array(), 'SOAP-ENV:Body' => array(), 'SOAP-ENV:Fault' => array(), 'faultcode' => array(), 'faultstring' => array())));
 			return true;
 		}
 		else
@@ -151,7 +151,7 @@ class QuickBooks_SOAP_Server
 			$soap .= '	</SOAP-ENV:Body>' . QUICKBOOKS_CRLF;
 			$soap .= '</SOAP-ENV:Envelope>' . QUICKBOOKS_CRLF;
 			
-			print($soap);
+			print(wp_kses($soap, array('SOAP-ENV:Envelope' => array(), 'SOAP-ENV:Body' => array(), 'SOAP-ENV:Fault' => array(), 'faultcode' => array(), 'faultstring' => array())));
 			return false;
 		}
 	}

@@ -1,5 +1,4 @@
 <?php
-
 /**
  *
  * @link              https://myworks.software/integrations/sync-woocommerce-quickbooks-online
@@ -10,7 +9,7 @@
  * Plugin Name:       MyWorks Sync for WooCommerce & QuickBooks Online
  * Plugin URI:        https://myworks.software/integrations/sync-woocommerce-quickbooks-online
  * Description:       Automatically sync your WooCommerce store with QuickBooks Online - in real-time! Easily sync customers, orders, payments, products, inventory and more between your WooCommerce store and QuickBooks Online. Your complete solution to streamline your accounting workflow.
- * Version:           2.9.3
+ * Version:           3.0.3
  * Author:            MyWorks
  * Author URI:        https://myworks.software/
  * License:           GPL v2 or later
@@ -21,9 +20,9 @@
  * Domain Path:       /languages
  * Requires at least: 5.3
  * Requires PHP: 7.3
- *
- * WC requires at least: 3.0.0
- * WC tested up to: 10.0.3
+ * Requires Plugins: woocommerce
+ * WC requires at least: 3.0
+ * WC tested up to: 10.4
  *
  * Copyright: © 2011-2025 MyWorks.
  */
@@ -37,13 +36,18 @@ if ( ! defined( 'MW_QBO_SYNC_EXT_DOMAIN' ) ) {
 	define('MW_QBO_SYNC_EXT_DOMAIN','mw_wc_qbo_sync');
 }
 
-if ( ! defined( 'MW_QBO_SYNC_LOG' ) ) {
+if ( ! defined( 'MW_QBO_SYNC_LOG_DIR' ) ) {
 	define('MW_QBO_SYNC_LOG_DIR', plugin_dir_path(__FILE__) . 'log/');
 }
 
 // Define QB_ADMIN_SETUP_PLUGIN_FILE.
 if ( ! defined( 'QB_ADMIN_SETUP_PLUGIN_FILE' ) ) {
 	define( 'QB_ADMIN_SETUP_PLUGIN_FILE', __FILE__ );
+}
+
+// Define QuickBooks Request Logging - Set to true to enable logging, false to disable
+if ( ! defined( 'MW_QBO_SYNC_DEBUG_LOGGING' ) ) {
+	define( 'MW_QBO_SYNC_DEBUG_LOGGING', false ); // Change to false to disable QB request logging
 }
 
 /**/
@@ -149,4 +153,8 @@ function myworks_woo_sync_for_quickbooks_online_run() {
 	$myworks_wc_qbo_sync->run();
 }
 
+
 myworks_woo_sync_for_quickbooks_online_run();
+
+
+

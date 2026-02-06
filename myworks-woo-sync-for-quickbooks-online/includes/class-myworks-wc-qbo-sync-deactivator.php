@@ -31,50 +31,7 @@ class MyWorks_WC_QBO_Sync_Deactivator {
 	 */
 	public static function deactivate() {
 		
-		$url = get_bloginfo('url');//wpurl
-		$company = get_bloginfo('name');
-		$email = get_bloginfo('admin_email');
-		$wordpress_version = get_bloginfo('version');
 		
-		$license_key = get_option('mw_wc_qbo_sync_license');
-		$plugin_version = MyWorks_WC_QBO_Sync_Admin::return_plugin_version();
-		
-		$message = "<b>WooCommerce Sync for QuickBooks Online</b></br>";
-		$message .= "</br>";
-		$message .= "<b>License Key:</b> " . $license_key ."</br>";
-		$message .= "<b>Version:</b> " . $plugin_version ."</br>";
-		$message .= "</br>";
-		$message .= "<b>Company:</b> " .$company ."</br>";
-		$message .= "<b>Email:</b> " .$email ."</br>";
-		$message .= "<b>WooCommerce URL:</b> " .$url ."</br>";
-		
-		$headers = array(
-			'MIME-Version: 1.0',
-			'Content-type:text/html;charset=UTF-8',
-		);		
-		
-		$to = 'notifications@myworks.design';		
-		
-		wp_mail($to, 'Deactivate - WooCommerce Sync', $message, $headers);
-		
-		$post_url = 'https://myworks.design/dashboard/api/dashboard/product/saveModule';
-		
-		$params = array(
-			'api_version'=>'0.1',
-			'result_type'=>'json',
-			'process'=>'de-activated',
-			'licensekey'=>$license_key,
-			'version'=>$plugin_version,
-			'company'=>$company,
-			'email'=>$email,
-			'system_url'=>$url
-		);
-		
-		wp_remote_post($post_url, [
-			'timeout' => 30,
-			'body' => $params,
-		]);
-
 		#New
 		global $wpdb;
 		$table = $wpdb->prefix.'mw_wc_qbo_sync_log';
@@ -82,7 +39,7 @@ class MyWorks_WC_QBO_Sync_Deactivator {
 		$ld = '';
 		$current_user = wp_get_current_user();
 		if(is_object($current_user) && !empty($current_user)){
-			$cu_name = $current_user->data->display_name;
+			$cu_name = isset($current_user->display_name) ? $current_user->display_name : '';
 			$ld = $cu_name;
 
 			if(isset($current_user->roles) && is_array($current_user->roles) && !empty($current_user->roles)){
@@ -147,3 +104,4 @@ class MyWorks_WC_QBO_Sync_Deactivator {
 	}
 
 }
+

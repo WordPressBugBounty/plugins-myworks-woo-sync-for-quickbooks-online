@@ -53,7 +53,7 @@ $wc_p_types = wc_get_product_types();
 	.sstchc{display:none;}
 </style>
 <div class="container">
-	<div class="page_title"><h4><?php _e( 'Product Push', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Product Push', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card qo-push-responsive">
 		<div class="card-content">
 
@@ -63,7 +63,7 @@ $wc_p_types = wc_get_product_types();
 						             <div class="mw_wc_filter">
 									 <span class="search_text">Search</span>
 									  &nbsp;
-									  <input type="text" placeholder="NAME / SKU / ID" id="product_push_search" value="<?php echo $product_push_search;?>">
+									  <input type="text" placeholder="NAME / SKU / ID" id="product_push_search" value="<?php echo esc_attr($product_push_search);?>">
 									  &nbsp;
 									  
 									  <span class="search_text">Product Type</span>
@@ -71,7 +71,10 @@ $wc_p_types = wc_get_product_types();
 									  <select id="product_type_srch" style="width:200px !important;">
 										<option value="">All but parent variable products</option>
 										<option value="all"<?php if($product_type_srch == 'all'){echo ' selected';}?>>All</option>
-										<?php echo  $MSQS_QL->only_option($product_type_srch,$wc_p_types);?>
+										<?php 
+										$option_html = $MSQS_QL->only_option($product_type_srch,$wc_p_types);
+										echo wp_kses($option_html ?: '', array('option' => array('value' => array(), 'selected' => array())));
+										?>
 									  </select>
 									  &nbsp;
 										
@@ -80,7 +83,10 @@ $wc_p_types = wc_get_product_types();
 											<?php if(empty($product_um_srch)):?>
 											<option value="">All</option>
 											<?php endif;?>
-											<?php echo  $MSQS_QL->only_option($product_um_srch,array('only_um'=>'Only Unmapped','only_m'=>'Only Mapped'));?>
+											<?php 
+											$option_html = $MSQS_QL->only_option($product_um_srch,array('only_um'=>'Only Unmapped','only_m'=>'Only Mapped'));
+											echo wp_kses($option_html ?: '', array('option' => array('value' => array(), 'selected' => array())));
+											?>
 										 </select>
 									 </span>
 									  
@@ -92,17 +98,20 @@ $wc_p_types = wc_get_product_types();
 									  <span class="filter-right-sec">
 										  <span class="entries">Show entries</span>
 										  &nbsp;
-										  <select style="width:50px;" onchange="javascript:window.location='<?php echo $page_url;?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-											<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+										  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_js($MSQS_QL->per_page_keyword);?>='+this.value;">
+											<?php 
+											$option_html = $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);
+											echo wp_kses($option_html ?: '', array('option' => array('value' => array(), 'selected' => array())));
+											?>
 										 </select>
 									 </span>
 									 </div>
 									 <br />
 									 <div class="row">
 										<div class="input-field col s12 m12 14">
-											<button id="push_selected_product_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo __('Push Selected Products','mw_wc_qbo_sync')?></button>
-											<button id="push_all_product_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo __('Push All Products','mw_wc_qbo_sync')?></button>
-											<button disabled="disabled" id="push_all_unsynced_product_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo __('Push Un-synced Products','mw_wc_qbo_sync')?></button>
+											<button id="push_selected_product_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo esc_html__('Push Selected Products','mw_wc_qbo_sync')?></button>
+											<button id="push_all_product_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo esc_html__('Push All Products','mw_wc_qbo_sync')?></button>
+											<button disabled="disabled" id="push_all_unsynced_product_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo esc_html__('Push Un-synced Products','mw_wc_qbo_sync')?></button>
 										</div>
 									</div>
 									 <br />
@@ -120,12 +129,12 @@ $wc_p_types = wc_get_product_types();
 														<th width="30%">Product Name</th>
 														<th width="14%">SKU</th>
 														<th width="8%">Price</th>
-														<th width="9%">Manage</br>Stock</th>
+														<th width="9%"><?php echo wp_kses( __( 'Manage<br>Stock', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
 														<th width="5%">Stock</th>
 														<th width="7%">Type</th>
-														<th width="8%">Stock</br>Status</th>
-														<th width="7%">Total</br>Sales</th>
-														<th width="6%" <?php echo $sstchc;?>>Sync</br>Status</th>
+														<th width="8%"><?php echo wp_kses( __( 'Stock<br>Status', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+														<th width="7%"><?php echo wp_kses( __( 'Total<br>Sales', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+														<th width="6%" <?php echo esc_attr($sstchc);?>><?php echo wp_kses( __( 'Sync<br>Status', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
 													</tr>
 												</thead>
 												<tbody>
@@ -144,33 +153,33 @@ $wc_p_types = wc_get_product_types();
 												}											
 												?>
 												<tr>
-													<td><input type="checkbox" id="product_push_<?php echo $p_val['ID']?>"></td>
-													<td><?php echo $p_val['ID']?></td>
-													<td><a href="<?php echo admin_url('post.php?action=edit&post=').$p_val['ID'] ?>" target="_blank"><?php _e( $p_val['name'], 'mw_wc_qbo_sync' );?></a></td>
-													<td><?php echo $p_val['sku'];?></td>
+													<td><input type="checkbox" id="product_push_<?php echo esc_attr($p_val['ID'])?>"></td>
+													<td><?php echo esc_html($p_val['ID'] ?? '')?></td>
+													<td><a href="<?php echo esc_url(admin_url('post.php?action=edit&post='.$p_val['ID'])); ?>" target="_blank"><?php echo esc_html($p_val['name'] ?? '');?></a></td>
+													<td><?php echo esc_html($p_val['sku'] ?? '');?></td>
 													<td>
 													<?php
-													echo $wc_currency_symbol;
-													echo (isset($p_val['price']))?floatval($p_val['price']):'0.00';
+													echo esc_html($wc_currency_symbol);
+													echo (isset($p_val['price']))?esc_html(floatval($p_val['price'])):'0.00';
 													?>
 													</td>
 													
-													<td><?php echo $p_val['manage_stock'];?></td>
-													<td><?php echo number_format(floatval($p_val['stock']),2);?></td>
-													<td><?php echo $p_val['wc_product_type'];?></td>
-													<td><?php echo $p_val['stock_status'];?></td>
-													<td><?php echo $p_val['total_sales'];?></td>
-													<td <?php echo $sstchc;?>><?php echo $sync_status_html;?></td>
+													<td><?php echo esc_html($p_val['manage_stock'] ?? '');?></td>
+													<td><?php echo esc_html(number_format(floatval($p_val['stock']),2));?></td>
+													<td><?php echo esc_html($p_val['wc_product_type'] ?? '');?></td>
+													<td><?php echo esc_html($p_val['stock_status'] ?? '');?></td>
+													<td><?php echo esc_html($p_val['total_sales'] ?? '');?></td>
+													<td <?php echo esc_attr($sstchc);?>><?php echo !empty($sync_status_html) ? $sync_status_html : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
 												</tr>
 												<?php endforeach;?>									
 												</tbody>
 											</table>
 										</div>
 									</div>
-									<?php echo $pagination_links?>
+									<?php echo !empty($pagination_links) ? $pagination_links : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 									<?php else:?>									
 									<h4 class="mw_mlp_ndf">
-										<?php _e( 'No available products to display.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'No available products to display.', 'mw_wc_qbo_sync' );?>
 									</h4>
 									<?php endif;?>						           
 						        </div>
@@ -192,14 +201,14 @@ $wc_p_types = wc_get_product_types();
 		product_um_srch = jQuery.trim(product_um_srch);
 		
 		if(product_push_search!='' || product_type_srch!='' || product_um_srch!=''){			
-			window.location = '<?php echo $page_url;?>&product_push_search='+product_push_search+'&product_type_srch='+product_type_srch+'&product_um_srch='+product_um_srch;
+			window.location = '<?php echo esc_url_raw($page_url);?>&product_push_search='+product_push_search+'&product_type_srch='+product_type_srch+'&product_um_srch='+product_um_srch;
 		}else{
-			alert('<?php echo $MWQS_OF->get_mpp_bs_msg($page_url);?>');
+			alert('<?php echo esc_js($MWQS_OF->get_mpp_bs_msg(esc_url($page_url)));?>');
 		}
 	}
 	
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&product_push_search=&product_type_srch=&product_um_srch=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&product_push_search=&product_type_srch=&product_um_srch=';
 	}
 	
 	jQuery(document).ready(function($) {
@@ -224,23 +233,23 @@ $wc_p_types = wc_get_product_types();
 			}
 			
 			if(item_checked==0){
-				alert('<?php echo __('Please select at least one item.','mw_wc_qbo_sync');?>');
+				alert('<?php echo esc_html__('Please select at least one item.','mw_wc_qbo_sync');?>');
 				return false;
 			}
 			
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_product_push',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=push&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_product_push',0,0,650,350);
 			return false;
 		});
 		
 		$('#push_all_product_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&sync_all=1&item_type='+item_type,'mw_qs_product_push',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=push&sync_all=1&item_type='+item_type,'mw_qs_product_push',0,0,650,350);
 			return false;
 		});
 		
 		$('#push_all_unsynced_product_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&sync_unsynced=1&item_type='+item_type,'mw_qs_product_push',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=push&sync_unsynced=1&item_type='+item_type,'mw_qs_product_push',0,0,650,350);
 			return false;
 		});
 	});
  </script>
- <?php echo $MWQS_OF->get_tablesorter_js('#mwqs_product_push_table');?>
+<?php echo wp_kses( $MWQS_OF->get_tablesorter_js('#mwqs_product_push_table'), array('script' => array('src' => array(), 'type' => array(), 'crossorigin' => array(), 'onerror' => array()), 'style' => array()) );?>

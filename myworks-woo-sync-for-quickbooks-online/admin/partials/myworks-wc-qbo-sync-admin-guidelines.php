@@ -6,10 +6,10 @@ exit;
 <?php 
 global $MSQS_QL;
 $is_valid_page = false;
-$page = (isset($_GET['page']))?$_GET['page']:'';
-$tab = (isset($_GET['tab']))?$_GET['tab']:'';
-$rf_data_count = (isset($_GET['rf_data_count']))?$_GET['rf_data_count']:'';
-$variation = (isset($_GET['variation']))?$_GET['variation']:'';
+$page = (isset($_GET['page'])) ? sanitize_text_field($_GET['page']) : '';
+$tab = (isset($_GET['tab'])) ? sanitize_text_field($_GET['tab']) : '';
+$rf_data_count = (isset($_GET['rf_data_count'])) ? absint($_GET['rf_data_count']) : 0;
+$variation = (isset($_GET['variation'])) ? sanitize_text_field($_GET['variation']) : '';
 if(is_admin() && !empty($page)){	
 	$is_valid_page = true;
 	if(($page == 'myworks-wc-qbo-map' || $page == 'myworks-wc-qbo-push') && empty($tab)){
@@ -82,14 +82,14 @@ $pv_tab = false;
                     <ul>
                         <li><span class="toggle-btn">Guidelines <i class="fa fa-angle-down"></i></span></li>
                         <?php if($pv_tab && $page == 'myworks-wc-qbo-map' && $tab == 'product'){ ?>
-                        <li class="ab tab_one <?php if($variation != 1){ ?>active<?php } ?>" data-id="product_tab"><span><a href="<?php echo admin_url('admin.php?page=myworks-wc-qbo-map&tab=product');?>">Products</a></span></li>
-                        <li class="ab tab_two <?php if($variation == 1){ ?>active<?php } ?>" data-id="variation_tab"><span><a href="<?php echo admin_url('admin.php?page=myworks-wc-qbo-map&tab=product&variation=1');?>">Variations</a></span></li>
+                        <li class="ab tab_one <?php if($variation != 1){ ?>active<?php } ?>" data-id="product_tab"><span><a href="<?php echo esc_url(admin_url('admin.php?page=myworks-wc-qbo-map&tab=product'));?>">Products</a></span></li>
+                        <li class="ab tab_two <?php if($variation == 1){ ?>active<?php } ?>" data-id="variation_tab"><span><a href="<?php echo esc_url(admin_url('admin.php?page=myworks-wc-qbo-map&tab=product&variation=1'));?>">Variations</a></span></li>
                         <?php } ?>
 
                         <?php if($pv_tab && $page == 'myworks-wc-qbo-push'){ ?>
                         <?php if($tab == 'product' || $tab == 'variation'){ ?>
-                        <li class="ab tab_one <?php if($tab == 'product'){ ?>active<?php } ?>" data-id="product_tab"><span><a href="<?php echo admin_url('admin.php?page=myworks-wc-qbo-push&tab=product');?>">Products</a></span></li>
-                        <li class="ab tab_two <?php if($tab == 'variation'){ ?>active<?php } ?>" data-id="variation_tab"><span><a href="<?php echo admin_url('admin.php?page=myworks-wc-qbo-push&tab=variation');?>">Variations</a></span></li>
+                        <li class="ab tab_one <?php if($tab == 'product'){ ?>active<?php } ?>" data-id="product_tab"><span><a href="<?php echo esc_url(admin_url('admin.php?page=myworks-wc-qbo-push&tab=product'));?>">Products</a></span></li>
+                        <li class="ab tab_two <?php if($tab == 'variation'){ ?>active<?php } ?>" data-id="variation_tab"><span><a href="<?php echo esc_url(admin_url('admin.php?page=myworks-wc-qbo-push&tab=variation'));?>">Variations</a></span></li>
                         <?php } ?>
                         <?php } ?>
                     </ul>
@@ -98,16 +98,16 @@ $pv_tab = false;
                         <?php
                         switch ($page) {
                             case "myworks-wc-qbo-sync-settings":
-                                echo __mwqbo_settings_page_guide();
+                                echo __mwqbo_settings_page_guide(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                                 break;
                             case "myworks-wc-qbo-map":
-                                echo __mwqbo_map_page_guide();
+                                echo __mwqbo_map_page_guide(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                                 break;
                             case "myworks-wc-qbo-push":
-                                echo __mwqbo_push_page_guide();
+                                echo __mwqbo_push_page_guide(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                                 break;                          
                             default:
-                                echo __mwqbo_default_guide();
+                                echo __mwqbo_default_guide(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                         }
                         ?>
                     </div>
@@ -121,8 +121,8 @@ $pv_tab = false;
             <?php if($variation != 1){ ?>
         	  <div class="refresh g-d-o-btn">
               <!-- Map > Product -->
-            	<a href="<?php echo site_url('index.php?mw_qbo_sync_public_quick_refresh=1&data_type=product');?>" id="mwqs_refresh_data_from_qbo">
-                <button title="Update products from quickbooks to local database">Refresh QuickBooks Products</button>			
+            	<a href="<?php echo esc_url(site_url('index.php?mw_qbo_sync_public_quick_refresh=1&data_type=product'));?>" id="mwqs_refresh_data_from_qbo">
+                <button title="Update products from QuickBooks to local database">Refresh QuickBooks Products</button>			
               </a>
             </div>
 			
@@ -158,7 +158,7 @@ $pv_tab = false;
 										<?php wp_nonce_field( 'myworks_wc_qbo_sync_automap_products_wf_qf', 'automap_products_wf_qf' ); ?>
 										<select class="wqam_select" id="pam_wf">
 											<option value=""></option>
-											<?php echo $MSQS_QL->only_option('',$MSQS_QL->get_n_pam_wf_list());?>
+											<?php echo wp_kses($MSQS_QL->only_option('',$MSQS_QL->get_n_pam_wf_list()) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 										</select>
 									</td>
 								</tr>
@@ -168,7 +168,7 @@ $pv_tab = false;
 									<td>
 										<select class="wqam_select" id="pam_qf">
 											<option value=""></option>
-											<?php echo $MSQS_QL->only_option('',$MSQS_QL->get_n_pam_qf_list());?>
+											<?php echo wp_kses($MSQS_QL->only_option('',$MSQS_QL->get_n_pam_qf_list()) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 										</select>
 									</td>
 								</tr>
@@ -202,8 +202,8 @@ $pv_tab = false;
             <?php if($variation == 1){ ?>
             <div class="refresh g-d-o-btn">
               <!-- Map > Variation -->
-              <a href="<?php echo site_url('index.php?mw_qbo_sync_public_quick_refresh=1&data_type=product&variation=1');?>" id="mwqs_refresh_data_from_qbo">
-                <button title="Update variations from quickbooks to local database">Refresh QuickBooks Products</button>     
+              <a href="<?php echo esc_url(site_url('index.php?mw_qbo_sync_public_quick_refresh=1&data_type=product&variation=1'));?>" id="mwqs_refresh_data_from_qbo">
+                <button title="Update variations from QuickBooks to local database">Refresh QuickBooks Products</button>     
               </a>
             </div>
 			
@@ -234,7 +234,7 @@ $pv_tab = false;
 									<?php wp_nonce_field( 'myworks_wc_qbo_sync_automap_variations_wf_qf', 'automap_variations_wf_qf' ); ?>
 									<select class="wqam_select" id="vam_wf">
 										<option value=""></option>
-										<?php echo $MSQS_QL->only_option('',$MSQS_QL->get_n_vam_wf_list());?>
+										<?php echo wp_kses($MSQS_QL->only_option('',$MSQS_QL->get_n_vam_wf_list()) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 									</select>
 								</td>
 							</tr>
@@ -244,7 +244,7 @@ $pv_tab = false;
 								<td>
 									<select class="wqam_select" id="vam_qf">
 										<option value=""></option>
-										<?php echo $MSQS_QL->only_option('',$MSQS_QL->get_n_vam_qf_list());?>
+										<?php echo wp_kses($MSQS_QL->only_option('',$MSQS_QL->get_n_vam_qf_list()) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 									</select>
 								</td>
 							</tr>
@@ -278,8 +278,8 @@ $pv_tab = false;
             <?php if($page == 'myworks-wc-qbo-map' && $tab == 'customer'){ ?>
             <div class="refresh g-d-o-btn">
               <!-- Map > Customer -->
-              <a href="<?php echo site_url('index.php?mw_qbo_sync_public_quick_refresh=1&data_type=customer');?>" id="mwqs_refresh_data_from_qbo">
-                <button title="Update customers from quickbooks to local database">Refresh QuickBooks Customers</button>     
+              <a href="<?php echo esc_url(site_url('index.php?mw_qbo_sync_public_quick_refresh=1&data_type=customer'));?>" id="mwqs_refresh_data_from_qbo">
+                <button title="Update customers from QuickBooks to local database">Refresh QuickBooks Customers</button>     
               </a>
             </div>
 			
@@ -314,7 +314,7 @@ $pv_tab = false;
 									<?php wp_nonce_field( 'myworks_wc_qbo_sync_automap_customers_wf_qf', 'automap_customers_wf_qf' ); ?>
 									<select class="wqam_select" id="cam_wf">
 										<option value=""></option>
-										<?php echo $MSQS_QL->only_option('',$MSQS_QL->get_n_cam_wf_list());?>
+										<?php echo wp_kses($MSQS_QL->only_option('',$MSQS_QL->get_n_cam_wf_list()) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 									</select>
 								</td>
 							</tr>
@@ -324,7 +324,7 @@ $pv_tab = false;
 								<td>
 									<select class="wqam_select" id="cam_qf">
 										<option value=""></option>
-										<?php echo $MSQS_QL->only_option('',$MSQS_QL->get_n_cam_qf_list());?>
+										<?php echo wp_kses($MSQS_QL->only_option('',$MSQS_QL->get_n_cam_qf_list()) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 									</select>
 								</td>
 							</tr>
@@ -356,8 +356,8 @@ $pv_tab = false;
 			<?php if($page == 'myworks-wc-qbo-map' && $tab == 'vendor' && $MSQS_QL->is_wq_vendor_pm_enable()){ ?>
             <div class="refresh g-d-o-btn">
               <!-- Map > Vendor -->
-              <a href="<?php echo site_url('index.php?mw_qbo_sync_public_quick_refresh=1&data_type=vendor');?>" id="mwqs_refresh_data_from_qbo">
-                <button title="Update vendors from quickbooks to local database">Refresh Vendors</button>     
+              <a href="<?php echo esc_url(site_url('index.php?mw_qbo_sync_public_quick_refresh=1&data_type=vendor'));?>" id="mwqs_refresh_data_from_qbo">
+                <button title="Update vendors from QuickBooks to local database">Refresh Vendors</button>     
               </a>
             </div>
 
@@ -380,22 +380,33 @@ $pv_tab = false;
             </div>
             <?php } ?>
 
+            <?php if($page == 'myworks-wc-qbo-sync-settings'):?>
+            <div class="refresh g-d-o-btn">
+              <span id="mwqs_srqd_msg"></span>
+              <!-- Settings Page -->
+              <a href="javascript:void(0);" id="mwqs_refresh_data_from_qbo" class="mwqs_settings_refresh_qb_data">
+                <button disabled="disabled" id="mwqs_refresh_data_from_qbo_btn" title="Update data from QuickBooks to local database">Refresh QuickBooks Data</button>     
+              </a>
+              <?php wp_nonce_field( 'myworks_wc_qbo_sync_settings_refresh_qb_data', 'settings_refresh_qb_data' ); ?>
+            </div>
+            <?php endif;?>
+
             <div class="guide-dropdown" style="position:static">
                <span class="dropbtn">Need Help?  <i class="fa fa-angle-down"></i></span>
                <div class="dropdown-content">
                   <?php
                   switch ($page) {
                       case "myworks-wc-qbo-sync-settings":
-                          echo __mwqbo_settings_page_help();
+                          echo __mwqbo_settings_page_help(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                           break;
                       case "myworks-wc-qbo-map":
-                          echo __mwqbo_map_page_help();
+                          echo __mwqbo_map_page_help(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                           break;
                       case "myworks-wc-qbo-push":
-                          echo __mwqbo_push_page_help();
+                          echo __mwqbo_push_page_help(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                           break;                          
                       default:
-                          echo __mwqbo_default_help();
+                          echo __mwqbo_default_help(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                   }
                   ?>
              </div>
@@ -434,7 +445,7 @@ jQuery('.guide-accordion').find('li').click(function(){
 
 <?php
 function __mwqbo_settings_page_guide(){
-  $tab = (isset($_GET['tab']))?$_GET['tab']:'';
+  $tab = (isset($_GET['tab'])) ? sanitize_text_field($_GET['tab']) : '';
   $HTML = '<div class="guide settings default" style="display: block;">
             All the dropdowns on this <strong>Default</strong> tab need to be selected to complete setup. Hover over the question marks on the right if you are unsure what a certain setting is, and make sure that the option you select makes sense based on your store settings.
             </div>
@@ -493,7 +504,7 @@ function __mwqbo_settings_page_guide(){
 }
 
 function __mwqbo_map_page_guide(){
-  $tab = (isset($_GET['tab']))?$_GET['tab']:'';  
+  $tab = (isset($_GET['tab'])) ? sanitize_text_field($_GET['tab']) : '';  
   if($tab=='customer'){
     $HTML = '<div class="guide">
             This page allows you to map existing WooCommerce customers to existing QuickBooks customers. Only customers that exist in both systems need to be mapped.
@@ -542,7 +553,7 @@ function __mwqbo_map_page_guide(){
 }
 
 function __mwqbo_push_page_guide(){
-  $tab = (isset($_GET['tab']))?$_GET['tab']:'';
+  $tab = (isset($_GET['tab'])) ? sanitize_text_field($_GET['tab']) : '';
   if($tab=='customer'){
     $HTML = '<div class="guide">
             This section allows you to push customers from WooCommerce to QuickBooks Online. If a customer already exists in QuickBooks Online, you should map them in MyWorks Sync > Map > Customers.
@@ -617,7 +628,7 @@ function __mwqbo_push_page_guide(){
 }
 
 function __mwqbo_default_guide(){
-  $tab = (isset($_GET['tab']))?$_GET['tab']:'';
+  $tab = (isset($_GET['tab'])) ? sanitize_text_field($_GET['tab']) : '';
   $HTML = '<div class="guide">
             Need help on this? Please contact our support anytime! 
             </div>';
@@ -625,7 +636,7 @@ function __mwqbo_default_guide(){
 }
 
 function __mwqbo_map_page_help(){
-  $tab = (isset($_GET['tab']))?$_GET['tab']:'';
+  $tab = (isset($_GET['tab'])) ? sanitize_text_field($_GET['tab']) : '';
   if($tab=='customer'){
     $HTML = '<ul id="guide-accordion" class="guide-accordion">
     <li>
@@ -739,7 +750,7 @@ function __mwqbo_map_page_help(){
 }
 
 function __mwqbo_push_page_help(){
-  $tab = (isset($_GET['tab']))?$_GET['tab']:'';
+  $tab = (isset($_GET['tab'])) ? sanitize_text_field($_GET['tab']) : '';
   if($tab=='customer'){
     $HTML = '<ul id="guide-accordion" class="guide-accordion">
     <li>
@@ -860,7 +871,7 @@ function __mwqbo_push_page_help(){
 }
 
 function __mwqbo_settings_page_help(){
-  $tab = (isset($_GET['tab']))?$_GET['tab']:'';
+  $tab = (isset($_GET['tab'])) ? sanitize_text_field($_GET['tab']) : '';
   $HTML = '<ul id="guide-accordion" class="guide-accordion settings default" style="display: block;">
     <li>
       <div class="acco-link">Getting Started</div>
@@ -984,7 +995,7 @@ function __mwqbo_settings_page_help(){
 }
 
 function __mwqbo_default_help(){
- $tab = (isset($_GET['tab']))?$_GET['tab']:'';
+ $tab = (isset($_GET['tab'])) ? sanitize_text_field($_GET['tab']) : '';
   $HTML = '<ul id="guide-accordion" class="guide-accordion">
     <li>
   <div class="acco-link">Need more help?</div>
@@ -999,7 +1010,7 @@ function __mwqbo_default_help(){
 
 function __mwqbo_need_help_common(){
   global $MSQS_QL;
-  $tab = (isset($_GET['tab']))?$_GET['tab']:'';
+  $tab = (isset($_GET['tab'])) ? sanitize_text_field($_GET['tab']) : '';
   $HTML = '<li>
       <div class="acco-link">Still need help?</div>
       <ul class="guide-submenu">

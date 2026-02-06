@@ -31,14 +31,51 @@ $is_plg_lc_p_l = $MSQS_QL->is_plg_lc_p_l();
 $is_plg_lc_p_r = $MSQS_QL->is_plg_lc_p_r();
 
 $page_url = 'admin.php?page=myworks-wc-qbo-sync-settings';
-$selected_tab = (isset($_GET['selected_tab']))?$MSQS_QL->sanitize($_GET['selected_tab']):'';
+$selected_tab = (isset($_GET['selected_tab']))?$MSQS_QL->sanitize(sanitize_text_field(wp_unslash($_GET['selected_tab']))):'';
 
 $save_status = '';
+
+# New
+if($MSQS_QL->use_new_qbo_local_data('class') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_classes_data_fetched') != 'true'){
+	# Fetch and save new QBO classes into DB
+	$MSQS_QL->save_all_classes();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_classes_data_fetched','true',false);
+}
+
+if($MSQS_QL->use_new_qbo_local_data('taxcode') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_taxcodes_data_fetched') != 'true'){
+	# Fetch and save new QBO tax codes into DB
+	$MSQS_QL->save_all_taxcodes();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_taxcodes_data_fetched','true',false);
+}
+
+if($MSQS_QL->use_new_qbo_local_data('department') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_departments_data_fetched') != 'true'){
+	# Fetch and save new QBO departments into DB
+	$MSQS_QL->save_all_departments();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_departments_data_fetched','true',false);
+}
+
+if($MSQS_QL->use_new_qbo_local_data('customertype') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_customertypes_data_fetched') != 'true'){
+	# Fetch and save new QBO customer types into DB
+	$MSQS_QL->save_all_customertypes();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_customertypes_data_fetched','true',false);
+}
+
+if($MSQS_QL->use_new_qbo_local_data('vendor') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_vendors_data_fetched') != 'true'){
+	# Fetch and save new QBO vendors into DB
+	$MSQS_QL->save_all_vendors();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_vendors_data_fetched','true',false);
+}
+
+if($MSQS_QL->use_new_qbo_local_data('account') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_accounts_data_fetched') != 'true'){
+	# Fetch and save new QBO accounts into DB
+	$MSQS_QL->save_all_accounts();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_accounts_data_fetched','true',false);
+}
 
 if(isset($_POST['mw_wc_qbo_sync_settings']) && check_admin_referer( 'myworks_wc_qbo_sync_save_settings', 'map_wc_qbo_update_settings' )){
 	/**/
 	if($_POST['mw_wc_qbo_sync_queue_cron_interval_time'] != $MSQS_QL->get_option('mw_wc_qbo_sync_queue_cron_interval_time')){
-		$cit = trim($_POST['mw_wc_qbo_sync_queue_cron_interval_time']);
+		$cit = trim(sanitize_text_field($_POST['mw_wc_qbo_sync_queue_cron_interval_time']));
 		
 		$ilp = $is_plg_lc_p_l;
 		if(empty($cit)){$cit = 'MWQBO_5min';}
@@ -66,7 +103,7 @@ if(isset($_POST['mw_wc_qbo_sync_settings']) && check_admin_referer( 'myworks_wc_
 	}
 	
 	if($_POST['mw_wc_qbo_sync_ivnt_pull_interval_time'] != $MSQS_QL->get_option('mw_wc_qbo_sync_ivnt_pull_interval_time')){
-		$ipit = trim($_POST['mw_wc_qbo_sync_ivnt_pull_interval_time']);
+		$ipit = trim(sanitize_text_field($_POST['mw_wc_qbo_sync_ivnt_pull_interval_time']));
 		
 		$ilp = $is_plg_lc_p_l;
 		if(empty($ipit)){$ipit = 'MWQBO_5min';}
@@ -95,7 +132,7 @@ if(isset($_POST['mw_wc_qbo_sync_settings']) && check_admin_referer( 'myworks_wc_
 	
 	#New - For Pricing
 	if($_POST['mw_wc_qbo_sync_prc_pull_interval_time'] != $MSQS_QL->get_option('mw_wc_qbo_sync_prc_pull_interval_time')){
-		$ppit = trim($_POST['mw_wc_qbo_sync_prc_pull_interval_time']);
+		$ppit = trim(sanitize_text_field($_POST['mw_wc_qbo_sync_prc_pull_interval_time']));
 		
 		$ilp = $is_plg_lc_p_l;
 		if(empty($ppit)){$ppit = 'MWQBO_5min';}
@@ -124,7 +161,7 @@ if(isset($_POST['mw_wc_qbo_sync_settings']) && check_admin_referer( 'myworks_wc_
 
 	#New - For Product
 	if($_POST['mw_wc_qbo_sync_product_pull_interval_time'] != $MSQS_QL->get_option('mw_wc_qbo_sync_product_pull_interval_time')){
-		$ppit = trim($_POST['mw_wc_qbo_sync_product_pull_interval_time']);
+		$ppit = trim(sanitize_text_field($_POST['mw_wc_qbo_sync_product_pull_interval_time']));
 		
 		$ilp = $is_plg_lc_p_l;
 		if(empty($ppit)){$ppit = 'MWQBO_5min';}
@@ -153,7 +190,7 @@ if(isset($_POST['mw_wc_qbo_sync_settings']) && check_admin_referer( 'myworks_wc_
 
 	#New - For Payment
 	if($_POST['mw_wc_qbo_sync_payment_pull_interval_time'] != $MSQS_QL->get_option('mw_wc_qbo_sync_payment_pull_interval_time')){
-		$ppit = trim($_POST['mw_wc_qbo_sync_payment_pull_interval_time']);
+		$ppit = trim(sanitize_text_field($_POST['mw_wc_qbo_sync_payment_pull_interval_time']));
 		
 		$ilp = $is_plg_lc_p_l;
 		if(empty($ppit)){$ppit = 'MWQBO_5min';}
@@ -204,13 +241,13 @@ if(isset($_POST['mw_wc_qbo_sync_settings']) && check_admin_referer( 'myworks_wc_
 	$MSQS_AD->admin_settings_save($MWQS_OF->get_plugin_settings_post_data(),1);
 	
 	if(isset($_POST['mw_wc_qbo_sync_update_option']) && $_POST['mw_wc_qbo_sync_update_option'] != $MSQS_QL->get_option('mw_wc_qbo_sync_update_option')){
-		update_option('mw_wc_qbo_sync_update_option', $_POST['mw_wc_qbo_sync_update_option']);
+		update_option('mw_wc_qbo_sync_update_option', sanitize_text_field($_POST['mw_wc_qbo_sync_update_option']));
 		$date = strtotime("+8 day", strtotime(date('Y-m-d')));
 		update_option('mw_wc_qbo_sync_update_option_date', date('Y-m-d', $date));
 	}
 	
 	/**/
-	update_option('mw_wc_qbo_sync_order_qbo_sync_as', isset($_POST['mw_wc_qbo_sync_order_qbo_sync_as'])?$_POST['mw_wc_qbo_sync_order_qbo_sync_as']:'');
+	update_option('mw_wc_qbo_sync_order_qbo_sync_as', isset($_POST['mw_wc_qbo_sync_order_qbo_sync_as'])?sanitize_text_field($_POST['mw_wc_qbo_sync_order_qbo_sync_as']):'');
 	
 	if(isset($_POST['mw_wc_qbo_sync_order_qbo_sync_as']) && $_POST['mw_wc_qbo_sync_order_qbo_sync_as'] == 'Per Role'){
 		$mw_wc_qbo_sync_oqsa_pr_data = '';
@@ -218,8 +255,8 @@ if(isset($_POST['mw_wc_qbo_sync_settings']) && check_admin_referer( 'myworks_wc_
 		if(isset($_POST['vpr_wr']) && is_array($_POST['vpr_wr']) && isset($_POST['vpr_qost']) && is_array($_POST['vpr_qost'])){
 			if(is_array($_POST['vpr_wr']) && !empty($_POST['vpr_wr']) && is_array($_POST['vpr_qost']) && !empty($_POST['vpr_qost'])){
 				if(count($_POST['vpr_wr']) == count($_POST['vpr_qost'])){
-					$vpr_wr = $_POST['vpr_wr'];
-					$vpr_qost = $_POST['vpr_qost'];
+					$vpr_wr = array_map('sanitize_text_field', $_POST['vpr_wr']);
+					$vpr_qost = array_map('sanitize_text_field', $_POST['vpr_qost']);
 					
 					$qosa_pa_data = array();
 					$qosa_pa_template_data = array();
@@ -251,8 +288,8 @@ if(isset($_POST['mw_wc_qbo_sync_settings']) && check_admin_referer( 'myworks_wc_
 		if(isset($_POST['saoqc_wr']) && is_array($_POST['saoqc_wr']) && isset($_POST['saoqc_qc']) && is_array($_POST['saoqc_qc'])){
 			if(is_array($_POST['saoqc_wr']) && !empty($_POST['saoqc_wr']) && is_array($_POST['saoqc_qc']) && !empty($_POST['saoqc_qc'])){
 				if(count($_POST['saoqc_wr']) == count($_POST['saoqc_qc'])){
-					$saoqc_wr = $_POST['saoqc_wr'];
-					$saoqc_qc = $_POST['saoqc_qc'];
+					$saoqc_wr = array_map('sanitize_text_field', $_POST['saoqc_wr']);
+					$saoqc_qc = array_map('sanitize_text_field', $_POST['saoqc_qc']);
 					
 					$aotc_rcm_data = array();
 					$aotc_scj_data = array();
@@ -265,7 +302,7 @@ if(isset($_POST['mw_wc_qbo_sync_settings']) && check_admin_referer( 'myworks_wc_
 							}
 
 							if(isset($_POST['saoqc_scj_'.$v]) && !empty($_POST['saoqc_scj_'.$v])){
-								$aotc_scj_data[$v] = $_POST['saoqc_scj_'.$v];
+								$aotc_scj_data[$v] = sanitize_text_field($_POST['saoqc_scj_'.$v]);
 							}							
 													
 						}
@@ -291,7 +328,7 @@ if(isset($_POST['mw_wc_qbo_sync_settings']) && check_admin_referer( 'myworks_wc_
 
 	$save_status = 'admin-success-green';
 	$MSQS_QL->set_session_val('settings_save_class',$save_status);
-	$MSQS_QL->set_session_val('settings_current_tab',isset($_POST['mw_qbo_sybc_settings_current_tab'])?$_POST['mw_qbo_sybc_settings_current_tab']:'mw_qbo_sybc_settings_tab_one');
+	$MSQS_QL->set_session_val('settings_current_tab',isset($_POST['mw_qbo_sybc_settings_current_tab'])?sanitize_text_field($_POST['mw_qbo_sybc_settings_current_tab']):'mw_qbo_sybc_settings_tab_one');
 	
 	$MSQS_QL->redirect($page_url);
 }
@@ -370,32 +407,32 @@ $wu_roles = get_editable_roles();
 <div class="mw_wc_qbo_sync_container">
 <form method="post">
 <?php wp_nonce_field( 'myworks_wc_qbo_sync_save_settings', 'map_wc_qbo_update_settings' ); ?>
-<input type="hidden" name="mw_qbo_sybc_settings_current_tab" id="mw_qbo_sybc_settings_current_tab" value="<?php echo $settings_current_tab; ?>">
+<input type="hidden" name="mw_qbo_sybc_settings_current_tab" id="mw_qbo_sybc_settings_current_tab" value="<?php echo esc_attr($settings_current_tab); ?>">
 <nav class="mw-qbo-sync-grey">
 	<div class="nav-wrapper">
 		<a class="brand-logo left" href="javascript:void(0)">
-			<img src="<?php echo plugins_url( 'myworks-woo-sync-for-quickbooks-online/admin/image/mwd-logo.png' ) ?>">
+			<img src="<?php echo esc_url( plugins_url( 'myworks-woo-sync-for-quickbooks-online/admin/image/mwd-logo.png' ) ) ?>">
 		</a>
 		<ul class="hide-on-med-and-down right">
-			<li class="default-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_one"><?php echo __('Default','mw_wc_qbo_sync') ?></a></li>
-			<li class="invoice-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_two"><?php echo __('Order','mw_wc_qbo_sync') ?></a></li>
+			<li class="default-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_one"><?php echo esc_html__('Default','mw_wc_qbo_sync') ?></a></li>
+			<li class="invoice-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_two"><?php echo esc_html__('Order','mw_wc_qbo_sync') ?></a></li>
 			
-			<li class="product-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_product"><?php echo __('Product','mw_wc_qbo_sync') ?></a></li>
+			<li class="product-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_product"><?php echo esc_html__('Product','mw_wc_qbo_sync') ?></a></li>
 			
-			<?php /* <li class="payment-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_three"><?php echo __('Payment','mw_wc_qbo_sync') ?></a></li> */ ?>
+			<?php /* <li class="payment-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_three"><?php echo esc_html__('Payment','mw_wc_qbo_sync') ?></a></li> */ ?>
 			
 			<?php if(!$MSQS_QL->get_qbo_company_setting('is_automated_sales_tax')):?>
-			<li class="tax-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_four"><?php echo __('Taxes','mw_wc_qbo_sync') ?></a></li>
+			<li class="tax-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_four"><?php echo esc_html__('Taxes','mw_wc_qbo_sync') ?></a></li>
 			<?php endif;?>
 			
-			<li class="mapping-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_five"><?php echo __('Mapping','mw_wc_qbo_sync') ?></a></li>
-			<li class="pull-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_six"><?php echo __('Pull','mw_wc_qbo_sync') ?></a></li>
+			<li class="mapping-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_five"><?php echo esc_html__('Mapping','mw_wc_qbo_sync') ?></a></li>
+			<li class="pull-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_six"><?php echo esc_html__('Pull','mw_wc_qbo_sync') ?></a></li>
 			
-			<li class="webhook-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_wh"><?php echo __('Automatic Sync','mw_wc_qbo_sync') ?></a></li>
+			<li class="webhook-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_wh"><?php echo esc_html__('Automatic Sync','mw_wc_qbo_sync') ?></a></li>
 			
-			<li style="display:none; class="dis-icon mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_seven"><?php echo __('Disable','mw_wc_qbo_sync') ?></a></li>
-			<li style="display:none;" class="adv-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_eight"><?php echo __('Advanced','mw_wc_qbo_sync') ?></a></li>
-			<li class="misc-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_nine"><?php echo __('Miscellaneous','mw_wc_qbo_sync') ?></a></li>			
+			<li style="display:none; class="dis-icon mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_seven"><?php echo esc_html__('Disable','mw_wc_qbo_sync') ?></a></li>
+			<li style="display:none;" class="adv-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_eight"><?php echo esc_html__('Advanced','mw_wc_qbo_sync') ?></a></li>
+			<li class="misc-menu mwqs_stb"><a href="javascript:void(0)" id="mw_qbo_sybc_settings_tab_nine"><?php echo esc_html__('Miscellaneous','mw_wc_qbo_sync') ?></a></li>			
 		</ul>
 	</div>
 </nav>
@@ -409,13 +446,13 @@ $wu_roles = get_editable_roles();
 					<div class="row">
 						<div class="col s12 m12 l12">
                           	<div id="mw_qbo_sybc_settings_tab_one_body" style="display: none;">
-							<h6><?php echo __('Default Settings','mw_wc_qbo_sync') ?></h6>
+							<h6><?php echo esc_html__('Default Settings','mw_wc_qbo_sync') ?></h6>
 							<div class="myworks-wc-qbo-sync-table-responsive myworks-setting">
 							<table class="mw-qbo-sync-settings-table mwqs_setting_tab_body_body">
 							<tbody>                				
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Default for unmatched products','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Default for unmatched products','mw_wc_qbo_sync') ?>
 								    </th>
 									<td>
 										<div class="row">
@@ -437,22 +474,22 @@ $wu_roles = get_editable_roles();
 															$dd_options.=$mw_qbo_product_list;
 														}
 													?>
-													<select name="mw_wc_qbo_sync_default_qbo_item" id="mw_wc_qbo_sync_default_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-														<?php echo $dd_options;?>
+													<select name="mw_wc_qbo_sync_default_qbo_item" id="mw_wc_qbo_sync_default_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+														<?php echo !empty($dd_options) ? $dd_options : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 													</select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-									  <span class="tooltiptext"><?php echo __('This is a QuickBooks Online Product that is only used when syncing an order that contains line items not mapped to a QuickBooks product. Think of this as a fallback / miscellaneous type product.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+									  <span class="tooltiptext"><?php echo esc_html__('This is a QuickBooks Online Product that is only used when syncing an order that contains line items not mapped to a QuickBooks product. Think of this as a fallback / miscellaneous type product.','mw_wc_qbo_sync') ?></span>
 									</div>
                                     </td>
 								</tr>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Default QuickBooks Sales Account for New Products ','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Default QuickBooks Sales Account for New Products ','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -461,22 +498,22 @@ $wu_roles = get_editable_roles();
 												<p>
 													<select name="mw_wc_qbo_sync_default_qbo_product_account" id="mw_wc_qbo_sync_default_qbo_product_account" class="filled-in production-option mw_wc_qbo_sync_select dd_dqsafnp">
 													<option value=""></option>
-										            <?php echo $get_account_dropdown_list ?>
+										            <?php echo !empty($get_account_dropdown_list) ? $get_account_dropdown_list : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Default account assigned to your WooCommerce products when pushing them over to QBO. This should be an income or expense account.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Default account assigned to your WooCommerce products when pushing them over to QBO. This should be an income or expense account.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Default QuickBooks Inventory Asset Account for New Products','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Default QuickBooks Inventory Asset Account for New Products','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -485,22 +522,22 @@ $wu_roles = get_editable_roles();
 												<p>
 													<select name="mw_wc_qbo_sync_default_qbo_asset_account" id="mw_wc_qbo_sync_default_qbo_asset_account" class="filled-in production-option mw_wc_qbo_sync_select dd_dqiaafnp">
 													<option value=""></option>
-										            <?php echo $get_account_dropdown_list ?>
+										            <?php echo !empty($get_account_dropdown_list) ? $get_account_dropdown_list : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Default inventory asset account assigned to your WooCommerce products when pushing them over to QBO.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Default inventory asset account assigned to your WooCommerce products when pushing them over to QBO.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Default QuickBooks COGS Account for New Products','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Default QuickBooks COGS Account for New Products','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -509,22 +546,22 @@ $wu_roles = get_editable_roles();
 												<p>
 													<select name="mw_wc_qbo_sync_default_qbo_expense_account" id="mw_wc_qbo_sync_default_qbo_expense_account" class="filled-in production-option mw_wc_qbo_sync_select dd_dqcogsafnp">
 													<option value=""></option>
-										            <?php echo $get_account_dropdown_list ?>
+										            <?php echo !empty($get_account_dropdown_list) ? $get_account_dropdown_list : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Default Cost of Goods Sold account assigned to your WooCommerce products when pushing them over to QBO.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Default Cost of Goods Sold account assigned to your WooCommerce products when pushing them over to QBO.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
 								
 								<tr style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('Default QuickBooks Discount Account for New Products','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Default QuickBooks Discount Account for New Products','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -533,15 +570,15 @@ $wu_roles = get_editable_roles();
 												<p>
 													<select name="mw_wc_qbo_sync_default_qbo_discount_account" id="mw_wc_qbo_sync_default_qbo_discount_account" class="filled-in production-option mw_wc_qbo_sync_select">
 													<option value=""></option>
-										            <?php echo $get_account_dropdown_list ?>
+										            <?php echo !empty($get_account_dropdown_list) ? $get_account_dropdown_list : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Default Income Account in QuickBooks Online for unmapped Discounts in WooCommerce.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Default Income Account in QuickBooks Online for unmapped Discounts in WooCommerce.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
@@ -549,7 +586,7 @@ $wu_roles = get_editable_roles();
 								
 								<tr <?php //if($MSQS_QL->get_qbo_company_setting('is_discount_allowed')){echo '';}?> style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('Default QuickBooks Coupon Code Product','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Default QuickBooks Coupon Code Product','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -575,7 +612,7 @@ $wu_roles = get_editable_roles();
 														*/
 													?>
 													
-													<select name="mw_wc_qbo_sync_default_coupon_code" id="mw_wc_qbo_sync_default_coupon_code" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
+													<select name="mw_wc_qbo_sync_default_coupon_code" id="mw_wc_qbo_sync_default_coupon_code" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
 														<?php //echo $dd_options;?>
 													</select>
 													
@@ -584,8 +621,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose a QuickBooks Online Product to fallback to in invoice line items for unmapped Coupon Codes.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose a QuickBooks Online Product to fallback to in invoice line items for unmapped Coupon Codes.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
@@ -593,7 +630,7 @@ $wu_roles = get_editable_roles();
 								<?php //if(!$MSQS_QL->option_checked('mw_wc_qbo_sync_odr_shipping_as_li')){echo 'style="display:none;"';}?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Default QuickBooks Shipping Product','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Default QuickBooks Shipping Product','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -618,8 +655,8 @@ $wu_roles = get_editable_roles();
 														}
 													?>													
 													
-													<select name="mw_wc_qbo_sync_default_shipping_product" id="mw_wc_qbo_sync_default_shipping_product" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-														<?php echo $dd_options;?>
+													<select name="mw_wc_qbo_sync_default_shipping_product" id="mw_wc_qbo_sync_default_shipping_product" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+														<?php echo !empty($dd_options) ? $dd_options : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 													</select>
 													
 												</p>
@@ -627,8 +664,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose a QuickBooks Online Product to fallback to for unmapped Shipping Methods.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose a QuickBooks Online Product to fallback to for unmapped Shipping Methods.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
@@ -636,7 +673,7 @@ $wu_roles = get_editable_roles();
 								<?php if($MSQS_QL->get_qbo_company_setting('is_m_currency')):?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Enable currencies for your WooCommerce store','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Enable currencies for your WooCommerce store','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -658,8 +695,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select currencies for your WooCommerce store. You can select multiple currency as per requirement.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select currencies for your WooCommerce store. You can select multiple currency as per requirement.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
@@ -675,7 +712,7 @@ $wu_roles = get_editable_roles();
 									<p>Timezone</p>
 									<p><?php if (date_default_timezone_get()) {
 									    //echo get_option('timezone_string');
-										echo $MSQS_QL->get_sys_timezone();
+										echo esc_html($MSQS_QL->get_sys_timezone());
 									}?></p>
 								</div>
 								
@@ -683,7 +720,7 @@ $wu_roles = get_editable_roles();
 								<?php if($MSQS_QL->get_qbo_company_setting('is_m_currency')):?>								
 								<div class="input-field col s3 m3 l3">
 									<p>Currency</p>
-									<p><?php echo get_option('woocommerce_currency').' '.get_woocommerce_currency_symbol() ?></p>
+									<p><?php echo esc_html(get_option('woocommerce_currency')).' '.esc_html(get_woocommerce_currency_symbol()) ?></p>
 								</div>
 								<?php endif;?>
 								
@@ -703,7 +740,7 @@ $wu_roles = get_editable_roles();
 							</div>
 							
 							<div id="mw_qbo_sybc_settings_tab_two_body" style="display: none;">
-							<h6><?php echo __('Order Settings','mw_wc_qbo_sync') ?></h6>
+							<h6><?php echo esc_html__('Order Settings','mw_wc_qbo_sync') ?></h6>
 							<div class="myworks-wc-qbo-sync-table-responsive myworks-setting">
 							<table class="mw-qbo-sync-settings-table mwqs_setting_tab_body_body">
 							<tbody>
@@ -717,7 +754,7 @@ $wu_roles = get_editable_roles();
 								
 								<tr>
 									<th class="title-description"  width="35%">
-								    	<?php echo __('Sync WooCommerce Orders as','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Sync WooCommerce Orders as','mw_wc_qbo_sync') ?>
 								    	
 								    </th>									
 									
@@ -764,8 +801,8 @@ $wu_roles = get_editable_roles();
 									</td>
 									
 									<td width="5%">
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Turn on to sync WooCommerce orders as Sales Receipts into QuickBooks Online. Otherwise, they will be synced as an Invoice + Payment.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Turn on to sync WooCommerce orders as Sales Receipts into QuickBooks Online. Otherwise, they will be synced as an Invoice + Payment.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -785,7 +822,7 @@ $wu_roles = get_editable_roles();
 								<?php if(is_array($wu_roles) && count($wu_roles)):?>
 								<tr id="wo_qsa_vpr_map_tr" <?php if($wo_qsa != 'Per Role'){echo 'style="display:none;"';}?>>
 									<th class="title-description">
-										<?php echo __('WooCommerce User Role -> Order Sync Type Mapping','mw_wc_qbo_sync') ?>
+										<?php echo esc_html__('WooCommerce User Role -> Order Sync Type Mapping','mw_wc_qbo_sync') ?>
 									</th>
 									<td>
 										<table>
@@ -798,13 +835,13 @@ $wu_roles = get_editable_roles();
 											?>
 											<tr style="border:none; background:none;">
 												<td width="30%">
-													<?php echo $role_info['name'];?>
-													<input type="hidden" name="vpr_wr[]" value="<?php echo $role_name;?>">
+													<?php echo esc_html($role_info['name'] ?? '');?>
+													<input type="hidden" name="vpr_wr[]" value="<?php echo esc_attr($role_name);?>">
 												</td>
 												
 												<td>												
 												<select name="vpr_qost[]" class="filled-in production-option mw_wc_qbo_sync_select">
-													<?php echo $MSQS_QL->only_option($qost_va,$qost_arr);?>
+													<?php echo $MSQS_QL->only_option($qost_va ?? '', $qost_arr ?? array()) ?? ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 												</select>
 												</td>												
 											</tr>
@@ -823,7 +860,7 @@ $wu_roles = get_editable_roles();
 												
 												<td>
 												<select name="vpr_qost[]" class="filled-in production-option mw_wc_qbo_sync_select">
-													<?php echo $MSQS_QL->only_option($qost_va,$qost_arr);?>
+													<?php echo $MSQS_QL->only_option($qost_va ?? '', $qost_arr ?? array()) ?? ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 												</select>
 												</td>
 												
@@ -832,8 +869,8 @@ $wu_roles = get_editable_roles();
 									</td>
 									
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose Wocommerce Order Syns as QBO Invoice or SalesReceipt','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose Wocommerce Order Syns as QBO Invoice or SalesReceipt','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -844,7 +881,7 @@ $wu_roles = get_editable_roles();
 								<?php if(!$MSQS_QL->get_qbo_company_setting('is_custom_txn_num_allowed')):?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Use Next QuickBooks Order #','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Use Next QuickBooks Order #','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -857,8 +894,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to sync orders to QuickBooks using the NEXT QuickBooks Invoice/Sales Receipt # - instead of the WooCommerce order number.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to sync orders to QuickBooks using the NEXT QuickBooks Invoice/Sales Receipt # - instead of the WooCommerce order number.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -868,7 +905,7 @@ $wu_roles = get_editable_roles();
 								<!--PO-->
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Sync Purchase Order with orders','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Sync Purchase Order with orders','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -881,15 +918,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('If enabled, a purchase order will sync to QuickBooks along with the WooCommerce order.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('If enabled, a purchase order will sync to QuickBooks along with the WooCommerce order.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr id="mw_psaoqv_tr" <?php if(!$MSQS_QL->option_checked('mw_wc_qbo_sync_po_sync_after_ord_ed')){echo 'style="display:none;"';} ?>>
 									<th class="title-description">
-								    	<?php echo __('QuickBooks Vendor for Purchase Orders ','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QuickBooks Vendor for Purchase Orders ','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -898,22 +935,22 @@ $wu_roles = get_editable_roles();
 												<p>
 													<select name="mw_wc_qbo_sync_po_sync_after_ord_qb_vendor" id="mw_wc_qbo_sync_po_sync_after_ord_qb_vendor" class="filled-in production-option mw_wc_qbo_sync_select">
 													<option value=""></option>
-										            <?php echo $qbo_vendor_options ?>
+										            <?php echo !empty($qbo_vendor_options) ? $qbo_vendor_options : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('QuickBooks Vendor for Purchase Orders.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('QuickBooks Vendor for Purchase Orders.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
 								
 								<tr id="mw_qpafpo_tr" <?php if(!$MSQS_QL->option_checked('mw_wc_qbo_sync_po_sync_after_ord_ed')){echo 'style="display:none;"';} ?>>
 									<th class="title-description">
-								    	<?php echo __('QuickBooks Accounts Payable Account for Purchase Orders ','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QuickBooks Accounts Payable Account for Purchase Orders ','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -922,15 +959,15 @@ $wu_roles = get_editable_roles();
 												<p>
 													<select name="mw_wc_qbo_sync_po_sync_after_ord_pa_acc" id="mw_wc_qbo_sync_po_sync_after_ord_pa_acc" class="filled-in production-option mw_wc_qbo_sync_select dd_popafnp">
 													<option value=""></option>
-										            <?php echo $get_account_dropdown_list ?>
+										            <?php echo !empty($get_account_dropdown_list) ? $get_account_dropdown_list : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('QuickBooks Accounts Payable Account for Purchase Orders.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('QuickBooks Accounts Payable Account for Purchase Orders.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
@@ -940,7 +977,7 @@ $wu_roles = get_editable_roles();
 								<?php if(!$setting_removed):?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Sync Order Notes to Statement Memo (PrivateNote)','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Sync Order Notes to Statement Memo (PrivateNote)','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -953,8 +990,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to enable the syncing of the WooCommerce Order Note contents to the QBO Statement Memo field.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to enable the syncing of the WooCommerce Order Note contents to the QBO Statement Memo field.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>								
@@ -977,7 +1014,7 @@ $wu_roles = get_editable_roles();
 								?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Sync order notes to','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Sync order notes to','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -985,22 +1022,22 @@ $wu_roles = get_editable_roles();
 											<div class="input-field col s12 m12 l12">
 												<p>
 													<select name="mw_wc_qbo_sync_won_qbf_sync" id="mw_wc_qbo_sync_won_qbf_sync" class="filled-in production-option mw_wc_qbo_sync_select">													
-										            <?php echo $MSQS_QL->only_option($won_qbf_v,$sontso_vl); ?>
+										            <?php echo $MSQS_QL->only_option($won_qbf_v ?? '', $sontso_vl ?? array()) ?? ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select the QuickBooks Field for Syncing WooCommerce Order Note contents to the QBO','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select the QuickBooks Field for Syncing WooCommerce Order Note contents to the QBO','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
 								
 								<tr id="onli_qp_tr" <?php if($won_qbf_v!='Line_Item'){echo 'style="display:none;"';}?>>
 									<th class="title-description">
-								    	<?php echo __('Order Note Line Item Product','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Order Note Line Item Product','mw_wc_qbo_sync') ?>
 								    </th>
 									<td>
 										<div class="row">
@@ -1022,23 +1059,23 @@ $wu_roles = get_editable_roles();
 															$dd_options.=$mw_qbo_product_list;
 														}
 													?>
-													<select name="mw_wc_qbo_sync_onli_qbo_product" id="mw_wc_qbo_sync_onli_qbo_product" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-														<?php echo $dd_options;?>
+													<select name="mw_wc_qbo_sync_onli_qbo_product" id="mw_wc_qbo_sync_onli_qbo_product" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+														<?php echo !empty($dd_options) ? $dd_options : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 													</select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-									  <span class="tooltiptext"><?php echo __('QuickBooks Product assigned to order note line item.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+									  <span class="tooltiptext"><?php echo esc_html__('QuickBooks Product assigned to order note line item.','mw_wc_qbo_sync') ?></span>
 									</div>
                                     </td>
 								</tr>
 								
                 				<tr>
 									<th class="title-description">
-								    	<?php echo __('Void orders in QuickBooks when WooCommerce order is cancelled','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Void orders in QuickBooks when WooCommerce order is cancelled','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1049,8 +1086,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to mark orders as void in QBO when cancelled in WooCommerce. Works in real-time, not applicable to historical orders.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to mark orders as void in QBO when cancelled in WooCommerce. Works in real-time, not applicable to historical orders.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -1061,7 +1098,7 @@ $wu_roles = get_editable_roles();
 								?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Default QuickBooks Class','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Default QuickBooks Class','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1070,15 +1107,15 @@ $wu_roles = get_editable_roles();
 												<p>
 													<select name="mw_wc_qbo_sync_inv_sr_txn_qb_class" id="mw_wc_qbo_sync_inv_sr_txn_qb_class" class="filled-in production-option mw_wc_qbo_sync_select">
 													<option value=""></option>
-										            <?php echo $MSQS_QL->get_class_dropdown_list($admin_settings_data['mw_wc_qbo_sync_inv_sr_txn_qb_class'],true); ?>
+										            <?php echo $MSQS_QL->get_class_dropdown_list($admin_settings_data['mw_wc_qbo_sync_inv_sr_txn_qb_class'],true); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select a QuickBooks Class to use by default for any line items NOT mapped to a specific class in MyWorks Sync > Map.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select a QuickBooks Class to use by default for any line items NOT mapped to a specific class in MyWorks Sync > Map.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
@@ -1090,7 +1127,7 @@ $wu_roles = get_editable_roles();
 								?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('$0 Order QuickBooks Class','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('$0 Order QuickBooks Class','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1099,15 +1136,15 @@ $wu_roles = get_editable_roles();
 												<p>
 													<select name="mw_wc_qbo_sync_zero_ord_spl_qb_class" id="mw_wc_qbo_sync_zero_ord_spl_qb_class" class="filled-in production-option mw_wc_qbo_sync_select">
 													<option value=""></option>
-										            <?php echo $MSQS_QL->get_class_dropdown_list($admin_settings_data['mw_wc_qbo_sync_zero_ord_spl_qb_class'],true); ?>
+										            <?php echo $MSQS_QL->get_class_dropdown_list($admin_settings_data['mw_wc_qbo_sync_zero_ord_spl_qb_class'],true); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select a QuickBooks Class to use for $0 order.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select a QuickBooks Class to use for $0 order.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
@@ -1118,7 +1155,7 @@ $wu_roles = get_editable_roles();
 								?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Default QuickBooks Department','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Default QuickBooks Department','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1127,15 +1164,15 @@ $wu_roles = get_editable_roles();
 												<p>
 													<select name="mw_wc_qbo_sync_inv_sr_txn_qb_department" id="mw_wc_qbo_sync_inv_sr_txn_qb_department" class="filled-in production-option mw_wc_qbo_sync_select">
 													<option value=""></option>
-										            <?php echo $MSQS_QL->get_department_dropdown_list($admin_settings_data['mw_wc_qbo_sync_inv_sr_txn_qb_department'],true); ?>
+										            <?php echo $MSQS_QL->get_department_dropdown_list($admin_settings_data['mw_wc_qbo_sync_inv_sr_txn_qb_department'],true); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select the department associated with the transaction for invoice and salesreceipt','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select the department associated with the transaction for invoice and salesreceipt','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
@@ -1143,25 +1180,25 @@ $wu_roles = get_editable_roles();
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Block syncing orders before ID','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Block syncing orders before ID','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
 										<div class="row">
 											<div class="input-field col s12 m12 l12">
-												<input type="text" name="mw_wc_qbo_sync_invoice_min_id" id="mw_wc_qbo_sync_invoice_min_id" value="<?php echo $admin_settings_data['mw_wc_qbo_sync_invoice_min_id'] ?>">
+												<input type="text" name="mw_wc_qbo_sync_invoice_min_id" id="mw_wc_qbo_sync_invoice_min_id" value="<?php echo esc_attr($admin_settings_data['mw_wc_qbo_sync_invoice_min_id'] ?? '') ?>">
 											</div>
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Disable/block syncing WooCommerce orders before this Order ID to QuickBooks Online. Default is 0 as previous orders will not be synced anyways unless edited and saved.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Disable/block syncing WooCommerce orders before this Order ID to QuickBooks Online. Default is 0 as previous orders will not be synced anyways unless edited and saved.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Do not Sync $0 Orders','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Do not Sync $0 Orders','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1174,8 +1211,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select to disable the real-time syncing of invoices with a $0 total to QuickBooks Online.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select to disable the real-time syncing of invoices with a $0 total to QuickBooks Online.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -1184,7 +1221,7 @@ $wu_roles = get_editable_roles();
 								<!--New-->
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Sync all orders to one QuickBooks Customer','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Sync all orders to one QuickBooks Customer','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1197,8 +1234,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Turn on to sync WooCommerce orders to one QuickBooks Customer.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Turn on to sync WooCommerce orders to one QuickBooks Customer.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -1211,7 +1248,7 @@ $wu_roles = get_editable_roles();
 								?>
 								<tr id="saoqc_tr" <?php if($MSQS_QL->get_option('mw_wc_qbo_sync_all_order_to_customer')!='true') echo 'style="display: none;"' ?>>
 									<th class="title-description">
-									<?php echo __('WooCommerce User Role -> QuickBooks Customer Mapping','mw_wc_qbo_sync') ?>
+									<?php echo esc_html__('WooCommerce User Role -> QuickBooks Customer Mapping','mw_wc_qbo_sync') ?>
 									</th>
 									<td>
 										<table>
@@ -1229,8 +1266,8 @@ $wu_roles = get_editable_roles();
 											<?php foreach ($wu_roles as $role_name => $role_info):?>
 											<tr style="border:none; background:none;">
 												<td width="30%">
-													<?php echo $role_info['name'];?>
-													<input type="hidden" name="saoqc_wr[]" value="<?php echo $role_name;?>">
+													<?php echo esc_html($role_info['name'] ?? '');?>
+													<input type="hidden" name="saoqc_wr[]" value="<?php echo esc_attr($role_name);?>">
 												</td>
 												<?php
 												$custId = (is_array($mw_wc_qbo_sync_aotc_rcm_data) && isset($mw_wc_qbo_sync_aotc_rcm_data[$role_name]))?$mw_wc_qbo_sync_aotc_rcm_data[$role_name]:'';
@@ -1261,13 +1298,13 @@ $wu_roles = get_editable_roles();
 												}
 												?>
 												<td>												
-													<select id="saoqc_qc_<?php echo $role_name;?>" name="saoqc_qc[]" class="filled-in production-option mw_wc_qbo_sync_select_cus <?php echo $dd_ext_class;?>">
-														<?php echo $dd_options;?>
+													<select id="saoqc_qc_<?php echo esc_attr($role_name);?>" name="saoqc_qc[]" class="filled-in production-option mw_wc_qbo_sync_select_cus <?php echo esc_attr($dd_ext_class);?>">
+														<?php echo !empty($dd_options) ? $dd_options : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 													</select>														
 												</td>
 
 												<td width="15%">
-													<input <?php echo $scj_dsbl;?> <?php echo $scj_chkd;?> title="Sync customers as Sub-Customer into QuickBooks" type="checkbox" id="saoqc_scj_<?php echo $role_name;?>" name="saoqc_scj_<?php echo $role_name;?>" value="<?php echo $role_name;?>">
+													<input <?php echo esc_attr($scj_dsbl);?> <?php echo esc_attr($scj_chkd);?> title="Sync customers as Sub-Customer into QuickBooks" type="checkbox" id="saoqc_scj_<?php echo esc_attr($role_name);?>" name="saoqc_scj_<?php echo esc_attr($role_name);?>" value="<?php echo esc_attr($role_name);?>">
 												</td>												
 												
 											</tr>
@@ -1307,21 +1344,21 @@ $wu_roles = get_editable_roles();
 												}
 												?>
 												<td>												
-													<select id="saoqc_qc_wc_guest_user" name="saoqc_qc[]" class="filled-in production-option mw_wc_qbo_sync_select_cus <?php echo $dd_ext_class;?>">
-														<?php echo $dd_options;?>
+													<select id="saoqc_qc_wc_guest_user" name="saoqc_qc[]" class="filled-in production-option mw_wc_qbo_sync_select_cus <?php echo esc_attr($dd_ext_class);?>">
+														<?php echo !empty($dd_options) ? $dd_options : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 													</select>														
 												</td>
 
 												<td width="15%">
-													<input <?php echo $scj_dsbl;?> <?php echo $scj_chkd;?> title="Sync customers as Sub-Customer into QuickBooks" type="checkbox" id="saoqc_scj_wc_guest_user" name="saoqc_scj_wc_guest_user" value="wc_guest_user">
+													<input <?php echo esc_attr($scj_dsbl);?> <?php echo esc_attr($scj_chkd);?> title="Sync customers as Sub-Customer into QuickBooks" type="checkbox" id="saoqc_scj_wc_guest_user" name="saoqc_scj_wc_guest_user" value="wc_guest_user">
 												</td>											
 											</tr>
 										</table>
 									</td>
 									
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select QuickBooks Customer.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select QuickBooks Customer.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -1331,7 +1368,7 @@ $wu_roles = get_editable_roles();
 								<?php if(!$setting_removed):?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Sync Notes Into Custom Field','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Sync Notes Into Custom Field','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1344,49 +1381,49 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Sync WooCommerce Invoice Note into QuickBooks Online custom field.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Sync WooCommerce Invoice Note into QuickBooks Online custom field.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								<tr id="mw_wc_qbo_sync_invoice_notes_res1" <?php if($admin_settings_data['mw_wc_qbo_sync_invoice_notes']!='true') echo 'style="display: none;"' ?>>
 									<th class="title-description">
-								    	<?php echo __('QBO Custom Field ID for Note','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QBO Custom Field ID for Note','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
 										<div class="row">
 											<div class="input-field col s12 m12 l12">
 												<p>
-													<input type="text" name="mw_wc_qbo_sync_invoice_note_id" id="mw_wc_qbo_sync_invoice_note_id" value="<?php echo $admin_settings_data['mw_wc_qbo_sync_invoice_note_id'] ?>">
+													<input type="text" name="mw_wc_qbo_sync_invoice_note_id" id="mw_wc_qbo_sync_invoice_note_id" value="<?php echo esc_attr($admin_settings_data['mw_wc_qbo_sync_invoice_note_id'] ?? '') ?>">
 												</p>
 											</div>
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select the ID of your QuickBooks Custom Invoice Field for WooCommerce Note above.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select the ID of your QuickBooks Custom Invoice Field for WooCommerce Note above.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>								
 								
 								<tr id="mw_wc_qbo_sync_invoice_notes_res2" <?php if($admin_settings_data['mw_wc_qbo_sync_invoice_notes']!='true') echo 'style="display: none;"' ?>>
 									<th class="title-description">
-								    	<?php echo __('QBO Custom Field Name for Note','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QBO Custom Field Name for Note','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
 										<div class="row">
 											<div class="input-field col s12 m12 l12">
 												<p>
-													<input type="text" name="mw_wc_qbo_sync_invoice_note_name" id="mw_wc_qbo_sync_invoice_note_name" value="<?php echo $admin_settings_data['mw_wc_qbo_sync_invoice_note_name'] ?>">
+													<input type="text" name="mw_wc_qbo_sync_invoice_note_name" id="mw_wc_qbo_sync_invoice_note_name" value="<?php echo esc_attr($admin_settings_data['mw_wc_qbo_sync_invoice_note_name'] ?? '') ?>">
 												</p>
 											</div>
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Enter the Name of your QuickBooks Custom Invoice Field for WooCommerce Note','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Enter the Name of your QuickBooks Custom Invoice Field for WooCommerce Note','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -1395,7 +1432,7 @@ $wu_roles = get_editable_roles();
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Use 1st Line Description for Statement Memo (PrivateNote)','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Use 1st Line Description for Statement Memo (PrivateNote)','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1408,15 +1445,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to enable the syncing of the WooCommerce first order line item description contents to the QBO Statement Memo field.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to enable the syncing of the WooCommerce first order line item description contents to the QBO Statement Memo field.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Use WooCommerce Order Date for QuickBooks Service Date','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Use WooCommerce Order Date for QuickBooks Service Date','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1429,15 +1466,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to enable the syncing of the WooCommerce Order Date or Due Date to the QuickBooks Online service date field in the invoice.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to enable the syncing of the WooCommerce Order Date or Due Date to the QuickBooks Online service date field in the invoice.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 
 								<tr>
 									<th class="title-description">
-								    	<?php _e('Automatically sync orders when they reach any of these statuses','mw_wc_qbo_sync') ?>
+								    	<?php esc_html_e('Automatically sync orders when they reach any of these statuses','mw_wc_qbo_sync') ?>
 										</br><span style="font-size:10px;color:grey;">This field must not be blank. By default, Processing and Completed statuses are selected here. </br> The Processing status must be selected in order for orders to automatically sync to QuickBooks.</span> 
 								    </th>
 									<td>
@@ -1451,22 +1488,22 @@ $wu_roles = get_editable_roles();
 														}
 													?>
 													<select name="mw_wc_qbo_sync_specific_order_status[]" id="mw_wc_qbo_sync_specific_order_status" class="filled-in production-option mw_wc_qbo_sync_select" multiple="multiple">								
-														<?php echo  $MSQS_QL->only_option($mw_wc_qbo_sync_specific_order_status,$order_statuses);?>
+														<?php echo $MSQS_QL->only_option($mw_wc_qbo_sync_specific_order_status ?? '', $order_statuses ?? array()) ?? ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 													</select>
 												</p>
 											</div>
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose a/multiple WooCommerce status that will act as a trigger to real-time sync the order to QBO. Defaults are Processing and Completed.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose a/multiple WooCommerce status that will act as a trigger to real-time sync the order to QBO. Defaults are Processing and Completed.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('Use today\'s date for QuickBooks order date','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Use today\'s date for QuickBooks order date','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1479,8 +1516,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to set the QuickBooks Online order date to be the most recent date it was pushed from WooCommerce - instead of the original WooCommerce Order date.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to set the QuickBooks Online order date to be the most recent date it was pushed from WooCommerce - instead of the original WooCommerce Order date.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -1499,7 +1536,7 @@ $wu_roles = get_editable_roles();
 								?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Date for QuickBooks Order','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Date for QuickBooks Order','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1507,22 +1544,22 @@ $wu_roles = get_editable_roles();
 											<div class="input-field col s12 m12 l12">
 												<p>
 													<select name="mw_wc_qbo_sync_qb_ord_df_val" id="mw_wc_qbo_sync_qb_ord_df_val" class="filled-in production-option mw_wc_qbo_sync_select">							
-										            <?php echo $MSQS_QL->only_option($qb_odfv,$qb_odf_arr); ?>
+										            <?php echo $MSQS_QL->only_option($qb_odfv ?? '', $qb_odf_arr ?? array()) ?? ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Orders date field value when syncing into QuickBooks.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Orders date field value when syncing into QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
 								
 								<tr style="display: none">
 									<th class="title-description">
-								    	<?php echo __('QuickBooks Online force shipping charge to line item','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QuickBooks Online force shipping charge to line item','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1535,15 +1572,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to force shipping charge to line item.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to force shipping charge to line item.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('Skip Line Item Description ','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Skip Line Item Description ','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1556,8 +1593,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Turn on to Skip Invoice /Sales Receipts Line Item Description.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Turn on to Skip Invoice /Sales Receipts Line Item Description.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -1573,7 +1610,7 @@ $wu_roles = get_editable_roles();
 								?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Value for QuickBooks Description Line Item','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Value for QuickBooks Description Line Item','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1582,22 +1619,22 @@ $wu_roles = get_editable_roles();
 												<p>
 													<select name="mw_wc_qbo_sync_inv_sr_qb_lid_val" id="mw_wc_qbo_sync_inv_sr_qb_lid_val" class="filled-in production-option mw_wc_qbo_sync_select">
 													<!--<option value=""></option>-->
-										            <?php echo $MSQS_QL->only_option($admin_settings_data['mw_wc_qbo_sync_inv_sr_qb_lid_val'],$qb_inv_sr_lid_opt_arr); ?>
+										            <?php echo $MSQS_QL->only_option($admin_settings_data['mw_wc_qbo_sync_inv_sr_qb_lid_val'] ?? '', $qb_inv_sr_lid_opt_arr ?? array()) ?? ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select the line item description value for QuickBooks invoice and salesreceipt','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select the line item description value for QuickBooks invoice and salesreceipt','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Add WooCommerce Custom Order Line Item Meta Into QuickBooks Line Item Description ','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Add WooCommerce Custom Order Line Item Meta Into QuickBooks Line Item Description ','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1610,36 +1647,36 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Turn on to add WooCommerce Custom Order line item meta into Invoice /Sales Receipts Line Item Description.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Turn on to add WooCommerce Custom Order line item meta into Invoice /Sales Receipts Line Item Description.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr id="oaslim_tr"  <?php if($admin_settings_data['mw_wc_qbo_sync_wolim_iqilid_desc'] !='true') echo 'style="display:none;"' ?>>
 									<th class="title-description">
-								    	<?php echo __('Only Add Specific Line Item Metas Into QuickBooks Line Item Description','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Only Add Specific Line Item Metas Into QuickBooks Line Item Description','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
 										<div class="row">
 											<div class="input-field col s12 m12 l12">
 												<p>
-													<textarea name="mw_wc_qbo_sync_oaslim_iqbld" placeholder="Optional" id="mw_wc_qbo_sync_oaslim_iqbld"><?php if(isset($admin_settings_data['mw_wc_qbo_sync_oaslim_iqbld'])) echo $admin_settings_data['mw_wc_qbo_sync_oaslim_iqbld']; else ''; ?></textarea>
+													<textarea name="mw_wc_qbo_sync_oaslim_iqbld" placeholder="Optional" id="mw_wc_qbo_sync_oaslim_iqbld"><?php if(isset($admin_settings_data['mw_wc_qbo_sync_oaslim_iqbld'])) echo esc_textarea($admin_settings_data['mw_wc_qbo_sync_oaslim_iqbld']); else ''; ?></textarea>
 												</p>
 											</div>
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Add multiple order line item meta separated by comma(,)','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Add multiple order line item meta separated by comma(,)','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Sync order discounts within original line item','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Sync order discounts within original line item','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1652,15 +1689,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('If left off, order discounts will be synced as normal discount line. If turned on, order discounts will be synced to QuickBooks within the original line item, as the discounted price - instead of the full price line item + dicount line item.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('If left off, order discounts will be synced as normal discount line. If turned on, order discounts will be synced to QuickBooks within the original line item, as the discounted price - instead of the full price line item + dicount line item.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr id="sdioli_tr"  <?php if($admin_settings_data['mw_wc_qbo_sync_no_ad_discount_li'] =='true') echo 'style="display:none;"' ?>>
 									<th class="title-description">
-								    	<?php echo __('Sync discount as original line item - in separate line item ','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Sync discount as original line item - in separate line item ','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1673,15 +1710,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to sync discount as original line item - in separate line item.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to sync discount as original line item - in separate line item.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Apply Discount above Sales Tax','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Apply Discount above Sales Tax','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1694,8 +1731,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('If disabled (default), the discount will be applied after the sales tax calculation in QuickBooks. If enabled, the discount will applied before the sales tax calculation.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('If disabled (default), the discount will be applied after the sales tax calculation in QuickBooks. If enabled, the discount will applied before the sales tax calculation.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -1707,7 +1744,7 @@ $wu_roles = get_editable_roles();
 								<?php if($a_allow_slis || $MSQS_QL->get_qbo_company_setting('is_shipping_allowed')):?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Sync shipping charges as a line item','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Sync shipping charges as a line item','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1720,8 +1757,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('If enabled, this will sync order shipping charges as a line item (set in MyWorks Sync > Settings > Default) instead of into the default shipping subtotal field in QuickBooks.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('If enabled, this will sync order shipping charges as a line item (set in MyWorks Sync > Settings > Default) instead of into the default shipping subtotal field in QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -1734,7 +1771,7 @@ $wu_roles = get_editable_roles();
 								?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Value for QuickBooks Payment Reference Number','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Value for QuickBooks Payment Reference Number','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1742,15 +1779,15 @@ $wu_roles = get_editable_roles();
 											<div class="input-field col s12 m12 l12">
 												<p>
 													<select name="mw_wc_qbo_sync_qb_pmnt_ref_num_vf" id="mw_wc_qbo_sync_qb_pmnt_ref_num_vf" class="filled-in production-option mw_wc_qbo_sync_select">													
-										            <?php echo $MSQS_QL->only_option($admin_settings_data['mw_wc_qbo_sync_qb_pmnt_ref_num_vf'],$qb_prn_vl); ?>
+										            <?php echo $MSQS_QL->only_option($admin_settings_data['mw_wc_qbo_sync_qb_pmnt_ref_num_vf'] ?? '', $qb_prn_vl ?? array()) ?? ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select the payment reference number value for QuickBooks payment sync','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select the payment reference number value for QuickBooks payment sync','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
@@ -1758,7 +1795,7 @@ $wu_roles = get_editable_roles();
 								<?php if(!$MSQS_QL->is_plg_lc_p_l()):?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Sync transaction fee as negative line item within the order','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Sync transaction fee as negative line item within the order','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1771,15 +1808,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Sync transaction fee within the actual order as negative line item. If enabled, transaction fees will not sync as journal entry.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Sync transaction fee within the actual order as negative line item. If enabled, transaction fees will not sync as journal entry.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Transaction fee line item product','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Transaction fee line item product','mw_wc_qbo_sync') ?>
 								    </th>
 									<td>
 										<div class="row">
@@ -1801,16 +1838,16 @@ $wu_roles = get_editable_roles();
 															$dd_options.=$mw_qbo_product_list;
 														}
 													?>
-													<select name="mw_wc_qbo_sync_txn_fee_li_qbo_item" id="mw_wc_qbo_sync_txn_fee_li_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-														<?php echo $dd_options;?>
+													<select name="mw_wc_qbo_sync_txn_fee_li_qbo_item" id="mw_wc_qbo_sync_txn_fee_li_qbo_item" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+														<?php echo !empty($dd_options) ? $dd_options : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 													</select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-									  <span class="tooltiptext"><?php echo __('This is a QuickBooks Online Product that will be used for transaction fee line item.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+									  <span class="tooltiptext"><?php echo esc_html__('This is a QuickBooks Online Product that will be used for transaction fee line item.','mw_wc_qbo_sync') ?></span>
 									</div>
                                     </td>
 								</tr>
@@ -1818,7 +1855,7 @@ $wu_roles = get_editable_roles();
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Skip country field in bill/ship to addresses in orders.','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Skip country field in bill/ship to addresses in orders.','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1831,15 +1868,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('check to skip country field in bill/ship to addresses in orders when syncing into QuickBooks.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('check to skip country field in bill/ship to addresses in orders when syncing into QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Use existing customer\'s QuickBooks Billing Address for order billing address .','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Use existing customer\'s QuickBooks Billing Address for order billing address .','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1852,8 +1889,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('If checked, it will not send the billing address to QuickBooks for existing QuickBooks customer (order,salesreceipt,estimate.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('If checked, it will not send the billing address to QuickBooks for existing QuickBooks customer (order,salesreceipt,estimate.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -1866,7 +1903,7 @@ $wu_roles = get_editable_roles();
 								?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Value for QuickBooks PrintStatus','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Value for QuickBooks PrintStatus','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1874,22 +1911,22 @@ $wu_roles = get_editable_roles();
 											<div class="input-field col s12 m12 l12">
 												<p>
 													<select name="mw_wc_qbo_sync_qb_o_print_status_v" id="mw_wc_qbo_sync_qb_o_print_status_v" class="filled-in production-option mw_wc_qbo_sync_select">													
-										            <?php echo $MSQS_QL->only_option($admin_settings_data['mw_wc_qbo_sync_qb_o_print_status_v'],$qb_ps_vl); ?>
+										            <?php echo $MSQS_QL->only_option($admin_settings_data['mw_wc_qbo_sync_qb_o_print_status_v'] ?? '', $qb_ps_vl ?? array()) ?? ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select the PrintStatus value for QuickBooks order sync (Add)','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select the PrintStatus value for QuickBooks order sync (Add)','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Skip syncing shipping line in an order if $0','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Skip syncing shipping line in an order if $0','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1902,8 +1939,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to not sync shipping line item with orders into QuickBooks, if shipping is $0.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to not sync shipping line item with orders into QuickBooks, if shipping is $0.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -1911,7 +1948,7 @@ $wu_roles = get_editable_roles();
 								<!---->
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Use QuickBooks customer primary email for BillEmail field','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Use QuickBooks customer primary email for BillEmail field','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1924,33 +1961,13 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('If enabled, this will 
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('If enabled, this will 
 										  Set invoice / salesreceipt BillEmail to the primary email address of the QuickBooks customer.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
-								<tr style="display:none;">
-									<th class="title-description">
-								    	<?php echo __('Email invoice to customer when synced to QuickBooks, if unpaid order','mw_wc_qbo_sync') ?>
-								    	
-								    </th>
-									<td>
-										<div class="row">
-											<div class="input-field col s12 m12 l12">
-												<p>
-													<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_send_inv_sr_afsi_qb" id="mw_wc_qbo_sync_send_inv_sr_afsi_qb" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_send_inv_sr_afsi_qb']=='true') echo 'checked' ?>>
-												</p>
-											</div>
-										</div>
-									</td>
-									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Turn on to send an invoice after syncing into QuickBooks.','mw_wc_qbo_sync') ?></span>
-										</div>
-									</td>
-								</tr>
 
 								<?php 
 									$qb_eiso_a = [
@@ -1961,17 +1978,13 @@ $wu_roles = get_editable_roles();
 
 									$mw_wc_qbo_sync_send_inv_sr_afsi_qb_option = $admin_settings_data['mw_wc_qbo_sync_send_inv_sr_afsi_qb_option'];
 									if(empty($mw_wc_qbo_sync_send_inv_sr_afsi_qb_option)){
-										if($admin_settings_data['mw_wc_qbo_sync_send_inv_sr_afsi_qb']=='true'){
-											$mw_wc_qbo_sync_send_inv_sr_afsi_qb_option = 'o_f_u_o';
-										}else{
-											$mw_wc_qbo_sync_send_inv_sr_afsi_qb_option = 'd_n_e';
-										}										
+										$mw_wc_qbo_sync_send_inv_sr_afsi_qb_option = 'd_n_e';
 									}									
 								?>
 
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Email invoice to customer when synced to QuickBooks','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Email invoice to customer when synced to QuickBooks','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -1979,15 +1992,15 @@ $wu_roles = get_editable_roles();
 											<div class="input-field col s12 m12 l12">
 												<p>
 													<select name="mw_wc_qbo_sync_send_inv_sr_afsi_qb_option" id="mw_wc_qbo_sync_send_inv_sr_afsi_qb_option" class="filled-in production-option mw_wc_qbo_sync_select">													
-										            <?php echo $MSQS_QL->only_option($mw_wc_qbo_sync_send_inv_sr_afsi_qb_option,$qb_eiso_a); ?>
+										            <?php echo $MSQS_QL->only_option($mw_wc_qbo_sync_send_inv_sr_afsi_qb_option ?? '', $qb_eiso_a ?? array()) ?? ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose to send an invoice after syncing into QuickBooks.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose to send an invoice after syncing into QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
@@ -2001,7 +2014,7 @@ $wu_roles = get_editable_roles();
 								?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('QuickBooks Invoice Online Payment Option','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QuickBooks Invoice Online Payment Option','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2009,15 +2022,15 @@ $wu_roles = get_editable_roles();
 											<div class="input-field col s12 m12 l12">
 												<p>
 													<select name="mw_wc_qbo_sync_qb_etpe_ops_o" id="mw_wc_qbo_sync_qb_etpe_ops_o" class="filled-in production-option mw_wc_qbo_sync_select">													
-										            <?php echo $MSQS_QL->only_option($admin_settings_data['mw_wc_qbo_sync_qb_etpe_ops_o'],$qb_iops_vl); ?>
+										            <?php echo $MSQS_QL->only_option($admin_settings_data['mw_wc_qbo_sync_qb_etpe_ops_o'] ?? '', $qb_iops_vl ?? array()) ?? ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select if online bank transfers, credit card payments are allowed for QuickBooks invoice (If ETransaction payment setting enabled in QuickBooks preference).','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select if online bank transfers, credit card payments are allowed for QuickBooks invoice (If ETransaction payment setting enabled in QuickBooks preference).','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
@@ -2029,7 +2042,7 @@ $wu_roles = get_editable_roles();
 								?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Sort order for order line items','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Sort order for order line items','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2037,15 +2050,15 @@ $wu_roles = get_editable_roles();
 											<div class="input-field col s12 m12 l12">
 												<p>
 													<select name="mw_wc_qbo_sync_qb_soli_sv" id="mw_wc_qbo_sync_qb_soli_sv" class="filled-in production-option mw_wc_qbo_sync_select">													
-										            <?php echo $MSQS_QL->only_option($admin_settings_data['mw_wc_qbo_sync_qb_soli_sv'],$qb_soli_vl); ?>
+										            <?php echo $MSQS_QL->only_option($admin_settings_data['mw_wc_qbo_sync_qb_soli_sv'] ?? '', $qb_soli_vl ?? array()) ?? ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										            </select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose the sort order for the order line items in the QuickBooks order. By default, they will match the sort order of the WooCommerce order line items.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose the sort order for the order line items in the QuickBooks order. By default, they will match the sort order of the WooCommerce order line items.','mw_wc_qbo_sync') ?></span>
 										</div>
                                     </td>
 								</tr>
@@ -2056,32 +2069,32 @@ $wu_roles = get_editable_roles();
 							</div>
 							
 							<div id="mw_qbo_sybc_settings_tab_product_body" style="display: none;">
-							<h6><?php echo __('Product / Inventory Settings','mw_wc_qbo_sync') ?></h6>
+							<h6><?php echo esc_html__('Product / Inventory Settings','mw_wc_qbo_sync') ?></h6>
 							<div class="myworks-wc-qbo-sync-table-responsive myworks-setting">
 							<table class="mw-qbo-sync-settings-table mwqs_setting_tab_body_body">
 								<tbody>
 									<tr>
 										<th class="title-description">
-											<?php echo __('QuickBooks Inventory Sync StartDate','mw_wc_qbo_sync') ?>
+											<?php echo esc_html__('QuickBooks Inventory Sync StartDate','mw_wc_qbo_sync') ?>
 											
 										</th>
 										<td>
 											<div class="row">
 												<div class="input-field col s12 m12 l12">
-													<input placeholder="yyyy-mm-dd" class="mwqs_datepicker" type="text" name="mw_wc_qbo_sync_qbo_inventory_start_date" id="mw_wc_qbo_sync_qbo_inventory_start_date" value="<?php echo $admin_settings_data['mw_wc_qbo_sync_qbo_inventory_start_date']; ?>">
+													<input placeholder="yyyy-mm-dd" class="mwqs_datepicker" type="text" name="mw_wc_qbo_sync_qbo_inventory_start_date" id="mw_wc_qbo_sync_qbo_inventory_start_date" value="<?php echo esc_attr($admin_settings_data['mw_wc_qbo_sync_qbo_inventory_start_date'] ?? ''); ?>">
 												</div>
 											</div>
 										</td>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Add Inventory Sync StartDate for QuickBooks Online. Default is today.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Add Inventory Sync StartDate for QuickBooks Online. Default is today.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
 									
 									<tr>
 										<th class="title-description">
-											<?php echo __('WooCommerce product field to use when syncing descriptions','mw_wc_qbo_sync') ?>
+											<?php echo esc_html__('WooCommerce product field to use when syncing descriptions','mw_wc_qbo_sync') ?>
 											
 										</th>
 										<td>
@@ -2097,15 +2110,15 @@ $wu_roles = get_editable_roles();
 											</div>
 										</td>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Choose the description field in WooCommerce to use when syncing products between WooCommerce and QuickBooks - for the QuickBooks description field.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Choose the description field in WooCommerce to use when syncing products between WooCommerce and QuickBooks - for the QuickBooks description field.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
 									
 									<tr>
 										<th class="title-description">
-											<?php echo __('WooCommerce purchase description field to use when syncing products','mw_wc_qbo_sync') ?>
+											<?php echo esc_html__('WooCommerce purchase description field to use when syncing products','mw_wc_qbo_sync') ?>
 											
 										</th>
 										<td>
@@ -2121,8 +2134,8 @@ $wu_roles = get_editable_roles();
 											</div>
 										</td>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Choose the purchase description field in WooCommerce to use when syncing products between WooCommerce and QuickBooks - for the QuickBooks purchase description field.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Choose the purchase description field in WooCommerce to use when syncing products between WooCommerce and QuickBooks - for the QuickBooks purchase description field.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
@@ -2137,7 +2150,7 @@ $wu_roles = get_editable_roles();
 									
 									<tr>
 										<th class="title-description">
-											<?php echo __('WooCommerce product name when syncing products from QuickBooks > WooCommerce','mw_wc_qbo_sync') ?>
+											<?php echo esc_html__('WooCommerce product name when syncing products from QuickBooks > WooCommerce','mw_wc_qbo_sync') ?>
 											
 										</th>
 										<td>
@@ -2153,8 +2166,8 @@ $wu_roles = get_editable_roles();
 											</div>
 										</td>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Choose the QuickBooks						  field to use when syncing products between QuickBooks and WooCommerce - for the WooCommerce name field.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Choose the QuickBooks						  field to use when syncing products between QuickBooks and WooCommerce - for the WooCommerce name field.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
@@ -2170,7 +2183,7 @@ $wu_roles = get_editable_roles();
 									
 									<tr>
 										<th class="title-description">
-											<?php echo __('QuickBooks product name when syncing products from WooCommerce > QuickBooks','mw_wc_qbo_sync') ?>
+											<?php echo esc_html__('QuickBooks product name when syncing products from WooCommerce > QuickBooks','mw_wc_qbo_sync') ?>
 											
 										</th>
 										<td>
@@ -2186,15 +2199,15 @@ $wu_roles = get_editable_roles();
 											</div>
 										</td>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Choose the WooCommerce						  field to use when syncing products between WooCommerce and QuickBooks - for the QuickBooks name field.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Choose the WooCommerce						  field to use when syncing products between WooCommerce and QuickBooks - for the QuickBooks name field.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
 									
 									<tr style="display:none;">
 										<th class="title-description">
-									    	<?php _e('Push WooCommerce product title as QuickBooks Online product description?','mw_wc_qbo_sync') ?>
+									    	<?php esc_html_e('Push WooCommerce product title as QuickBooks Online product description?','mw_wc_qbo_sync') ?>
 									    </th>
 										<td>
 											<div class="row">
@@ -2206,15 +2219,15 @@ $wu_roles = get_editable_roles();
 											</div>
 										</td>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Enable to have Product Description in QuickBooks Online be WooCommerce Product Title','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Enable to have Product Description in QuickBooks Online be WooCommerce Product Title','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
 									
 									<tr>
 										<th class="title-description">
-											<?php echo __('Show only mapped products with different inventory levels </br>in Push > Inventory Levels.','mw_wc_qbo_sync') ?>
+											<?php echo esc_html__('Show only mapped products with different inventory levels','mw_wc_qbo_sync') ?><br><?php echo esc_html__('in Push > Inventory Levels.','mw_wc_qbo_sync') ?>
 											
 										</th>
 										<td>
@@ -2227,15 +2240,15 @@ $wu_roles = get_editable_roles();
 											</div>
 										</td>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Check to only show products with inventory levels that don\'t match in Push > Inventory Levels.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Check to only show products with inventory levels that don\'t match in Push > Inventory Levels.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
 									
 									<tr style="display:none;">
 										<th class="title-description">
-											<?php echo __('Hide variable parent products from Map/Push > Products/Inventory','mw_wc_qbo_sync') ?>
+											<?php echo esc_html__('Hide variable parent products from Map/Push > Products/Inventory','mw_wc_qbo_sync') ?>
 											
 										</th>
 										<td>
@@ -2248,15 +2261,15 @@ $wu_roles = get_editable_roles();
 											</div>
 										</td>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Check to hide variable parent products from Map/Push > Products/Inventory','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Check to hide variable parent products from Map/Push > Products/Inventory','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
 									
 									<tr style="display:none;">
 										<th class="title-description">
-											<?php echo __('Sync inventory without relying on QuickBooks WebHooks','mw_wc_qbo_sync') ?>
+											<?php echo esc_html__('Sync inventory without relying on QuickBooks WebHooks','mw_wc_qbo_sync') ?>
 											
 										</th>
 										<td>
@@ -2269,15 +2282,15 @@ $wu_roles = get_editable_roles();
 											</div>
 										</td>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('If experiencing inconsistent inventory sync due to inconsistent webhooks from QuickBooks, enabling this setting will pro-actively sync inventory levels by scanning all QuickBooks products.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('If experiencing inconsistent inventory sync due to inconsistent webhooks from QuickBooks, enabling this setting will pro-actively sync inventory levels by scanning all QuickBooks products.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
 									
 									<tr style="display:none;">
 										<th class="title-description">
-											<?php echo __('Sync QuickBooks inventory using webhooks/CDC','mw_wc_qbo_sync') ?>
+											<?php echo esc_html__('Sync QuickBooks inventory using webhooks/CDC','mw_wc_qbo_sync') ?>
 											
 										</th>
 										<td>
@@ -2290,15 +2303,15 @@ $wu_roles = get_editable_roles();
 											</div>
 										</td>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Enable to sync inventory only when notified by QuickBooks that an inventory change for a product has been made. By default, we pro-actively check all QuickBooks products for inventory changes in every inventory sync, for accuracy.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Enable to sync inventory only when notified by QuickBooks that an inventory change for a product has been made. By default, we pro-actively check all QuickBooks products for inventory changes in every inventory sync, for accuracy.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
 									
 									<tr style="display:none;">
 										<th class="title-description">
-											<?php echo __('Sync QuickBooks pricing using webhooks/CDC','mw_wc_qbo_sync') ?>
+											<?php echo esc_html__('Sync QuickBooks pricing using webhooks/CDC','mw_wc_qbo_sync') ?>
 											
 										</th>
 										<td>
@@ -2311,15 +2324,15 @@ $wu_roles = get_editable_roles();
 											</div>
 										</td>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Enable to sync pricing only when notified by QuickBooks that an inventory change for a product has been made. By default, we pro-actively check all QuickBooks products for inventory changes in every inventory sync, for accuracy.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Enable to sync pricing only when notified by QuickBooks that an inventory change for a product has been made. By default, we pro-actively check all QuickBooks products for inventory changes in every inventory sync, for accuracy.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
 									
 									<tr style="display:none;">
 										<th class="title-description">
-											<?php echo __('Only sync pricing when syncing product updates','mw_wc_qbo_sync') ?>
+											<?php echo esc_html__('Only sync pricing when syncing product updates','mw_wc_qbo_sync') ?>
 											
 										</th>
 										<td>
@@ -2332,8 +2345,8 @@ $wu_roles = get_editable_roles();
 											</div>
 										</td>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('If checked then it will only sync price when updating product in both QuickBooks and WooCommerce.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('If checked then it will only sync price when updating product in both QuickBooks and WooCommerce.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
@@ -2345,7 +2358,7 @@ $wu_roles = get_editable_roles();
 									?>
 									<tr>
 										<th class="title-description">
-											<?php echo __('Sync images with products','mw_wc_qbo_sync') ?>
+											<?php echo esc_html__('Sync images with products','mw_wc_qbo_sync') ?>
 											
 										</th>
 										<td>
@@ -2358,8 +2371,8 @@ $wu_roles = get_editable_roles();
 											</div>
 										</td>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('When enabled, the main product image will sync when new and updated products are synced between WooCommerce and QuickBooks. If an image already exists in a product, it will not be overwritten/changed.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('When enabled, the main product image will sync when new and updated products are synced between WooCommerce and QuickBooks. If an image already exists in a product, it will not be overwritten/changed.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
@@ -2370,7 +2383,7 @@ $wu_roles = get_editable_roles();
 							</div>
 							
 							<div id="mw_qbo_sybc_settings_tab_three_body" style="display: none;">
-							<h6><?php echo __('Mapping Settings','mw_wc_qbo_sync') ?></h6>
+							<h6><?php echo esc_html__('Mapping Settings','mw_wc_qbo_sync') ?></h6>
 							<table class="mw-qbo-sync-settings-table mwqs_setting_tab_body">
 							<tbody>
 								
@@ -2379,7 +2392,7 @@ $wu_roles = get_editable_roles();
 							</div>
 							
 							<div id="mw_qbo_sybc_settings_tab_four_body" style="display: none;">
-							<h6><?php echo __('Tax Settings','mw_wc_qbo_sync') ?></h6>
+							<h6><?php echo esc_html__('Tax Settings','mw_wc_qbo_sync') ?></h6>
 							<div class="myworks-wc-qbo-sync-table-responsive myworks-setting">
 							<table class="mw-qbo-sync-settings-table mwqs_setting_tab_body">
 							<tbody>
@@ -2392,7 +2405,7 @@ $wu_roles = get_editable_roles();
 								?>
                 				<tr>
 									<th class="title-description">
-								    	<?php echo __('QuickBooks Non-taxable Rate','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QuickBooks Non-taxable Rate','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2400,14 +2413,14 @@ $wu_roles = get_editable_roles();
 											<div class="input-field col s12 m12 l12">
 												<select name="mw_wc_qbo_sync_tax_rule" id="mw_wc_qbo_sync_tax_rule" class=" mw_wc_qbo_sync_select">
 									            <option value=""></option>
-												<?php echo $qbo_tax_codes_options;?>
+												<?php echo !empty($qbo_tax_codes_options) ? $qbo_tax_codes_options : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 									            </select>
 											</div>
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('This should be set to a 0% or Out of Scope tax rate in QuickBooks, as it will be used for any line items not charged any tax rate.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('This should be set to a 0% or Out of Scope tax rate in QuickBooks, as it will be used for any line items not charged any tax rate.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -2416,7 +2429,7 @@ $wu_roles = get_editable_roles();
 								
 								<tr style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('QuickBooks Tax/Price Format','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QuickBooks Tax/Price Format','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2432,8 +2445,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose whether your tax setup is Inclusive - prices already include the tax, or Exclusive - taxes are additionally added on.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose whether your tax setup is Inclusive - prices already include the tax, or Exclusive - taxes are additionally added on.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -2441,7 +2454,7 @@ $wu_roles = get_editable_roles();
 								<?php if(!$MSQS_QL->get_qbo_company_setting('is_automated_sales_tax')):?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Sync WooCommerce Order Tax as a Line Item','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Sync WooCommerce Order Tax as a Line Item','mw_wc_qbo_sync') ?>
 										</br><span style="font-size:10px;color:grey;">Used for Automated Sales Tax compatibility. If enabled, this will sync order tax as a line item instead of assigning it to a rate in QuickBooks following mappings in MyWorks Sync > Map > Taxes.</span> 
 								    	
 								    </th>
@@ -2455,15 +2468,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('If enabled, this will override/invalidate any tax mappings set in MyWorks Sync > Map > Taxes, and sync order tax as a line item instead of assigning it to a rate in QuickBooks.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('If enabled, this will override/invalidate any tax mappings set in MyWorks Sync > Map > Taxes, and sync order tax as a line item instead of assigning it to a rate in QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>								
 								
 								<tr id="otli_qp_tr" <?php if($admin_settings_data['mw_wc_qbo_sync_odr_tax_as_li']!='true'){echo 'style="display:none;"';}?>>
 									<th class="title-description">
-								    	<?php echo __('QuickBooks Product for Sales Tax line item','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QuickBooks Product for Sales Tax line item','mw_wc_qbo_sync') ?>
 								    </th>
 									<td>
 										<div class="row">
@@ -2485,16 +2498,16 @@ $wu_roles = get_editable_roles();
 															$dd_options.=$mw_qbo_product_list;
 														}
 													?>
-													<select name="mw_wc_qbo_sync_otli_qbo_product" id="mw_wc_qbo_sync_otli_qbo_product" class="filled-in production-option mw_wc_qbo_sync_select <?php echo $dd_ext_class;?>">
-														<?php echo $dd_options;?>
+													<select name="mw_wc_qbo_sync_otli_qbo_product" id="mw_wc_qbo_sync_otli_qbo_product" class="filled-in production-option mw_wc_qbo_sync_select <?php echo esc_attr($dd_ext_class);?>">
+														<?php echo !empty($dd_options) ? $dd_options : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 													</select>
 												</p>
 											</div>
 										</div>
 									</td>
                                     <td>
-                                        <div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-									  <span class="tooltiptext"><?php echo __('Choose a QuickBooks Product that will be the line item in the QuickBooks Invoice/Sales Receipt to represent the sales tax from the WooCommerce Order.','mw_wc_qbo_sync') ?></span>
+                                        <div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+									  <span class="tooltiptext"><?php echo esc_html__('Choose a QuickBooks Product that will be the line item in the QuickBooks Invoice/Sales Receipt to represent the sales tax from the WooCommerce Order.','mw_wc_qbo_sync') ?></span>
 									</div>
                                     </td>
 								</tr>								
@@ -2505,14 +2518,14 @@ $wu_roles = get_editable_roles();
 							</div>
 
 							<div id="mw_qbo_sybc_settings_tab_five_body" style="display: none;">
-							<h6><?php echo __('Mapping Settings','mw_wc_qbo_sync') ?></h6>
+							<h6><?php echo esc_html__('Mapping Settings','mw_wc_qbo_sync') ?></h6>
 							<div class="myworks-wc-qbo-sync-table-responsive myworks-setting">
 							<table class="mw-qbo-sync-settings-table mwqs_setting_tab_body">
 							<tbody>
 								
 								<tr style="display:none;"> <!---->
 									<th class="title-description">
-								    	<?php _e('Recognize other Wordpress roles as a customer','mw_wc_qbo_sync') ?>
+								    	<?php esc_html_e('Recognize other Wordpress roles as a customer','mw_wc_qbo_sync') ?>
 								    </th>
 									<td>
 										<div class="row">
@@ -2541,22 +2554,22 @@ $wu_roles = get_editable_roles();
 													
     												?>
 													<select name="mw_wc_qbo_sync_wc_cust_role[]" id="mw_wc_qbo_sync_wc_cust_role" class="filled-in production-option mw_wc_qbo_sync_select mqs_multi" multiple="multiple">
-														<?php echo $role_dd_options;?>
+														<?php echo !empty($role_dd_options) ? $role_dd_options : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 													</select>												
 												</p>
 											</div>
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Enable to map other custom customer roles with QuickBooks Online rather than only default "CUSTOMER". Please note that default customer will always be mapped.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Enable to map other custom customer roles with QuickBooks Online rather than only default "CUSTOMER". Please note that default customer will always be mapped.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>								
 								
                 				<tr>
 									<th class="title-description">
-								    	<?php echo __('Append User ID for duplicate customers','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Append User ID for duplicate customers','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2567,35 +2580,35 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Append the WooCommerce User ID to the QuickBooks Online Display Name if the customer\'s name already exists in QuickBooks Online. Prevents errors from occuring when a customer with the same name but non-matching email is being synced.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Append the WooCommerce User ID to the QuickBooks Online Display Name if the customer\'s name already exists in QuickBooks Online. Prevents errors from occuring when a customer with the same name but non-matching email is being synced.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('QuickBooks Display Name format for new customers','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QuickBooks Display Name format for new customers','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
 										<div class="row">
 											<div class="input-field col s12 m12 l12">
 												<p>
-													<textarea name="mw_wc_qbo_sync_display_name_pattern" placeholder="Default: {firstname} {lastname}" id="mw_wc_qbo_sync_display_name_pattern"><?php if(isset($admin_settings_data['mw_wc_qbo_sync_display_name_pattern'])) echo $admin_settings_data['mw_wc_qbo_sync_display_name_pattern']; else '{firstname} {lastname} - {id}'; ?></textarea>
+													<textarea name="mw_wc_qbo_sync_display_name_pattern" placeholder="Default: {firstname} {lastname}" id="mw_wc_qbo_sync_display_name_pattern"><?php if(isset($admin_settings_data['mw_wc_qbo_sync_display_name_pattern'])) echo esc_textarea($admin_settings_data['mw_wc_qbo_sync_display_name_pattern']); else '{firstname} {lastname} - {id}'; ?></textarea>
 												</p>
 											</div>
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Leave blank by default, to sync customers as {firstname} {lastname).</br></br>Choose the WooCommerce client name values you would like to be assigned to the QBO "Display Name As" client field. This setting will determine the value in the QuickBooks Online Display Name for clients synced over. Choose either first/last name OR Company name - not both.<br><b>Available Tags: {firstname} , {lastname} , {companyname} , {id} ,{email}, {phone_number},{username}</b>','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Leave blank by default, to sync customers as {firstname} {lastname).','mw_wc_qbo_sync') ?><br><br><?php echo esc_html__('Choose the WooCommerce client name values you would like to be assigned to the QBO "Display Name As" client field. This setting will determine the value in the QuickBooks Online Display Name for clients synced over. Choose either first/last name OR Company name - not both.','mw_wc_qbo_sync') ?><br><b><?php echo esc_html__('Available Tags: {firstname} , {lastname} , {companyname} , {id} ,{email}, {phone_number},{username}','mw_wc_qbo_sync') ?></b></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Use Display Name (if no email match found) to find a matching customer','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Use Display Name (if no email match found) to find a matching customer','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2606,15 +2619,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Use the customer Display Name (if no email match found) when checking QuickBooks to find/match an unmapped customer - before syncing in a new customer record.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Use the customer Display Name (if no email match found) when checking QuickBooks to find/match an unmapped customer - before syncing in a new customer record.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Sort order in Map > Customers for QuickBooks Customer dropdown','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Sort order in Map > Customers for QuickBooks Customer dropdown','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2630,15 +2643,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose the sort order for QuickBooks Online clients names. It will be applied in the QuickBooks Online client dropdown in the client mapping page.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose the sort order for QuickBooks Online clients names. It will be applied in the QuickBooks Online client dropdown in the client mapping page.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Override customer mappings using Shipping Company','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Override customer mappings using Shipping Company','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2649,15 +2662,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Only turn on if fully understood. This setting will override the default mapping by email address and instead use the Shipping Company in the order to check if that company exists in QB, when syncing an order over into QuickBooks.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Only turn on if fully understood. This setting will override the default mapping by email address and instead use the Shipping Company in the order to check if that company exists in QB, when syncing an order over into QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Override customer mappings using Billing Company','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Override customer mappings using Billing Company','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2668,15 +2681,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Only turn on if fully understood. This setting will override the default mapping by email address and instead use the Billing Company in the order to check if that company exists in QB, when syncing an order over into QuickBooks.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Only turn on if fully understood. This setting will override the default mapping by email address and instead use the Billing Company in the order to check if that company exists in QB, when syncing an order over into QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Override customer mappings using Billing First + Last Name','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Override customer mappings using Billing First + Last Name','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2687,15 +2700,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Only turn on if fully understood. This setting will override the default mapping, and checking matches by email address, and instead use the Billing First + Last Name in the order to check if that name exists in QuickBooks when syncing an order. If that name does not exist, a new customer will be created.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Only turn on if fully understood. This setting will override the default mapping, and checking matches by email address, and instead use the Billing First + Last Name in the order to check if that name exists in QuickBooks when syncing an order. If that name does not exist, a new customer will be created.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('Check Mapped Customer Directly From QuickBooks Online','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Check Mapped Customer Directly From QuickBooks Online','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2706,8 +2719,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check customer on QuickBooks by email if no record in local server.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check customer on QuickBooks by email if no record in local server.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -2721,7 +2734,7 @@ $wu_roles = get_editable_roles();
 								<!--Disabled if not already active or new setting enabled-->
 								<tr <?php if($admin_settings_data['mw_wc_qbo_sync_orders_to_specific_cust_opt']!='true' || $admin_settings_data['mw_wc_qbo_sync_all_order_to_customer'] == 'true') echo 'style="display: none;"' ?>>
 									<th class="title-description">
-								    	<?php _e('Sync all WooCommerce orders to one QuickBooks Online Customer','mw_wc_qbo_sync') ?>
+								    	<?php esc_html_e('Sync all WooCommerce orders to one QuickBooks Online Customer','mw_wc_qbo_sync') ?>
 								    </th>
 									<td>
 										<div class="row">
@@ -2733,15 +2746,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check if you want to select a specific customer in QuickBooks to map/sync all orders in to.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check if you want to select a specific customer in QuickBooks to map/sync all orders in to.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr <?php if($admin_settings_data['mw_wc_qbo_sync_orders_to_specific_cust_opt']!='true' || $admin_settings_data['mw_wc_qbo_sync_all_order_to_customer'] == 'true') echo 'style="display: none;"' ?> id="mw_wc_qbo_sync_orders_to_specific_cust_opt_res1">
 									<th class="title-description">
-								    	<?php _e('QuickBooks Customer','mw_wc_qbo_sync') ?>
+								    	<?php esc_html_e('QuickBooks Customer','mw_wc_qbo_sync') ?>
 								    </th>
 									<td>
 										<div class="row">
@@ -2764,8 +2777,8 @@ $wu_roles = get_editable_roles();
 														}
 													?>
 													
-													<select name="mw_wc_qbo_sync_orders_to_specific_cust" id="mw_wc_qbo_sync_orders_to_specific_cust" class="filled-in production-option mw_wc_qbo_sync_select_cus <?php echo $dd_ext_class;?>">
-														<?php echo $dd_options;?>
+													<select name="mw_wc_qbo_sync_orders_to_specific_cust" id="mw_wc_qbo_sync_orders_to_specific_cust" class="filled-in production-option mw_wc_qbo_sync_select_cus <?php echo esc_attr($dd_ext_class);?>">
+														<?php echo !empty($dd_options) ? $dd_options : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 													</select>
 													
 												</p>
@@ -2773,8 +2786,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select a specific customer in QuickBooks to map and sync all orders in to.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select a specific customer in QuickBooks to map and sync all orders in to.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>								
@@ -2782,7 +2795,7 @@ $wu_roles = get_editable_roles();
 								
 								<tr <?php if($admin_settings_data['mw_wc_qbo_sync_orders_to_specific_cust_opt']!='true' || $admin_settings_data['mw_wc_qbo_sync_all_order_to_customer'] == 'true') echo 'style="display: none;"' ?> id="mw_wc_qbo_sync_orders_to_specific_cust_opt_res2">
 									<th class="title-description">
-								    	<?php _e('Ignore these roles / Sync to individual mapped customer','mw_wc_qbo_sync') ?>
+								    	<?php esc_html_e('Ignore these roles / Sync to individual mapped customer','mw_wc_qbo_sync') ?>
 								    </th>
 									<td>
 										<div class="row">
@@ -2809,15 +2822,15 @@ $wu_roles = get_editable_roles();
 													
     												?>
 													<select name="mw_wc_qbo_sync_wc_cust_role_sync_as_cus[]" id="mw_wc_qbo_sync_wc_cust_role_sync_as_cus" class="filled-in production-option mw_wc_qbo_sync_select mqs_multi" multiple="multiple">
-														<?php echo $role_dd_options;?>
+														<?php echo !empty($role_dd_options) ? $role_dd_options : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 													</select>												
 												</p>
 											</div>
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('The user roles selected here will be ignored by the above setting to sync all orders to one QB customer. Orders for customers in the roles selected here will be synced to their own individual QuickBooks customer accounts.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('The user roles selected here will be ignored by the above setting to sync all orders to one QuickBooks customer. Orders for customers in the roles selected here will be synced to their own individual QuickBooks customer accounts.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -2830,7 +2843,7 @@ $wu_roles = get_editable_roles();
 								?>
                 				<tr>
 									<th class="title-description">
-								    	<?php echo __('QuickBooks Customer Type for new customers','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QuickBooks Customer Type for new customers','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2838,14 +2851,14 @@ $wu_roles = get_editable_roles();
 											<div class="input-field col s12 m12 l12">
 												<select name="mw_wc_qbo_sync_qb_customer_type_fnc" id="mw_wc_qbo_sync_qb_customer_type_fnc" class=" mw_wc_qbo_sync_select">
 									            <option value=""></option>
-												<?php echo $qbo_customer_type_options;?>
+												<?php echo !empty($qbo_customer_type_options) ? $qbo_customer_type_options : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 									            </select>
 											</div>
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose customer type value for syncing new customers to QuickBooks.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose customer type value for syncing new customers to QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -2853,7 +2866,7 @@ $wu_roles = get_editable_roles();
 								
 								<tr style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('Use Email For Client Check','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Use Email For Client Check','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2866,15 +2879,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to use email along with other fields for check if client exists or for automap client.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to use email along with other fields for check if client exists or for automap client.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php _e('Block Automatically Syncing Any New Customers in to QuickBooks','mw_wc_qbo_sync') ?>
+								    	<?php esc_html_e('Block Automatically Syncing Any New Customers in to QuickBooks','mw_wc_qbo_sync') ?>
 								    </th>
 									<td>
 										<div class="row">
@@ -2886,8 +2899,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to block automatically syncing new customer into QuickBooks.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to block automatically syncing new customer into QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -2899,13 +2912,13 @@ $wu_roles = get_editable_roles();
 							</div>
 
 							<div id="mw_qbo_sybc_settings_tab_six_body" style="display: none;">
-							<h6><?php echo __('Pull Settings','mw_wc_qbo_sync') ?></h6>
+							<h6><?php echo esc_html__('Pull Settings','mw_wc_qbo_sync') ?></h6>
 							<div class="myworks-wc-qbo-sync-table-responsive myworks-setting">
 							<table class="mw-qbo-sync-settings-table mwqs_setting_tab_body">
 							<tbody>
 								<tr style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('Show Pull section under MyWorks Sync sidebar','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Show Pull section under MyWorks Sync sidebar','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2918,8 +2931,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to enable the Customer, Order, Product & Payment Pull pages. This will enable you to use the manual pull pages to manually pull data into WooCommerce from QuickBooks Online.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to enable the Customer, Order, Product & Payment Pull pages. This will enable you to use the manual pull pages to manually pull data into WooCommerce from QuickBooks Online.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -2927,7 +2940,7 @@ $wu_roles = get_editable_roles();
 								<?php if($MSQS_QL->check_if_real_time_pull_enable_for_item('Product')):?>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Status for new products synced into WooCommerce','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Status for new products synced into WooCommerce','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -2943,8 +2956,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose the product status that products inherit when they are first pulled in WooCommerce.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose the product status that products inherit when they are first pulled in WooCommerce.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -2953,7 +2966,7 @@ $wu_roles = get_editable_roles();
 								<?php if($MSQS_QL->check_if_real_time_pull_enable_for_item('Payment')):?>								
 								<tr <?php if($MSQS_QL->option_checked('mw_wc_qbo_sync_order_as_sales_receipt')){echo 'style="display:none;"';}?>>
 									<th class="title-description">
-								    	<?php _e('Update order to this status when payment is added in QuickBooks','mw_wc_qbo_sync') ?>
+								    	<?php esc_html_e('Update order to this status when payment is added in QuickBooks','mw_wc_qbo_sync') ?>
 								    </th>
 									<td>
 										<div class="row">
@@ -2961,22 +2974,22 @@ $wu_roles = get_editable_roles();
 												<p>													
 													<select name="mw_wc_qbo_sync_pmnt_pull_order_status" id="mw_wc_qbo_sync_pmnt_pull_order_status" class="filled-in production-option mw_wc_qbo_sync_select">
 														<option value=""></option>
-														<?php echo  $MSQS_QL->only_option($admin_settings_data['mw_wc_qbo_sync_pmnt_pull_order_status'],$order_statuses);?>
+														<?php echo wp_kses($MSQS_QL->only_option($admin_settings_data['mw_wc_qbo_sync_pmnt_pull_order_status'],$order_statuses) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 													</select>
 												</p>
 											</div>
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Change the WooCommerce Order Status for orders in these statuses, when a payment is applied to the related invoice in QuickBooks.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Change the WooCommerce Order Status for orders in these statuses, when a payment is applied to the related invoice in QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr <?php if($MSQS_QL->option_checked('mw_wc_qbo_sync_order_as_sales_receipt')){echo 'style="display:none;"';}?>>
 									<th class="title-description">
-								    	<?php _e('Don\'t update orders in these statuses','mw_wc_qbo_sync') ?>
+								    	<?php esc_html_e('Don\'t update orders in these statuses','mw_wc_qbo_sync') ?>
 								    </th>
 									<td>
 										<div class="row">
@@ -2989,15 +3002,15 @@ $wu_roles = get_editable_roles();
 																$mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses = explode(',',$mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses);
 															}
 														?>
-														<?php echo  $MSQS_QL->only_option($mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses,$order_statuses);?>
+														<?php echo wp_kses($MSQS_QL->only_option($mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses,$order_statuses) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 													</select>
 												</p>
 											</div>
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Prevent pulling payments (changing WooCommerce order status) for orders in these statuses','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Prevent pulling payments (changing WooCommerce order status) for orders in these statuses','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>								
@@ -3006,7 +3019,7 @@ $wu_roles = get_editable_roles();
 								<?php if($MSQS_QL->check_if_real_time_pull_enable_for_item('Inventory')):?>
 								<tr style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('Update Stock Status field when inventory is synced into WooCommerce','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Update Stock Status field when inventory is synced into WooCommerce','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3019,8 +3032,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('If enabled, our sync will adjust Product Stock Status to \'Out of Stock\' if a 0-level inventory is synced into WooCommerce - and \'In Stock\', if product inventory is updated from 0 to a real number.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('If enabled, our sync will adjust Product Stock Status to \'Out of Stock\' if a 0-level inventory is synced into WooCommerce - and \'In Stock\', if product inventory is updated from 0 to a real number.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -3028,7 +3041,7 @@ $wu_roles = get_editable_roles();
 								
 								<tr>
 									<th class="title-description">
-										<?php echo __('Show only mapped products with different inventory levels </br>in Pull > Inventory Levels.','mw_wc_qbo_sync') ?>
+										<?php echo esc_html__('Show only mapped products with different inventory levels','mw_wc_qbo_sync') ?><br><?php echo esc_html__('in Pull > Inventory Levels.','mw_wc_qbo_sync') ?>
 										
 									</th>
 									<td>
@@ -3041,8 +3054,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to only show products with inventory levels that don\'t match in Pull > Inventory Levels.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to only show products with inventory levels that don\'t match in Pull > Inventory Levels.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -3053,7 +3066,7 @@ $wu_roles = get_editable_roles();
 							</div>
 							
 							<div id="mw_qbo_sybc_settings_tab_wh_body" style="display: none;">
-							<h6><?php echo __('Automatic Sync Settings','mw_wc_qbo_sync') ?></h6>
+							<h6><?php echo esc_html__('Automatic Sync Settings','mw_wc_qbo_sync') ?></h6>
 							
 							<div class="myworks-wc-qbo-sync-table-responsive myworks-setting">
 							<table class="mw-qbo-sync-settings-table mwqs_setting_tab_body">
@@ -3061,7 +3074,7 @@ $wu_roles = get_editable_roles();
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('<b>WooCommerce > QuickBooks Online</b>','mw_wc_qbo_sync') ?>
+								    	<b><?php echo esc_html__('WooCommerce > QuickBooks Online','mw_wc_qbo_sync') ?></b>
 								    	
 								    </th>
 									<td style="display:none;">
@@ -3074,15 +3087,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to enable automatic sync for WooCommerce > QuickBooks Online.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to enable automatic sync for WooCommerce > QuickBooks Online.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Data Types','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Data Types','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3099,8 +3112,8 @@ $wu_roles = get_editable_roles();
 														}
 													?>
 													
-													<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_rt_push_items[]" id="mw_wc_qbo_sync_rt_push_items" value="<?php echo $rpi_key;?>" <?php echo $rpi_checked;?>>
-													&nbsp;<span class="rt_item_hd"><?php echo $rpi_val;?></span>
+													<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_rt_push_items[]" id="mw_wc_qbo_sync_rt_push_items" value="<?php echo esc_attr($rpi_key);?>" <?php echo esc_attr($rpi_checked);?>>
+													&nbsp;<span class="rt_item_hd"><?php echo esc_html($rpi_val);?></span>
 													
 													<?php 
 														if($rpi_val == 'Product' && $MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')):
@@ -3155,8 +3168,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext" style="top: -300;left: -410px;width: 400px;text-align: left;"><?php echo __('
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext" style="top: -300;left: -410px;width: 400px;text-align: left;"><?php echo esc_html__('
 											  <b>Customer</b></br>
 											  Add/update QuickBooks customers when WooCommerce customers are added/updated.
 											 </br></br><b>Order</b></br>
@@ -3176,7 +3189,7 @@ $wu_roles = get_editable_roles();
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('<b>QuickBooks Online -> WooCommerce</b>','mw_wc_qbo_sync') ?>
+								    	<b><?php echo esc_html__('QuickBooks Online -> WooCommerce','mw_wc_qbo_sync') ?></b>
 								    	
 								    </th>
 									<td style="display:none;">
@@ -3189,15 +3202,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to enable automatic syncing from QuickBooks Online into WooCommerce.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to enable automatic syncing from QuickBooks Online into WooCommerce.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Data Types','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Data Types','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3218,8 +3231,8 @@ $wu_roles = get_editable_roles();
 														}
 													?>
 													
-													<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_webhook_items[]" id="mw_wc_qbo_sync_webhook_items" value="<?php echo $qwi_key;?>" <?php echo $qwi_checked;?>>
-													&nbsp;<span class="rt_item_hd"><?php echo $qwi_val;?></span>
+													<input type="checkbox" class="filled-in mwqs_st_chk  production-option" name="mw_wc_qbo_sync_webhook_items[]" id="mw_wc_qbo_sync_webhook_items" value="<?php echo esc_attr($qwi_key);?>" <?php echo esc_attr($qwi_checked);?>>
+													&nbsp;<span class="rt_item_hd"><?php echo esc_html($qwi_val);?></span>
 
 													<?php if($qwi_val == 'Product'):?>
 													<?php
@@ -3262,6 +3275,9 @@ $wu_roles = get_editable_roles();
 													<select name="mw_wc_qbo_sync_product_pull_interval_time">
 														<?php $MSQS_QL->only_option($ppit,$oa_ppit,'','',false,$oda) ?>
 													</select>
+													<br><br>
+													<input type="checkbox" class="filled-in mwqs_st_chk production-option" name="mw_wc_qbo_sync_os_cost_fp_update" id="mw_wc_qbo_sync_os_cost_fp_update" value="true" <?php if($admin_settings_data['mw_wc_qbo_sync_os_cost_fp_update']=='true') echo 'checked' ?>>
+													&nbsp;<span class="rt_item_hd"><?php echo esc_html__('Cost','mw_wc_qbo_sync') ?></span>
 													<?php endif;?>
 													
 													<?php if($qwi_val == 'Inventory'):?>
@@ -3402,8 +3418,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext" style="top: -123px;left: -410px;width: 400px;text-align: left;"><?php echo __('
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext" style="top: -123px;left: -410px;width: 400px;text-align: left;"><?php echo esc_html__('
 											  <b>Product</b></br>
 											  Add/update WooCommerce products when QuickBooks products are added/updated. This covers product title, description and price. Settings to control this are in Settings > Pull above.
 											 </br></br><b>Inventory</b></br>
@@ -3421,13 +3437,13 @@ $wu_roles = get_editable_roles();
 							</div>
 							
 							<div id="mw_qbo_sybc_settings_tab_seven_body" style="display: none;">
-							<h6><?php echo __('Disable Settings','mw_wc_qbo_sync') ?></h6>
+							<h6><?php echo esc_html__('Disable Settings','mw_wc_qbo_sync') ?></h6>
 							<div class="myworks-wc-qbo-sync-table-responsive myworks-setting">
 							<table class="mw-qbo-sync-settings-table mwqs_setting_tab_body">
 							<tbody>
 								<tr style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('Disable Real-Time Push (Queue)','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Disable Real-Time Push (Queue)','mw_wc_qbo_sync') ?>
 								    	 
 								    </th>
 									<td>
@@ -3440,14 +3456,14 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><font color="red">OFF: Default</font> <?php echo __('Check to disable real time data syncing. This will speed up WooCommerce operations slightly and sync data using a cron job you need to set up on the Cron Setup page.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><font color="red">OFF: Default</font> <?php echo esc_html__('Check to disable real time data syncing. This will speed up WooCommerce operations slightly and sync data using a cron job you need to set up on the Cron Setup page.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Disable Sync Status Icons','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Disable Sync Status Icons','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3460,14 +3476,14 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to disable Sync Statuses in Push Pages (invoice and payment). This will speed up the loading of these pages.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to disable Sync Statuses in Push Pages (invoice and payment). This will speed up the loading of these pages.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Block Real Time Client Update','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Block Real Time Client Update','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3480,8 +3496,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to block the update of client profile information in QuickBooks Online when it is updated in WooCommerce.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to block the update of client profile information in QuickBooks Online when it is updated in WooCommerce.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -3491,13 +3507,13 @@ $wu_roles = get_editable_roles();
 							</div>
 
 							<div id="mw_qbo_sybc_settings_tab_eight_body" style="display: none;">
-							<h6><?php echo __('Advanced Settings','mw_wc_qbo_sync') ?></h6>
+							<h6><?php echo esc_html__('Advanced Settings','mw_wc_qbo_sync') ?></h6>
 							<div class="myworks-wc-qbo-sync-table-responsive myworks-setting">
 							<table class="mw-qbo-sync-settings-table mwqs_setting_tab_body">
 							<tbody>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Enable Invoice Prefix','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Enable Invoice Prefix','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3510,14 +3526,14 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><font color="red">OFF: Default</font> <?php echo __('Check to enable support for invoice prefixes. Only check this box if your WooCommerce invoices have custom prefixes.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><font color="red">OFF: Default</font> <?php echo esc_html__('Check to enable support for invoice prefixes. Only check this box if your WooCommerce invoices have custom prefixes.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Use QBO Invoice #s','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Use QBO Invoice #s','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3530,8 +3546,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><font color="red">OFF: Default</font> <?php echo __('Check to create WooCommerce Invoices with the next Invoice Number from QBO. Only check this box if you do not wish to use the WooCommerce numbering system.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><font color="red">OFF: Default</font> <?php echo esc_html__('Check to create WooCommerce Invoices with the next Invoice Number from QBO. Only check this box if you do not wish to use the WooCommerce numbering system.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -3541,20 +3557,20 @@ $wu_roles = get_editable_roles();
 							</div>
 
 							<div id="mw_qbo_sybc_settings_tab_nine_body" style="display: none;">
-							<h6><?php echo __('Miscellaneous Settings','mw_wc_qbo_sync') ?></h6>
+							<h6><?php echo esc_html__('Miscellaneous Settings','mw_wc_qbo_sync') ?></h6>
 							<div class="myworks-wc-qbo-sync-table-responsive myworks-setting">
 							<table class="mw-qbo-sync-settings-table mwqs_setting_tab_body">
 							<tbody>
 							
 								<tr height="50">
 									<td colspan="3">
-										<b><?php echo __('Sync Settings','mw_wc_qbo_sync') ?></b>										
+										<b><?php echo esc_html__('Sync Settings','mw_wc_qbo_sync') ?></b>										
 									</td>									
 								</tr>
 								
 								<tr style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('Queue Sync Mode','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Queue Sync Mode','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3567,8 +3583,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to enable queue sync mode.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to enable queue sync mode.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -3584,7 +3600,7 @@ $wu_roles = get_editable_roles();
 								<?php if(!$disable_this_section):?>
 								<tr id="mw_qis_tr" <?php if(!$MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){echo 'style="display:none;"';} ?>>
 									<th class="title-description">
-								    	<?php echo __('Queue Sync Interval','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Queue Sync Interval','mw_wc_qbo_sync') ?>
 										
 								    </th>
 									<td>
@@ -3597,8 +3613,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose a time interval for the syncing activity in the Queue to be processed and sent to QuickBooks Online.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose a time interval for the syncing activity in the Queue to be processed and sent to QuickBooks Online.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -3606,7 +3622,7 @@ $wu_roles = get_editable_roles();
 								
 								<tr id="mw_cruo_tr" <?php if(!$MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){echo 'style="display:none;"';} ?>>
 									<th class="title-description">
-								    	<?php echo __('Catch recent unsynced orders','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Catch recent unsynced orders','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3619,21 +3635,21 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Only enable if random new WooCommerce orders are not syncing to QuickBooks automatically. This is ususally a sign of a WooCommerce gateway/checkout not calling the correct hooks to trigger our sync - and this override will automatically catch these orders and sync to QuickBooks.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Only enable if random new WooCommerce orders are not syncing to QuickBooks automatically. This is ususally a sign of a WooCommerce gateway/checkout not calling the correct hooks to trigger our sync - and this override will automatically catch these orders and sync to QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>								
 								
 								<tr height="50">
 									<td colspan="3">
-										<b><?php echo __('Email Log and Other Settings','mw_wc_qbo_sync') ?></b>										
+										<b><?php echo esc_html__('Email Log and Other Settings','mw_wc_qbo_sync') ?></b>										
 									</td>									
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('WooCommerce Admin User','mw_wc_qbo_sync') ?>				    	
+								    	<?php echo esc_html__('WooCommerce Admin User','mw_wc_qbo_sync') ?>				    	
 								    </th>
 									<td>
 										<div class="row">
@@ -3648,14 +3664,14 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select admin email for daily report of syncing activity. This report is emailed when the module cron is run.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select admin email for daily report of syncing activity. This report is emailed when the module cron is run.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Email Log Daily','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Email Log Daily','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3668,14 +3684,14 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to email a daily report of syncing activity to the admin selected above. This report is emailed when the module cron is run.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to email a daily report of syncing activity to the admin selected above. This report is emailed when the module cron is run.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								<tr style="display: none;">
 									<th class="title-description">
-								    	<?php echo __('Auto Quick Refresh Daily','mw_wc_qbo_sync') ?>				    	
+								    	<?php echo esc_html__('Auto Quick Refresh Daily','mw_wc_qbo_sync') ?>				    	
 								    </th>
 									<td>
 										<div class="row">
@@ -3687,14 +3703,14 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to automatic quick refresh data on regular basis. This is done when the module cron is run.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to automatic quick refresh data on regular basis. This is done when the module cron is run.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
                 				<tr>
 									<th class="title-description">
-								    	<?php echo __('Save Logs for Days','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Save Logs for Days','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3707,21 +3723,21 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose how many days log entry you want to save','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose how many days log entry you want to save','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr height="50">
 									<td colspan="3">
-										<b><?php echo __('Plugin Debug Settings','mw_wc_qbo_sync') ?></b>										
+										<b><?php echo esc_html__('Plugin Debug Settings','mw_wc_qbo_sync') ?></b>										
 									</td>									
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('QuickBooks Error Add/Update Item Object, Request/Response Into Log File ','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QuickBooks Error Add/Update Item Object, Request/Response Into Log File ','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3734,15 +3750,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Only for debug, Add QuickBooks Item Object into log file (last 24 hours).','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Only for debug, Add QuickBooks Item Object into log file (last 24 hours).','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('QuickBooks Success Add/Update Item Object, Request/Response Into Log File ','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QuickBooks Success Add/Update Item Object, Request/Response Into Log File ','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3755,15 +3771,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Only for debug, Add QuickBooks Item Object into log file (last 24 hours).','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Only for debug, Add QuickBooks Item Object into log file (last 24 hours).','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Enable Inventory Import CDC Debug Log','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Enable Inventory Import CDC Debug Log','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3776,15 +3792,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Only for debug, Add CDC Cron QBO Item Inventory Ids in Log Entry.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Only for debug, Add CDC Cron QBO Item Inventory Ids in Log Entry.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Enable Database Debug/Fix tool','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Enable Database Debug/Fix tool','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3797,15 +3813,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Turn it on if you are getting any issues with database','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Turn it on if you are getting any issues with database','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('Enable QBO Connection Improvement (per session)','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Enable QBO Connection Improvement (per session)','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3818,21 +3834,21 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('It will reduce the load time, please turn of this if you face any issues regarding QBO connection.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('It will reduce the load time, please turn of this if you face any issues regarding QBO connection.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr height="50" style="display:none;">
 									<td colspan="3">
-										<b><?php echo __('Update preference','mw_wc_qbo_sync') ?></b>										
+										<b><?php echo esc_html__('Update preference','mw_wc_qbo_sync') ?></b>										
 									</td>									
 								</tr>
 
 								<tr style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('Accept Beta Update?','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Accept Beta Update?','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3845,8 +3861,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Check to get beta version updates too. If not, it will only update stable versions.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Check to get beta version updates too. If not, it will only update stable versions.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -3854,13 +3870,13 @@ $wu_roles = get_editable_roles();
 								<?php if(!$is_plg_lc_p_l && !$is_plg_lc_p_r):?>
 								<tr height="50">
 									<td colspan="3">
-										<b><?php echo __('Customer Account Area','mw_wc_qbo_sync') ?></b>										
+										<b><?php echo esc_html__('Customer Account Area','mw_wc_qbo_sync') ?></b>										
 									</td>									
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Enable Invoices tab in the WooCommerce Account menu','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Enable Invoices tab in the WooCommerce Account menu','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3873,8 +3889,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('If enabled, an Invoices tab will be present in the front-end WooCommerce Account menu - where the customer can view/pay a list of invoices present in their QuickBooks Online customer account - based on their customer mapping in MyWorks Sync > Map > Customers.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('If enabled, an Invoices tab will be present in the front-end WooCommerce Account menu - where the customer can view/pay a list of invoices present in their QuickBooks Online customer account - based on their customer mapping in MyWorks Sync > Map > Customers.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -3896,7 +3912,7 @@ $wu_roles = get_editable_roles();
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('QuickBooks Records to show','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('QuickBooks Records to show','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3909,8 +3925,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose what to show in the account area','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose what to show in the account area','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -3918,13 +3934,13 @@ $wu_roles = get_editable_roles();
 								
 								<tr height="50">
 									<td colspan="3">
-										<b><?php echo __('Products / Variations Section','mw_wc_qbo_sync') ?></b>
+										<b><?php echo esc_html__('Products / Variations Section','mw_wc_qbo_sync') ?></b>
 									</td>									
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Show QuickBooks area in WooCommerce product variations','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Show QuickBooks area in WooCommerce product variations','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3937,21 +3953,21 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('QuickBooks area in variations.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('QuickBooks area in variations.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr height="50">
 									<td colspan="3">
-										<b><?php echo __('Plugin Dropdown Settings','mw_wc_qbo_sync') ?></b>										
+										<b><?php echo esc_html__('Plugin Dropdown Settings','mw_wc_qbo_sync') ?></b>										
 									</td>									
 								</tr>
 
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Enable Select2 searchable dropdown style','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Enable Select2 searchable dropdown style','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3964,14 +3980,14 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('This setting is on by default - to enable the Select2 dropdown style. Turn this off to display a normal dropdown for the plugin.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('This setting is on by default - to enable the Select2 dropdown style. Turn this off to display a normal dropdown for the plugin.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Enable Optimized AJAX-Search-Only for Select2 Dropdowns (customer and product)','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Enable Optimized AJAX-Search-Only for Select2 Dropdowns (customer and product)','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -3984,22 +4000,22 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Enable Optimized AJAX search only for Select2 dropdown styles. This option is applicable if Select2 is enabled on above setting. This is efficient if your install has huge customer and product data lists and will help avoid page load lags.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Enable Optimized AJAX search only for Select2 dropdown styles. This option is applicable if Select2 is enabled on above setting. This is efficient if your install has huge customer and product data lists and will help avoid page load lags.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>								
 								
 								<tr height="50">
 									<td colspan="3">
-										<b><?php echo __('Other Settings','mw_wc_qbo_sync') ?></b>										
+										<b><?php echo esc_html__('Other Settings','mw_wc_qbo_sync') ?></b>										
 									</td>									
 								</tr>
 								
 								<?php if(!$MSQS_QL->get_qbo_company_info('is_sku_enabled',false,false)):?>
 								<tr style="display:none;">
 									<th class="title-description">
-								    	<?php echo __('Enable QuickBooks Inventory Setting','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Enable QuickBooks Inventory Setting','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -4012,8 +4028,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('This setting is off by default - enable QuickBooks inventory setting.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('This setting is off by default - enable QuickBooks inventory setting.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -4021,7 +4037,7 @@ $wu_roles = get_editable_roles();
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Skip UnitPrice in Order Sync Line Item','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Skip UnitPrice in Order Sync Line Item','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -4034,15 +4050,15 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Skip unit price for product line item when syncing order into QuickBooks.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Skip unit price for product line item when syncing order into QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Use "_line_total" instead of "_line_subtotal" for line items','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Use "_line_total" instead of "_line_subtotal" for line items','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -4055,21 +4071,21 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('If checked it will use _line_total instead of _line_subtotal  for product line item when syncing order into QuickBooks.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('If checked it will use _line_total instead of _line_subtotal  for product line item when syncing order into QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
 								
 								<tr height="50">
 									<td colspan="3">
-										<b><?php echo __('Sync / Queue Related Settings','mw_wc_qbo_sync') ?></b>										
+										<b><?php echo esc_html__('Sync / Queue Related Settings','mw_wc_qbo_sync') ?></b>										
 									</td>									
 								</tr>
 								
 								<tr>
 									<th class="title-description">
-								    	<?php echo __('Enable additional duplicate prevention for orders triggered more than once','mw_wc_qbo_sync') ?>
+								    	<?php echo esc_html__('Enable additional duplicate prevention for orders triggered more than once','mw_wc_qbo_sync') ?>
 								    	
 								    </th>
 									<td>
@@ -4082,8 +4098,8 @@ $wu_roles = get_editable_roles();
 										</div>
 									</td>
 									<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Enable additional protections to avoid syncing an order more than once if incorrectly triggered multiple times in the same second by WooCommerce to our sync while the web connector is actively running.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Enable additional protections to avoid syncing an order more than once if incorrectly triggered multiple times in the same second by WooCommerce to our sync while the web connector is actively running.','mw_wc_qbo_sync') ?></span>
 										</div>
 									</td>
 								</tr>
@@ -4151,8 +4167,8 @@ jQuery(document).ready(function($){
 	});
 	<?php endif;?>	
 	<?php if($selected_tab!=''):?>
-	if(jQuery('#mw_qbo_sybc_settings_tab_<?php echo $selected_tab;?>').length >0) {
-		jQuery('#mw_qbo_sybc_settings_tab_<?php echo $selected_tab;?>').trigger( "click" );
+	if(jQuery('#mw_qbo_sybc_settings_tab_<?php echo esc_js($selected_tab);?>').length >0) {
+		jQuery('#mw_qbo_sybc_settings_tab_<?php echo esc_js($selected_tab);?>').trigger( "click" );
 	}	
 	<?php endif;?>
 		
@@ -4250,7 +4266,7 @@ jQuery(document).ready(function($){
 	$('#wp_avnu_btn_op').removeAttr('disabled');
 	$('#wp_avnu_btn_op').click(function(e){
 		e.preventDefault();
-		if(confirm('<?php echo __('Are you sure, you re-generate all incorrect variation names?','mw_wc_qbo_sync')?>')){
+		if(confirm('<?php echo esc_html__('Are you sure, you re-generate all incorrect variation names?','mw_wc_qbo_sync')?>')){
 			$('#wp_avnu_msg_op').html('Loading...');
 			var data = {
 				"action": 'mw_wc_qbo_sync_rg_all_inc_variation_names',
@@ -4275,6 +4291,36 @@ jQuery(document).ready(function($){
 			   }
 			});
 		}
+	});
+
+	//New
+	$('#mwqs_refresh_data_from_qbo_btn').removeAttr('disabled');
+	$('.mwqs_settings_refresh_qb_data').click(function(e){
+		e.preventDefault();
+		$('#mwqs_srqd_msg').html('Refreshing...');
+		var data = {
+			"action": 'mw_wc_qbo_sync_settings_refresh_qb_data',
+			"settings_refresh_qb_data": jQuery('#settings_refresh_qb_data').val(),
+		};
+		
+		jQuery.ajax({
+			type: "POST",
+			url: ajaxurl,
+			data: data,
+			cache:  false ,
+			//datatype: "json",
+			success: function(result){
+				if(result == 'Success'){	
+				jQuery('#mwqs_srqd_msg').html('Done');				 
+				location.reload();
+				}else{					
+				jQuery('#mwqs_srqd_msg').html('Something went wrong');
+				}				  
+			},
+			error: function(result) {					
+				jQuery('#mwqs_srqd_msg').html('Error!');
+			}
+		});
 	});
 	
 	/**/
@@ -4321,7 +4367,7 @@ jQuery(document).ready(function($){
 		}
 	});
 
-	<?php echo $list_selected;?>
+	<?php echo !empty($list_selected) ? $list_selected : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	
 	<?php if(empty($admin_settings_data['mw_wc_qbo_sync_po_sync_after_ord_pa_acc'])):?>
 	$("#mw_wc_qbo_sync_po_sync_after_ord_pa_acc").val('');
@@ -4341,5 +4387,5 @@ $( ".mwqs_datepicker" ).datepicker(
 );
 } );
 </script>
-<?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select','qbo_product');?>
-<?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select_cus','qbo_customer');?>
+<?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select','qbo_product'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized in get_select2_js function ?>
+<?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select_cus','qbo_customer'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized in get_select2_js function ?>

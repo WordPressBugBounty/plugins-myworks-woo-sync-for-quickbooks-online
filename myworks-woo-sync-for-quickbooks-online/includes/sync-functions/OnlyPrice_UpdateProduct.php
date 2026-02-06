@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) )
 exit;
 
 /**
- * Update Only Product Price Into Quickbooks Online.
+ * Update Only Product Price Into QuickBooks Online.
  *
  * @since    
  * Last Updated: 2021-04-07

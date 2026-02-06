@@ -440,9 +440,9 @@ class QuickBooks_Driver_Sql_Pgsql extends QuickBooks_Driver_Sql
 		/*
 		if ($print)
 		{
-			print('{{');
+			echo esc_html('{{');
 			print_r($arr);
-			die('}} OUTPUT STOP');
+			die(esc_html('}} OUTPUT STOP'));
 		}
 		*/
 		
@@ -501,7 +501,7 @@ class QuickBooks_Driver_Sql_Pgsql extends QuickBooks_Driver_Sql
 			$errnum = -1;
 			$errmsg = pg_last_error($this->_conn);
 			
-			trigger_error('PostgreSQL Error: ' . $errmsg . ', SQL: ' . $sql, E_USER_ERROR);
+			trigger_error('PostgreSQL Error: ' . esc_html($errmsg) . ', SQL: ' . esc_html($sql), E_USER_ERROR);
 			return false;
 		}
 		
@@ -852,7 +852,7 @@ class QuickBooks_Driver_Sql_Pgsql extends QuickBooks_Driver_Sql
 				
 				/*if ($name == 'ListID')
 				{
-					print('LIST ID:');
+					echo esc_html('LIST ID:');
 					print_r($def);
 				}*/
 				

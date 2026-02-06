@@ -28,8 +28,8 @@ class QuickBooks_ErrorHandler
 	static public function handle($errno, $errstr, $errfile, $errline)
 	{
 		print('
-			ERROR: [' . $errno . '] ' . $errstr . '
-        	Fatal error on line ' . $errline . ' in file ' . $errfile . ', PHP v' . PHP_VERSION . ' (' . PHP_OS . ')
+			ERROR: [' . esc_html($errno) . '] ' . esc_html($errstr) . '
+        	Fatal error on line ' . esc_html($errline) . ' in file ' . esc_html($errfile) . ', PHP v' . PHP_VERSION . ' (' . esc_html(PHP_OS) . ')
 		');
 		
 		exit(1);

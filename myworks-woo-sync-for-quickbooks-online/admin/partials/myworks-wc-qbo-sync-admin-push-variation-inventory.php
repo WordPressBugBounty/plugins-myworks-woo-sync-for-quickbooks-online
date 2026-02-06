@@ -53,9 +53,9 @@ $js_somqmi = false;
 	.sstchc{display:none;}
 </style>
 <div class="mwqs_page_tab_cont">
-	<span class="tab_one"><a href="<?php echo $page_url_product;?>"><?php esc_html_e( 'Products', 'mw_wc_qbo_sync' );?></a></span>
+	<span class="tab_one"><a href="<?php echo esc_url($page_url_product);?>"><?php esc_html_e( 'Products', 'mw_wc_qbo_sync' );?></a></span>
 	&nbsp;
-	<span class="tab_two active"><a href="<?php echo $page_url;?>"><?php esc_html_e( 'Variations', 'mw_wc_qbo_sync' );?></a></span>
+	<span class="tab_two active"><a href="<?php echo esc_url($page_url);?>"><?php esc_html_e( 'Variations', 'mw_wc_qbo_sync' );?></a></span>
 </div>
 
 <div class="container">
@@ -69,7 +69,7 @@ $js_somqmi = false;
 						             <div class="mw_wc_filter">
 									 <span class="search_text">Search</span>
 									  &nbsp;
-									  <input type="text" id="variation_inventory_push_search" value="<?php echo $variation_inventory_push_search;?>">
+									  <input type="text" id="variation_inventory_push_search" value="<?php echo esc_attr($variation_inventory_push_search);?>">
 									  &nbsp;		
 									  <button onclick="javascript:search_item();" class="btn btn-info">Filter</button>
 									  &nbsp;
@@ -78,15 +78,15 @@ $js_somqmi = false;
 									  <span class="filter-right-sec">
 										  <span class="entries">Show entries</span>
 										  &nbsp;
-										  <select style="width:50px;" onchange="javascript:window.location='<?php echo $page_url;?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-											<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+										  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_js($MSQS_QL->per_page_keyword);?>='+this.value;">
+											<?php echo wp_kses($MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page), array('option' => array('value' => array(), 'selected' => array())));?>
 										 </select>
 									 </span>
 									 </div>
 									 <br />
 									 <div class="row">
 										<div class="input-field col s12 m12 14">
-											<button id="push_selected_inventory_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo __('Push Selected Inventory','mw_wc_qbo_sync')?></button>
+											<button id="push_selected_inventory_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo esc_html__('Push Selected Inventory','mw_wc_qbo_sync')?></button>
 																					
 										</div>
 									</div>
@@ -106,10 +106,10 @@ $js_somqmi = false;
 														<th width="24%">Parent Product</th>
 														<th width="10%">SKU</th>
 														<th width="8%">Price</th>														
-														<th width="8%">WooCommerce</br>Stock</th>
-														<th width="8%">QuickBooks</br>Stock</th>
-														<th width="8%">Stock</br>Status</th>
-														<th width="5%" <?php echo $sstchc;?>>Sync</br>Status</th>										
+														<th width="8%"><?php echo wp_kses( __( 'WooCommerce<br>Stock', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+														<th width="8%"><?php echo wp_kses( __( 'QuickBooks<br>Stock', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+														<th width="8%"><?php echo wp_kses( __( 'Stock<br>Status', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+														<th width="5%" <?php echo esc_attr($sstchc);?>><?php echo wp_kses( __( 'Sync<br>Status', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>							
 													</tr>
 												</thead>
 												<tbody>
@@ -141,24 +141,24 @@ $js_somqmi = false;
 													}
 												}
 												?>
-												<tr class="wip_vtr" id="tr_wi_<?php echo $p_val['ID']?>">
-													<td><input type="checkbox" id="variation_inventory_push_<?php echo $p_val['ID']?>"></td>
-													<td><?php echo $p_val['ID']?></td>
+												<tr class="wip_vtr" id="tr_wi_<?php echo esc_attr($p_val['ID'])?>">
+													<td><input type="checkbox" id="variation_inventory_push_<?php echo esc_attr($p_val['ID'])?>"></td>
+													<td><?php echo esc_html($p_val['ID'])?></td>
 													<td><?php esc_html_e( $p_val['name'], 'mw_wc_qbo_sync' );?></td>
 													<td>
-														<a title="<?php echo $p_val['parent_id']?>" target="_blank" href="post.php?post=<?php echo $p_val['parent_id']?>&action=edit">
+														<a title="<?php echo esc_attr($p_val['parent_id'])?>" target="_blank" href="post.php?post=<?php echo esc_attr($p_val['parent_id'])?>&action=edit">
 															<?php esc_html_e( $p_val['parent_name'], 'mw_wc_qbo_sync' );?>
 														</a>
 													</td>
-													<td><?php echo $p_val['sku'];?></td>
+													<td><?php echo esc_html($p_val['sku']);?></td>
 													<td>
 													<?php
-													echo $wc_currency_symbol;
+													echo esc_html($wc_currency_symbol);
 													echo (isset($p_val['price']))?floatval($p_val['price']):'0.00';
 													?>
 													</td>												
 													
-													<td id="w_qty_<?php echo $p_val['ID']?>">
+													<td id="w_qty_<?php echo esc_attr($p_val['ID'])?>">
 														<?php echo number_format(floatval($p_val['stock']),2);?>
 													</td>
 													<?php if((int) $p_val['quickbook_product_id']):?>
@@ -167,16 +167,16 @@ $js_somqmi = false;
 													<td></td>
 													<?php endif;?>
 													
-													<td><?php echo $p_val['stock_status'];?></td>
+													<td><?php echo esc_html($p_val['stock_status']);?></td>
 													
-													<td <?php echo $sstchc;?>><?php echo $sync_status_html;?></td>
+													<td <?php echo esc_attr($sstchc);?>><?php echo $sync_status_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
 												</tr>
 												<?php endforeach;?>									
 												</tbody>
 											</table>
 										</div>
 									</div>
-									<?php echo $pagination_links?>
+									<?php echo $pagination_links; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 									<?php else:?>									
 									<h4 class="mw_mlp_ndf">
 										<?php esc_html_e( 'No available variation inventories to display.', 'mw_wc_qbo_sync' );?>
@@ -193,21 +193,21 @@ $js_somqmi = false;
 	function search_item(){		
 		var variation_inventory_push_search = jQuery('#variation_inventory_push_search').val();
 		if(variation_inventory_push_search!=''){			
-			window.location = '<?php echo $page_url;?>&variation_inventory_push_search='+variation_inventory_push_search;
+			window.location = '<?php echo esc_url_raw($page_url);?>&variation_inventory_push_search='+variation_inventory_push_search;
 		}else{
-			alert('<?php echo __('Please enter search keyword.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_js(__('Please enter search keyword.','mw_wc_qbo_sync')); ?>');
 		}
 	}
 
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&variation_inventory_push_search=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&variation_inventory_push_search=';
 	}
 	
 	jQuery(document).ready(function($) {		
 		
 		 <?php if(is_array($push_map_data_arr) && count($push_map_data_arr)):?>
 		 <?php foreach($push_map_data_arr as $pmd):?>		 	 
-		 jQuery('.p_wc_stock_<?php echo $pmd['quickbook_product_id']?>').html('<?php echo $pmd['QtyOnHand']?>');		 
+		 jQuery('.p_wc_stock_<?php echo esc_js($pmd['quickbook_product_id'])?>').html('<?php echo esc_js($pmd['QtyOnHand'])?>');		 
 		 <?php endforeach;?>
 		 
 		 <?php if($show_only_mapped_qty_mismatch_items && $js_somqmi):?>
@@ -266,19 +266,19 @@ $js_somqmi = false;
 			}
 			
 			if(item_checked==0){
-				alert('<?php echo __('Please select at least one item.','mw_wc_qbo_sync');?>');
+				alert('<?php echo esc_js(__('Please select at least one item.','mw_wc_qbo_sync')); ?>');
 				return false;
 			}
 			
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_variation_inventory_push',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=push&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_variation_inventory_push',0,0,650,350);
 			return false;
 		});
 		
 		$('#push_all_inventory_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&sync_all=1&item_type='+item_type,'mw_qs_variation_inventory_push',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=push&sync_all=1&item_type='+item_type,'mw_qs_variation_inventory_push',0,0,650,350);
 			return false;
 		});		
 		
 	});
  </script>
- <?php echo $MWQS_OF->get_tablesorter_js('#mwqs_inventory_push_table');?>
+<?php echo wp_kses( $MWQS_OF->get_tablesorter_js('#mwqs_inventory_push_table'), array('script' => array('src' => array(), 'type' => array(), 'crossorigin' => array(), 'onerror' => array()), 'style' => array()) );?>

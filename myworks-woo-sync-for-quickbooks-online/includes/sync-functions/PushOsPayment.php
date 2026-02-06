@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) )
 exit;
 
 /**
- * Push Order Payment Into Quickbooks Online.
+ * Push Order Payment Into QuickBooks Online.
  *
  * @since    
  * Last Updated: 2019-01-25

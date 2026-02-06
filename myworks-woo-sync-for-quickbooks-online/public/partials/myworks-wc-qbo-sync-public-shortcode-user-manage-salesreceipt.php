@@ -70,7 +70,7 @@ if($qb_customer_id > 0 && ($qrts == 'SalesReceipt' || $qrts == 'Invoice_SalesRec
 
 	<script type='text/javascript' src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.js"></script>
 	<script type='text/javascript' src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
-	<link rel='stylesheet' href='<?php echo dirname(plugin_dir_url( __FILE__ ));?>/css/myworks-wc-qbo-sync-public.css' type='text/css' media='all' />
+	<link rel='stylesheet' href='<?php echo esc_url(dirname(plugin_dir_url( __FILE__ )));?>/css/myworks-wc-qbo-sync-public.css' type='text/css' media='all' />
 </head>
 <body>
 	<div class="invoice_container mw_wsfqo_p_ic">
@@ -94,7 +94,7 @@ if($qb_customer_id > 0 && ($qrts == 'SalesReceipt' || $qrts == 'Invoice_SalesRec
 		$qbo_href = '';		
 		
 		$qbo_inv_currency = str_replace(array('{','-','}'),array('','',''),$SalesReceipt->getCurrencyRef());
-		$qbo_inv_currency_symbol = get_woocommerce_currency_symbol($qbo_inv_currency);
+		$qbo_inv_currency_symbol = esc_html(get_woocommerce_currency_symbol($qbo_inv_currency));
 		
 		
 		$TotalAmt = (float) $SalesReceipt->getTotalAmt();
@@ -108,17 +108,17 @@ if($qb_customer_id > 0 && ($qrts == 'SalesReceipt' || $qrts == 'Invoice_SalesRec
 		
 		?>
 	      <tr>
-	        <td>#<?php echo $SalesReceipt->getDocNumber();?></td>
-	        <td><?php echo $TxnDate;?></td>
-	        <td><?php echo $qbo_inv_currency_symbol;?><?php echo number_format($SalesReceipt->getTotalAmt(),2);?></td>
+	        <td>#<?php echo esc_html($SalesReceipt->getDocNumber());?></td>
+	        <td><?php echo esc_html($TxnDate);?></td>
+	        <td><?php echo esc_html($qbo_inv_currency_symbol);?><?php echo esc_html(number_format($SalesReceipt->getTotalAmt(),2));?></td>
 	        <td>
-				<a target="_blank" href="<?php echo $pdf_url.$qbo_id;?>&type=SalesReceipt"><button type="button" class="btn btn-pdf">VIEW<!--PDF--></button></a>
+				<a target="_blank" href="<?php echo esc_url($pdf_url.$qbo_id);?>&type=SalesReceipt"><button type="button" class="btn btn-pdf">VIEW<!--PDF--></button></a>
 			</td>
 	      </tr>
 		  <?php endforeach;?>
 	    </tbody>
 	  </table>
-	  <?php echo $pagination_links?>
+	  <?php echo wp_kses_post($pagination_links);?>
 	  
 	 <?php else:?>
 		 <?php if($qb_customer_id < 1): ?>

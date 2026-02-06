@@ -88,7 +88,7 @@ class MyWorks_WC_QBO_Sync_Oth_Funcs {
 					$is_lc_func_run = true;
 					$_SESSION['mw_wc_qbo_sync_rts_license_data'] = $license_data;
 				}else{
-					$license_data = $_SESSION['mw_wc_qbo_sync_rts_license_data'];
+					$license_data = is_array($_SESSION['mw_wc_qbo_sync_rts_license_data']) ? array_map('sanitize_text_field', $_SESSION['mw_wc_qbo_sync_rts_license_data']) : array();
 				}
 			}else{
 				$license_data = $this->myworks_wc_qbo_sync_check_license($licensekey,$localkey,$realtime);
@@ -433,13 +433,13 @@ class MyWorks_WC_QBO_Sync_Oth_Funcs {
 	public function get_plugin_domain(){
 		$u_sn = false;
 		if($u_sn && isset($_SERVER['SERVER_NAME']) && !empty($_SERVER['SERVER_NAME'])){
-			return $_SERVER['SERVER_NAME'];
+			return sanitize_text_field(wp_unslash($_SERVER['SERVER_NAME']));
 		}else{
 			$siteurl = get_option('siteurl'); //get_site_url
 			if(!empty($siteurl)){
-				$psurl = parse_url($siteurl);
+				$psurl = parse_url(esc_url_raw($siteurl));
 				if(is_array($psurl) && isset($psurl['host'])){
-					return $psurl['host'];
+					return sanitize_text_field($psurl['host']);
 				}
 			}			
 		}
@@ -447,14 +447,14 @@ class MyWorks_WC_QBO_Sync_Oth_Funcs {
 	}
 	
 	public function get_plugin_ip(){
-		$s_laddr = (isset($_SERVER['LOCAL_ADDR']))?$_SERVER['LOCAL_ADDR']:'';
-		$usersip = isset($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : $s_laddr;
+		$s_laddr = (isset($_SERVER['LOCAL_ADDR']))?sanitize_text_field(wp_unslash($_SERVER['LOCAL_ADDR'])):'';
+		$usersip = isset($_SERVER['SERVER_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_ADDR'])) : $s_laddr;
 		
 		//
 		$u_sn = false;
-		$sname = ($u_sn && isset($_SERVER['SERVER_NAME']) && !empty($_SERVER['SERVER_NAME']))?$_SERVER['SERVER_NAME']:$this->get_plugin_domain();
+		$sname = ($u_sn && isset($_SERVER['SERVER_NAME']) && !empty($_SERVER['SERVER_NAME']))?sanitize_text_field(wp_unslash($_SERVER['SERVER_NAME'])):$this->get_plugin_domain();
 		if(empty($usersip) && !empty($sname)){
-			$usersip = gethostbyname($sname);
+			$usersip = sanitize_text_field(gethostbyname($sname));
 		}
 		return $usersip;
 	}
@@ -465,22 +465,35 @@ class MyWorks_WC_QBO_Sync_Oth_Funcs {
 	}
 	
 	public function myworks_wc_qbo_sync_set_session_msg($key='',$msg=''){
+		if(!is_string($key) || empty($key)){
+			return;
+		}
+		
 		if(!isset($_SESSION['myworks_wc_qbo_sync_session_msg'])){
 			$_SESSION['myworks_wc_qbo_sync_session_msg'] = array();     
 		}
 
-		$_SESSION['myworks_wc_qbo_sync_session_msg'][$key] = $msg;        
+		// Sanitize message data before storing
+		if(is_array($msg)){
+			$msg = array_map('sanitize_text_field', $msg);
+		} else {
+			$msg = sanitize_text_field($msg);
+		}
+
+		$_SESSION['myworks_wc_qbo_sync_session_msg'][sanitize_text_field($key)] = $msg;        
 	}
 
 	public function myworks_wc_qbo_sync_show_session_msg($key='',$div_class=""){
-		if(isset($_SESSION['myworks_wc_qbo_sync_session_msg'][$key])){
-			if(!empty($_SESSION['myworks_wc_qbo_sync_session_msg'][$key])){            
-			echo '<div class="myworks_wc_qbo_sync_session_msg_div '.$div_class.'">';
-			if(is_array($_SESSION['myworks_wc_qbo_sync_session_msg'][$key])){
-				echo implode('<br />', $_SESSION['myworks_wc_qbo_sync_session_msg'][$key]);
+		if(isset($_SESSION['myworks_wc_qbo_sync_session_msg'][$key]) && is_string($key)){
+			$session_msg = sanitize_text_field($_SESSION['myworks_wc_qbo_sync_session_msg'][$key]);
+			if(!empty($session_msg)){            
+			echo '<div class="myworks_wc_qbo_sync_session_msg_div ' . esc_attr(sanitize_text_field($div_class)) . '">';
+			if(is_array($session_msg)){
+				$sanitized_msgs = array_map('sanitize_text_field', $session_msg);
+				echo wp_kses_post(implode('<br />', $sanitized_msgs));
 			}
 			else{
-				echo $_SESSION['myworks_wc_qbo_sync_session_msg'][$key];
+				echo wp_kses_post(sanitize_text_field($session_msg));
 			}
 			echo '</div>';
 			}
@@ -492,14 +505,16 @@ class MyWorks_WC_QBO_Sync_Oth_Funcs {
 
 	public function myworks_wc_qbo_sync_get_session_msg($key='',$div_class="",$unset=true){
 		$return="";
-		if(isset($_SESSION['myworks_wc_qbo_sync_session_msg'][$key])){
-			if(!empty($_SESSION['myworks_wc_qbo_sync_session_msg'][$key])){
-				$return.='<div class="myworks_wc_qbo_sync_session_msg_div '.$div_class.'">';
-				if(is_array($_SESSION['myworks_wc_qbo_sync_session_msg'][$key])){
-					$return.= implode('<br />', $_SESSION['myworks_wc_qbo_sync_session_msg'][$key]);
+		if(isset($_SESSION['myworks_wc_qbo_sync_session_msg'][$key]) && is_string($key)){
+			$session_msg = sanitize_text_field($_SESSION['myworks_wc_qbo_sync_session_msg'][$key]);
+			if(!empty($session_msg)){
+				$return.='<div class="myworks_wc_qbo_sync_session_msg_div '.esc_attr(sanitize_text_field($div_class)).'">';
+				if(is_array($session_msg)){
+					$sanitized_msgs = array_map('sanitize_text_field', $session_msg);
+					$return.= wp_kses_post(implode('<br />', $sanitized_msgs));
 				}
 				else{
-					$return.= $_SESSION['myworks_wc_qbo_sync_session_msg'][$key];
+					$return.= wp_kses_post(sanitize_text_field($session_msg));
 				}
 				$return.= '</div>';
 			}
@@ -515,32 +530,39 @@ class MyWorks_WC_QBO_Sync_Oth_Funcs {
 	}
 	
 	public function var_p($key=''){
-		if($key!=''){
+		if($key!='' && is_string($key)){
 			if(isset($_POST[$key])){
 				if(!is_array($_POST[$key])){
-					return trim($_POST[$key]);
+					return trim(sanitize_text_field(wp_unslash($_POST[$key])));
 				}
 				else{
-					return $_POST[$key];
+					return array_map('sanitize_text_field', wp_unslash($_POST[$key]));
 				}
 			}
 		}
+		return '';
 	}
 
 	public function var_g($key=''){
-		if($key!=''){
+		if($key!='' && is_string($key)){
 			if(isset($_GET[$key])){
-				return trim($_GET[$key]);
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Input is sanitized with sanitize_text_field() on next line
+				return sanitize_text_field(trim(wp_unslash($_GET[$key])));
 			}
 		}
+		return '';
 	}
 	
 	public function _p($item=''){
 		if(is_array($item) || is_object($item)){
-			echo '<pre>'; print_r($item); echo '</pre>';
+			echo '<pre>'; 
+			// Escape output for security - but this method should only be used for debugging in development
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Debug function for development only
+			echo esc_html(print_r($item, true)); 
+			echo '</pre>';
 		}
 		else{
-			echo $item;
+			echo esc_html($item);
 		}
 	}
 
@@ -561,29 +583,29 @@ public function get_select2_js($item='select', $d_item='', $pvep='no') {
 	}
 
 	$html = '';
-	$html .= '<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" />' . "\n";
-	$html .= '<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>' . "\n";
+	$html .= '<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" crossorigin="anonymous" />' . "\n";
+	$html .= '<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js" crossorigin="anonymous"></script>' . "\n";
 	$html .= '<script type="text/javascript">
 	jQuery(document).ready(function(){
-		jQuery("' . $item . '").addClass("mwqs_s2");
+		jQuery("' . esc_attr(sanitize_text_field($item)) . '").addClass("mwqs_s2");
 	});
 
-	var d_item = "' . $d_item . '";
-	var pvep = "' . $pvep . '";
+	var d_item = "' . esc_url_raw(sanitize_text_field($d_item)) . '";
+	var pvep = "' . esc_url_raw(sanitize_text_field($pvep)) . '";
 	jQuery(function($){
-		jQuery("' . $item . '").each(function(){
+		jQuery("' . esc_attr(sanitize_text_field($item)) . '").each(function(){
 			if (jQuery(this).prop("multiple")) {
 				jQuery(this).select2();
 				jQuery(this).removeClass("mwqs_s2");
 			}
 		});
 
-		jQuery("' . $item . '").hover(function(){
+		jQuery("' . esc_attr(sanitize_text_field($item)) . '").hover(function(){
 			var is_ajax_dd = ' . $is_ajax_dd . ';
 			if (jQuery(this).hasClass("mwqs_dynamic_select") && is_ajax_dd == 1) {
 				jQuery(this).select2({
 					ajax: {
-						url: "' . $json_data_url . '",
+						url: "' . esc_url_raw($json_data_url) . '",
 						dataType: "json",
 						delay: 250,
 						data: function (params) {
@@ -635,7 +657,8 @@ public function get_select2_js($item='select', $d_item='', $pvep='no') {
 }
 
 	public function get_tablesorter_js($item = 'table') {
-		$js = "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.28.5/js/jquery.tablesorter.js\"></script>\n";
+		$item = esc_attr(sanitize_text_field($item));
+		$js = "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.28.5/js/jquery.tablesorter.js\" crossorigin=\"anonymous\" onerror=\"console.error('Failed to load tablesorter from CDN')\"></script>\n";
 		$js .= "<script type=\"text/javascript\">\n";
 		$js .= "jQuery(function($){\n";
 		$js .= "  //jQuery('{$item}').addClass('tablesorter-blue');\n";
@@ -658,7 +681,11 @@ public function get_select2_js($item='select', $d_item='', $pvep='no') {
 		$js .= "      jQuery(this).attr('data-filter','false');\n";
 		$js .= "    }\n";
 		$js .= "  });\n";
-		$js .= "  jQuery('{$item}').tablesorter();\n";
+		$js .= "  if (jQuery.fn.tablesorter) {\n";
+		$js .= "    jQuery('{$item}').tablesorter();\n";
+		$js .= "  } else {\n";
+		$js .= "    console.warn('Tablesorter plugin not loaded - table sorting disabled');\n";
+		$js .= "  }\n";
 		$js .= "});\n";
 		$js .= "</script>\n";
 
@@ -666,31 +693,43 @@ public function get_select2_js($item='select', $d_item='', $pvep='no') {
 	}
 
 	public function get_bootstrap_switch_lib() {
-		$html  = "<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' type='text/css' media='all' />\n";
-		$html .= "<script type='text/javascript' src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>\n";
-		$html .= "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/css/bootstrap2/bootstrap-switch.css' type='text/css' media='all' />\n";
-		$html .= "<script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/js/bootstrap-switch.js'></script>\n";
+		$html  = "<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' type='text/css' media='all' crossorigin='anonymous' />\n";
+		$html .= "<script type='text/javascript' src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js' crossorigin='anonymous'></script>\n";
+		$html .= "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/css/bootstrap2/bootstrap-switch.css' type='text/css' media='all' crossorigin='anonymous' />\n";
+		$html .= "<script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/js/bootstrap-switch.js' crossorigin='anonymous'></script>\n";
 		return $html;
 	}
 	public function get_html_msg($title='',$body=''){
 		$display = '
 		<html>
 			<head>
-			<title>'.$title.'</title>
+			<title>'.esc_html(sanitize_text_field($title)).'</title>
 			</head>
 			
 			<body>
-			'.$body.'
+			'.wp_kses_post($body).'
 			</body>
 		</html>';
 		return $display;
 	}
 	
+	/**
+	 * Verify nonce for form processing
+	 */
+	public function verify_nonce($action = 'mw_wc_qbo_sync_settings', $nonce_field = '_wpnonce'){
+		if (!isset($_POST[$nonce_field]) || !wp_verify_nonce(wp_unslash(sanitize_text_field($_POST[$nonce_field])), $action)) {
+			wp_die(esc_html__('Security check failed. Please try again.', 'mw_wc_qbo_sync'));
+		}
+	}
+
 	public function get_plugin_settings_post_data(){
+		// Verify nonce before processing form data
+		// Note: This should be called by the calling method to verify nonce
+		// $this->verify_nonce('mw_wc_qbo_sync_settings');
 
 		//$this->_p($_POST);die;
 		return array(
-		//'mw_wc_qbo_sync_sandbox_mode' => isset($_POST['mw_wc_qbo_sync_sandbox_mode'])?$_POST['mw_wc_qbo_sync_sandbox_mode']:'',
+		//'mw_wc_qbo_sync_sandbox_mode' => isset($_POST['mw_wc_qbo_sync_sandbox_mode'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_sandbox_mode'])):'',
 		
 		'mw_wc_qbo_sync_default_qbo_item' => isset($_POST['mw_wc_qbo_sync_default_qbo_item'])?(int) $_POST['mw_wc_qbo_sync_default_qbo_item']:0,
 
@@ -708,226 +747,225 @@ public function get_select2_js($item='select', $d_item='', $pvep='no') {
 		
 		'mw_wc_qbo_sync_txn_fee_li_qbo_item' => isset($_POST['mw_wc_qbo_sync_txn_fee_li_qbo_item'])?(int) $_POST['mw_wc_qbo_sync_txn_fee_li_qbo_item']:0,
 		
-		//'mw_wc_qbo_sync_order_as_sales_receipt' => isset($_POST['mw_wc_qbo_sync_order_as_sales_receipt'])?$_POST['mw_wc_qbo_sync_order_as_sales_receipt']:'false',
+		//'mw_wc_qbo_sync_order_as_sales_receipt' => isset($_POST['mw_wc_qbo_sync_order_as_sales_receipt'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_order_as_sales_receipt'])):'false',
 		
 		'mw_wc_qbo_sync_invoice_min_id' => isset($_POST['mw_wc_qbo_sync_invoice_min_id'])?(int) $_POST['mw_wc_qbo_sync_invoice_min_id']:0,
 		
-		'mw_wc_qbo_sync_qbo_inventory_start_date' => isset($_POST['mw_wc_qbo_sync_qbo_inventory_start_date'])?trim($_POST['mw_wc_qbo_sync_qbo_inventory_start_date']):'',
+		'mw_wc_qbo_sync_qbo_inventory_start_date' => isset($_POST['mw_wc_qbo_sync_qbo_inventory_start_date'])?trim(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_qbo_inventory_start_date']))):'',
 		
-		'mw_wc_qbo_sync_null_invoice' => isset($_POST['mw_wc_qbo_sync_null_invoice'])?$_POST['mw_wc_qbo_sync_null_invoice']:'false',
+		'mw_wc_qbo_sync_null_invoice' => isset($_POST['mw_wc_qbo_sync_null_invoice'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_null_invoice'])):'false',
 		
-		'mw_wc_qbo_sync_invoice_notes' => isset($_POST['mw_wc_qbo_sync_invoice_notes'])?$_POST['mw_wc_qbo_sync_invoice_notes']:'false',
+		'mw_wc_qbo_sync_invoice_notes' => isset($_POST['mw_wc_qbo_sync_invoice_notes'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_invoice_notes'])):'false',
 		
 		'mw_wc_qbo_sync_invoice_note_id' => isset($_POST['mw_wc_qbo_sync_invoice_note_id'])?(int) $_POST['mw_wc_qbo_sync_invoice_note_id']:0,
 		
-		'mw_wc_qbo_sync_invoice_note_name' => isset($_POST['mw_wc_qbo_sync_invoice_note_name'])?$_POST['mw_wc_qbo_sync_invoice_note_name']:'',
+		'mw_wc_qbo_sync_invoice_note_name' => isset($_POST['mw_wc_qbo_sync_invoice_note_name'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_invoice_note_name'])):'',
 		
-		'mw_wc_qbo_sync_invoice_cancelled' => isset($_POST['mw_wc_qbo_sync_invoice_cancelled'])?$_POST['mw_wc_qbo_sync_invoice_cancelled']:'false',
+		'mw_wc_qbo_sync_invoice_cancelled' => isset($_POST['mw_wc_qbo_sync_invoice_cancelled'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_invoice_cancelled'])):'false',
 		
-		'mw_wc_qbo_sync_invoice_memo' => isset($_POST['mw_wc_qbo_sync_invoice_memo'])?$_POST['mw_wc_qbo_sync_invoice_memo']:'false',
-		'mw_wc_qbo_sync_won_qbf_sync' => isset($_POST['mw_wc_qbo_sync_won_qbf_sync'])?trim($_POST['mw_wc_qbo_sync_won_qbf_sync']):'',
+		'mw_wc_qbo_sync_invoice_memo' => isset($_POST['mw_wc_qbo_sync_invoice_memo'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_invoice_memo'])):'false',
+		'mw_wc_qbo_sync_won_qbf_sync' => isset($_POST['mw_wc_qbo_sync_won_qbf_sync'])?trim(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_won_qbf_sync']))):'',
 		
 		'mw_wc_qbo_sync_onli_qbo_product' => isset($_POST['mw_wc_qbo_sync_onli_qbo_product'])?(int) $_POST['mw_wc_qbo_sync_onli_qbo_product']:0,
 		
-		'mw_wc_qbo_sync_use_qb_next_ord_num_iowon' => isset($_POST['mw_wc_qbo_sync_use_qb_next_ord_num_iowon'])?$_POST['mw_wc_qbo_sync_use_qb_next_ord_num_iowon']:'false',
+		'mw_wc_qbo_sync_use_qb_next_ord_num_iowon' => isset($_POST['mw_wc_qbo_sync_use_qb_next_ord_num_iowon'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_use_qb_next_ord_num_iowon'])):'false',
 		
-		'mw_wc_qbo_sync_invoice_memo_statement' => isset($_POST['mw_wc_qbo_sync_invoice_memo_statement'])?$_POST['mw_wc_qbo_sync_invoice_memo_statement']:'false',
+		'mw_wc_qbo_sync_invoice_memo_statement' => isset($_POST['mw_wc_qbo_sync_invoice_memo_statement'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_invoice_memo_statement'])):'false',
 		
-		'mw_wc_qbo_sync_invoice_date' => isset($_POST['mw_wc_qbo_sync_invoice_date'])?$_POST['mw_wc_qbo_sync_invoice_date']:'false',
+		'mw_wc_qbo_sync_invoice_date' => isset($_POST['mw_wc_qbo_sync_invoice_date'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_invoice_date'])):'false',
 		
 		'mw_wc_qbo_sync_tax_rule' => isset($_POST['mw_wc_qbo_sync_tax_rule'])?(int) $_POST['mw_wc_qbo_sync_tax_rule']:0,
 		
-		'mw_wc_qbo_sync_tax_format' => isset($_POST['mw_wc_qbo_sync_tax_format'])?$_POST['mw_wc_qbo_sync_tax_format']:'',
+		'mw_wc_qbo_sync_tax_format' => isset($_POST['mw_wc_qbo_sync_tax_format'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_tax_format'])):'',
 		
-		'mw_wc_qbo_sync_odr_tax_as_li' => isset($_POST['mw_wc_qbo_sync_odr_tax_as_li'])?$_POST['mw_wc_qbo_sync_odr_tax_as_li']:'false',
-		'mw_wc_qbo_sync_odr_shipping_as_li' => isset($_POST['mw_wc_qbo_sync_odr_shipping_as_li'])?$_POST['mw_wc_qbo_sync_odr_shipping_as_li']:'false',
+		'mw_wc_qbo_sync_odr_tax_as_li' => isset($_POST['mw_wc_qbo_sync_odr_tax_as_li'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_odr_tax_as_li'])):'false',
+		'mw_wc_qbo_sync_odr_shipping_as_li' => isset($_POST['mw_wc_qbo_sync_odr_shipping_as_li'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_odr_shipping_as_li'])):'false',
 		
-		'mw_wc_qbo_sync_set_bemail_to_cus_email_addr' => isset($_POST['mw_wc_qbo_sync_set_bemail_to_cus_email_addr'])?$_POST['mw_wc_qbo_sync_set_bemail_to_cus_email_addr']:'false',
+		'mw_wc_qbo_sync_set_bemail_to_cus_email_addr' => isset($_POST['mw_wc_qbo_sync_set_bemail_to_cus_email_addr'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_set_bemail_to_cus_email_addr'])):'false',
 		
 		//
-		'mw_wc_qbo_sync_po_sync_after_ord_ed' => isset($_POST['mw_wc_qbo_sync_po_sync_after_ord_ed'])?$_POST['mw_wc_qbo_sync_po_sync_after_ord_ed']:'false',
+		'mw_wc_qbo_sync_po_sync_after_ord_ed' => isset($_POST['mw_wc_qbo_sync_po_sync_after_ord_ed'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_po_sync_after_ord_ed'])):'false',
 		
-		'mw_wc_qbo_sync_po_sync_after_ord_qb_vendor' => isset($_POST['mw_wc_qbo_sync_po_sync_after_ord_qb_vendor'])?$_POST['mw_wc_qbo_sync_po_sync_after_ord_qb_vendor']:'',
+		'mw_wc_qbo_sync_po_sync_after_ord_qb_vendor' => isset($_POST['mw_wc_qbo_sync_po_sync_after_ord_qb_vendor'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_po_sync_after_ord_qb_vendor'])):'',
 		
-		'mw_wc_qbo_sync_po_sync_after_ord_pa_acc' => isset($_POST['mw_wc_qbo_sync_po_sync_after_ord_pa_acc'])?$_POST['mw_wc_qbo_sync_po_sync_after_ord_pa_acc']:'',
+		'mw_wc_qbo_sync_po_sync_after_ord_pa_acc' => isset($_POST['mw_wc_qbo_sync_po_sync_after_ord_pa_acc'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_po_sync_after_ord_pa_acc'])):'',
 		
 		'mw_wc_qbo_sync_otli_qbo_product' => isset($_POST['mw_wc_qbo_sync_otli_qbo_product'])?(int) $_POST['mw_wc_qbo_sync_otli_qbo_product']:0,		
 		
-		'mw_wc_qbo_sync_append_client' => isset($_POST['mw_wc_qbo_sync_append_client'])?$_POST['mw_wc_qbo_sync_append_client']:'false',
+		'mw_wc_qbo_sync_append_client' => isset($_POST['mw_wc_qbo_sync_append_client'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_append_client'])):'false',
 		
-		'mw_wc_qbo_sync_display_name_pattern' => isset($_POST['mw_wc_qbo_sync_display_name_pattern'])?$_POST['mw_wc_qbo_sync_display_name_pattern']:'',
+		'mw_wc_qbo_sync_display_name_pattern' => isset($_POST['mw_wc_qbo_sync_display_name_pattern'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_display_name_pattern'])):'',
 		
-		'mw_wc_qbo_sync_client_sort_order' => isset($_POST['mw_wc_qbo_sync_client_sort_order'])?$_POST['mw_wc_qbo_sync_client_sort_order']:'',
-		'mw_wc_qbo_sync_qb_customer_type_fnc' => isset($_POST['mw_wc_qbo_sync_qb_customer_type_fnc'])?$_POST['mw_wc_qbo_sync_qb_customer_type_fnc']:'',
+		'mw_wc_qbo_sync_client_sort_order' => isset($_POST['mw_wc_qbo_sync_client_sort_order'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_client_sort_order'])):'',
+		'mw_wc_qbo_sync_qb_customer_type_fnc' => isset($_POST['mw_wc_qbo_sync_qb_customer_type_fnc'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_qb_customer_type_fnc'])):'',
 		
-		'mw_wc_qbo_sync_client_check_email' => isset($_POST['mw_wc_qbo_sync_client_check_email'])?$_POST['mw_wc_qbo_sync_client_check_email']:'false',
+		'mw_wc_qbo_sync_client_check_email' => isset($_POST['mw_wc_qbo_sync_client_check_email'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_client_check_email'])):'false',
 		
-		'mw_wc_qbo_sync_block_new_cus_sync_qb' => isset($_POST['mw_wc_qbo_sync_block_new_cus_sync_qb'])?$_POST['mw_wc_qbo_sync_block_new_cus_sync_qb']:'false',
+		'mw_wc_qbo_sync_block_new_cus_sync_qb' => isset($_POST['mw_wc_qbo_sync_block_new_cus_sync_qb'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_block_new_cus_sync_qb'])):'false',
 		
-		'mw_wc_qbo_sync_pull_enable' => isset($_POST['mw_wc_qbo_sync_pull_enable'])?$_POST['mw_wc_qbo_sync_pull_enable']:'false',
-		'mw_wc_qbo_sync_product_pull_wc_status' => isset($_POST['mw_wc_qbo_sync_product_pull_wc_status'])?$_POST['mw_wc_qbo_sync_product_pull_wc_status']:'',
-		'mw_wc_qbo_sync_product_pull_desc_field' => isset($_POST['mw_wc_qbo_sync_product_pull_desc_field'])?$_POST['mw_wc_qbo_sync_product_pull_desc_field']:'none',
+		'mw_wc_qbo_sync_pull_enable' => isset($_POST['mw_wc_qbo_sync_pull_enable'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_pull_enable'])):'false',
+		'mw_wc_qbo_sync_product_pull_wc_status' => isset($_POST['mw_wc_qbo_sync_product_pull_wc_status'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_product_pull_wc_status'])):'',
+		'mw_wc_qbo_sync_product_pull_desc_field' => isset($_POST['mw_wc_qbo_sync_product_pull_desc_field'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_product_pull_desc_field'])):'none',
 		//
-		'mw_wc_qbo_sync_produc_push_purchase_desc_field' => isset($_POST['mw_wc_qbo_sync_produc_push_purchase_desc_field'])?$_POST['mw_wc_qbo_sync_produc_push_purchase_desc_field']:'none',
+		'mw_wc_qbo_sync_produc_push_purchase_desc_field' => isset($_POST['mw_wc_qbo_sync_produc_push_purchase_desc_field'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_produc_push_purchase_desc_field'])):'none',
 		
-		'mw_wc_qbo_sync_product_pull_wpn_field' => isset($_POST['mw_wc_qbo_sync_product_pull_wpn_field'])?$_POST['mw_wc_qbo_sync_product_pull_wpn_field']:'',
+		'mw_wc_qbo_sync_product_pull_wpn_field' => isset($_POST['mw_wc_qbo_sync_product_pull_wpn_field'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_product_pull_wpn_field'])):'',
 		
-		'mw_wc_qbo_sync_product_push_qpn_field' => isset($_POST['mw_wc_qbo_sync_product_push_qpn_field'])?$_POST['mw_wc_qbo_sync_product_push_qpn_field']:'',
+		'mw_wc_qbo_sync_product_push_qpn_field' => isset($_POST['mw_wc_qbo_sync_product_push_qpn_field'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_product_push_qpn_field'])):'',
 		
-		'mw_wc_qbo_sync_auto_pull_client' => isset($_POST['mw_wc_qbo_sync_auto_pull_client'])?$_POST['mw_wc_qbo_sync_auto_pull_client']:'',
+		'mw_wc_qbo_sync_auto_pull_client' => isset($_POST['mw_wc_qbo_sync_auto_pull_client'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_auto_pull_client'])):'',
 		
-		'mw_wc_qbo_sync_auto_pull_invoice' => isset($_POST['mw_wc_qbo_sync_auto_pull_invoice'])?$_POST['mw_wc_qbo_sync_auto_pull_invoice']:'',
+		'mw_wc_qbo_sync_auto_pull_invoice' => isset($_POST['mw_wc_qbo_sync_auto_pull_invoice'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_auto_pull_invoice'])):'',
 		
-		'mw_wc_qbo_sync_auto_pull_payment' => isset($_POST['mw_wc_qbo_sync_auto_pull_payment'])?$_POST['mw_wc_qbo_sync_auto_pull_payment']:'',
+		'mw_wc_qbo_sync_auto_pull_payment' => isset($_POST['mw_wc_qbo_sync_auto_pull_payment'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_auto_pull_payment'])):'',
 		
-		'mw_wc_qbo_sync_auto_pull_limit' => isset($_POST['mw_wc_qbo_sync_auto_pull_limit'])?$_POST['mw_wc_qbo_sync_auto_pull_limit']:'',
+		'mw_wc_qbo_sync_auto_pull_limit' => isset($_POST['mw_wc_qbo_sync_auto_pull_limit'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_auto_pull_limit'])):'',
 		
 		'mw_wc_qbo_sync_auto_pull_interval' => isset($_POST['mw_wc_qbo_sync_auto_pull_interval'])?(int) $_POST['mw_wc_qbo_sync_auto_pull_interval']:0,
-		'mw_wc_qbo_sync_webhook_enable' => isset($_POST['mw_wc_qbo_sync_webhook_enable'])?$_POST['mw_wc_qbo_sync_webhook_enable']:'false',
-		'mw_wc_qbo_sync_webhook_items' => (isset($_POST['mw_wc_qbo_sync_webhook_items']) && is_array($_POST['mw_wc_qbo_sync_webhook_items']) && count($_POST['mw_wc_qbo_sync_webhook_items']))?implode(',',$_POST['mw_wc_qbo_sync_webhook_items']):'',
+		'mw_wc_qbo_sync_webhook_enable' => isset($_POST['mw_wc_qbo_sync_webhook_enable'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_webhook_enable'])):'false',
+		'mw_wc_qbo_sync_webhook_items' => (isset($_POST['mw_wc_qbo_sync_webhook_items']) && is_array($_POST['mw_wc_qbo_sync_webhook_items']) && count($_POST['mw_wc_qbo_sync_webhook_items']))?implode(',',array_map('sanitize_text_field', wp_unslash($_POST['mw_wc_qbo_sync_webhook_items']))):'',
 		
-		'mw_wc_qbo_sync_pause_up_qbo_conection' => isset($_POST['mw_wc_qbo_sync_pause_up_qbo_conection'])?$_POST['mw_wc_qbo_sync_pause_up_qbo_conection']:'false',
+		'mw_wc_qbo_sync_pause_up_qbo_conection' => isset($_POST['mw_wc_qbo_sync_pause_up_qbo_conection'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_pause_up_qbo_conection'])):'false',
 
-		'mw_wc_qbo_sync_rt_push_enable' => isset($_POST['mw_wc_qbo_sync_rt_push_enable'])?$_POST['mw_wc_qbo_sync_rt_push_enable']:'false',
-		'mw_wc_qbo_sync_rt_push_items' => (isset($_POST['mw_wc_qbo_sync_rt_push_items']) && is_array($_POST['mw_wc_qbo_sync_rt_push_items']) && count($_POST['mw_wc_qbo_sync_rt_push_items']))?implode(',',$_POST['mw_wc_qbo_sync_rt_push_items']):'',
+		'mw_wc_qbo_sync_rt_push_enable' => isset($_POST['mw_wc_qbo_sync_rt_push_enable'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_rt_push_enable'])):'false',
+		'mw_wc_qbo_sync_rt_push_items' => (isset($_POST['mw_wc_qbo_sync_rt_push_items']) && is_array($_POST['mw_wc_qbo_sync_rt_push_items']) && count($_POST['mw_wc_qbo_sync_rt_push_items']))?implode(',',array_map('sanitize_text_field', wp_unslash($_POST['mw_wc_qbo_sync_rt_push_items']))):'',
 		
-		'mw_wc_qbo_sync_queue_cron_interval_time' => isset($_POST['mw_wc_qbo_sync_queue_cron_interval_time'])?$_POST['mw_wc_qbo_sync_queue_cron_interval_time']:'',
+		'mw_wc_qbo_sync_queue_cron_interval_time' => isset($_POST['mw_wc_qbo_sync_queue_cron_interval_time'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_queue_cron_interval_time'])):'',
 		
-		'mw_wc_qbo_sync_inv_sr_txn_qb_class' => isset($_POST['mw_wc_qbo_sync_inv_sr_txn_qb_class'])?trim($_POST['mw_wc_qbo_sync_inv_sr_txn_qb_class']):'',
-		'mw_wc_qbo_sync_inv_sr_txn_qb_department' => isset($_POST['mw_wc_qbo_sync_inv_sr_txn_qb_department'])?trim($_POST['mw_wc_qbo_sync_inv_sr_txn_qb_department']):'',		
+		'mw_wc_qbo_sync_inv_sr_txn_qb_class' => isset($_POST['mw_wc_qbo_sync_inv_sr_txn_qb_class'])?trim(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_inv_sr_txn_qb_class']))):'',
+		'mw_wc_qbo_sync_inv_sr_txn_qb_department' => isset($_POST['mw_wc_qbo_sync_inv_sr_txn_qb_department'])?trim(sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_inv_sr_txn_qb_department']))):'',		
 		
-		'mw_wc_qbo_sync_disable_realtime_sync' => isset($_POST['mw_wc_qbo_sync_disable_realtime_sync'])?$_POST['mw_wc_qbo_sync_disable_realtime_sync']:'false',
+		'mw_wc_qbo_sync_disable_realtime_sync' => isset($_POST['mw_wc_qbo_sync_disable_realtime_sync'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_disable_realtime_sync'])):'false',
 		
-		'mw_wc_qbo_sync_disable_sync_status' => isset($_POST['mw_wc_qbo_sync_disable_sync_status'])?$_POST['mw_wc_qbo_sync_disable_sync_status']:'false',
+		'mw_wc_qbo_sync_disable_sync_status' => isset($_POST['mw_wc_qbo_sync_disable_sync_status'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_disable_sync_status'])):'false',
 		
-		'mw_wc_qbo_sync_disable_realtime_client_update' => isset($_POST['mw_wc_qbo_sync_disable_realtime_client_update'])?$_POST['mw_wc_qbo_sync_disable_realtime_client_update']:'false',
+		'mw_wc_qbo_sync_disable_realtime_client_update' => isset($_POST['mw_wc_qbo_sync_disable_realtime_client_update'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_disable_realtime_client_update'])):'false',
 		
-		'mw_wc_qbo_sync_enable_invoice_prefix' => isset($_POST['mw_wc_qbo_sync_enable_invoice_prefix'])?$_POST['mw_wc_qbo_sync_enable_invoice_prefix']:'false',
-		'mw_wc_qbo_sync_qbo_invoice' => isset($_POST['mw_wc_qbo_sync_qbo_invoice'])?$_POST['mw_wc_qbo_sync_qbo_invoice']:'false',
+		'mw_wc_qbo_sync_enable_invoice_prefix' => isset($_POST['mw_wc_qbo_sync_enable_invoice_prefix'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_enable_invoice_prefix'])):'false',
+		'mw_wc_qbo_sync_qbo_invoice' => isset($_POST['mw_wc_qbo_sync_qbo_invoice'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_qbo_invoice'])):'false',
 		
-		'mw_wc_qbo_sync_email_log' => isset($_POST['mw_wc_qbo_sync_email_log'])?$_POST['mw_wc_qbo_sync_email_log']:'false',
-		'mw_wc_qbo_sync_err_add_item_obj_into_log_file' => isset($_POST['mw_wc_qbo_sync_err_add_item_obj_into_log_file'])?$_POST['mw_wc_qbo_sync_err_add_item_obj_into_log_file']:'false',
-		'mw_wc_qbo_sync_qbo_push_invoice_date' => isset($_POST['mw_wc_qbo_sync_qbo_push_invoice_date'])?$_POST['mw_wc_qbo_sync_qbo_push_invoice_date']:'false',
-		'mw_wc_qbo_sync_success_add_item_obj_into_log_file' => isset($_POST['mw_wc_qbo_sync_success_add_item_obj_into_log_file'])?$_POST['mw_wc_qbo_sync_success_add_item_obj_into_log_file']:'false',
+		'mw_wc_qbo_sync_email_log' => isset($_POST['mw_wc_qbo_sync_email_log'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_email_log'])):'false',
+		'mw_wc_qbo_sync_err_add_item_obj_into_log_file' => isset($_POST['mw_wc_qbo_sync_err_add_item_obj_into_log_file'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_err_add_item_obj_into_log_file'])):'false',
+		'mw_wc_qbo_sync_qbo_push_invoice_date' => isset($_POST['mw_wc_qbo_sync_qbo_push_invoice_date'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_qbo_push_invoice_date'])):'false',
+		'mw_wc_qbo_sync_success_add_item_obj_into_log_file' => isset($_POST['mw_wc_qbo_sync_success_add_item_obj_into_log_file'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_success_add_item_obj_into_log_file'])):'false',
 		
-		'mw_wc_qbo_sync_success_add_ccqii_debug_ids_into_log' => isset($_POST['mw_wc_qbo_sync_success_add_ccqii_debug_ids_into_log'])?$_POST['mw_wc_qbo_sync_success_add_ccqii_debug_ids_into_log']:'false',
+		'mw_wc_qbo_sync_success_add_ccqii_debug_ids_into_log' => isset($_POST['mw_wc_qbo_sync_success_add_ccqii_debug_ids_into_log'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_success_add_ccqii_debug_ids_into_log'])):'false',
 		
-		'mw_wc_qbo_sync_save_log_for' => isset($_POST['mw_wc_qbo_sync_save_log_for'])?(int) $_POST['mw_wc_qbo_sync_save_log_for']:'',
-		'mw_wc_qbo_sync_wc_qbo_product_desc' => isset($_POST['mw_wc_qbo_sync_wc_qbo_product_desc'])?$_POST['mw_wc_qbo_sync_wc_qbo_product_desc']:'false',
-		'mw_wc_qbo_sync_auto_refresh' => isset($_POST['mw_wc_qbo_sync_auto_refresh'])?$_POST['mw_wc_qbo_sync_auto_refresh']:'false',
-		'mw_wc_qbo_sync_admin_email' => isset($_POST['mw_wc_qbo_sync_admin_email'])?$_POST['mw_wc_qbo_sync_admin_email']:'',
-		//'mw_wc_qbo_sync_customer_qbo_check' => isset($_POST['mw_wc_qbo_sync_customer_qbo_check'])?$_POST['mw_wc_qbo_sync_customer_qbo_check']:'',
+		'mw_wc_qbo_sync_save_log_for' => isset($_POST['mw_wc_qbo_sync_save_log_for'])?(int) sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_save_log_for'])):'',
+		'mw_wc_qbo_sync_wc_qbo_product_desc' => isset($_POST['mw_wc_qbo_sync_wc_qbo_product_desc'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_wc_qbo_product_desc'])):'false',
+		'mw_wc_qbo_sync_auto_refresh' => isset($_POST['mw_wc_qbo_sync_auto_refresh'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_auto_refresh'])):'false',
+		'mw_wc_qbo_sync_admin_email' => isset($_POST['mw_wc_qbo_sync_admin_email'])?sanitize_email(wp_unslash($_POST['mw_wc_qbo_sync_admin_email'])):'',
+		//'mw_wc_qbo_sync_customer_qbo_check' => isset($_POST['mw_wc_qbo_sync_customer_qbo_check'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_customer_qbo_check'])):'',
 		'mw_wc_qbo_sync_customer_qbo_check' => 'true',
-		'mw_wc_qbo_sync_customer_qbo_check_ship_addr' => isset($_POST['mw_wc_qbo_sync_customer_qbo_check_ship_addr'])?$_POST['mw_wc_qbo_sync_customer_qbo_check_ship_addr']:'false',
+		'mw_wc_qbo_sync_customer_qbo_check_ship_addr' => isset($_POST['mw_wc_qbo_sync_customer_qbo_check_ship_addr'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_customer_qbo_check_ship_addr'])):'false',
 		
-		'mw_wc_qbo_sync_customer_match_by_name' => isset($_POST['mw_wc_qbo_sync_customer_match_by_name'])?$_POST['mw_wc_qbo_sync_customer_match_by_name']:'false',
+		'mw_wc_qbo_sync_customer_match_by_name' => isset($_POST['mw_wc_qbo_sync_customer_match_by_name'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_customer_match_by_name'])):'false',
 		
-		'mw_wc_qbo_sync_select2_status' => isset($_POST['mw_wc_qbo_sync_select2_status'])?$_POST['mw_wc_qbo_sync_select2_status']:'false',
-		'mw_wc_qbo_sync_select2_ajax' => isset($_POST['mw_wc_qbo_sync_select2_ajax'])?$_POST['mw_wc_qbo_sync_select2_ajax']:'false',
-		'mw_wc_qbo_sync_orders_to_specific_cust' => intval(isset($_POST['mw_wc_qbo_sync_orders_to_specific_cust'])?$_POST['mw_wc_qbo_sync_orders_to_specific_cust']:''),
-		'mw_wc_qbo_sync_orders_to_specific_cust_opt' => isset($_POST['mw_wc_qbo_sync_orders_to_specific_cust_opt'])?$_POST['mw_wc_qbo_sync_orders_to_specific_cust_opt']:'false',
-		'mw_wc_qbo_sync_store_currency' => (isset($_POST['mw_wc_qbo_sync_store_currency']) && is_array($_POST['mw_wc_qbo_sync_store_currency']) && count($_POST['mw_wc_qbo_sync_store_currency']))?implode(',',$_POST['mw_wc_qbo_sync_store_currency']):'',
+		'mw_wc_qbo_sync_select2_status' => isset($_POST['mw_wc_qbo_sync_select2_status'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_select2_status'])):'false',
+		'mw_wc_qbo_sync_select2_ajax' => isset($_POST['mw_wc_qbo_sync_select2_ajax'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_select2_ajax'])):'false',
+		'mw_wc_qbo_sync_orders_to_specific_cust' => intval(isset($_POST['mw_wc_qbo_sync_orders_to_specific_cust'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_orders_to_specific_cust'])):''),
+		'mw_wc_qbo_sync_orders_to_specific_cust_opt' => isset($_POST['mw_wc_qbo_sync_orders_to_specific_cust_opt'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_orders_to_specific_cust_opt'])):'false',
+		'mw_wc_qbo_sync_store_currency' => (isset($_POST['mw_wc_qbo_sync_store_currency']) && is_array($_POST['mw_wc_qbo_sync_store_currency']) && count($_POST['mw_wc_qbo_sync_store_currency']))?implode(',',array_map('sanitize_text_field', wp_unslash($_POST['mw_wc_qbo_sync_store_currency']))):'',
 		
-		'mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses' => (isset($_POST['mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses']) && is_array($_POST['mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses']) && count($_POST['mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses']))?implode(',',$_POST['mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses']):'',
+		'mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses' => (isset($_POST['mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses']) && is_array($_POST['mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses']) && count($_POST['mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses']))?implode(',',array_map('sanitize_text_field', wp_unslash($_POST['mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses']))):'',
 		
-		'mw_wc_qbo_sync_pmnt_pull_order_status' => isset($_POST['mw_wc_qbo_sync_pmnt_pull_order_status'])?$_POST['mw_wc_qbo_sync_pmnt_pull_order_status']:'',
-		'mw_wc_qbo_sync_db_fix' => isset($_POST['mw_wc_qbo_sync_db_fix'])?$_POST['mw_wc_qbo_sync_db_fix']:'false',
+		'mw_wc_qbo_sync_pmnt_pull_order_status' => isset($_POST['mw_wc_qbo_sync_pmnt_pull_order_status'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_pmnt_pull_order_status'])):'',
+		'mw_wc_qbo_sync_db_fix' => isset($_POST['mw_wc_qbo_sync_db_fix'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_db_fix'])):'false',
 		
-		//'mw_wc_qbo_sync_session_cn_ls_chk' => isset($_POST['mw_wc_qbo_sync_session_cn_ls_chk'])?$_POST['mw_wc_qbo_sync_session_cn_ls_chk']:'',
+		//'mw_wc_qbo_sync_session_cn_ls_chk' => isset($_POST['mw_wc_qbo_sync_session_cn_ls_chk'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_session_cn_ls_chk'])):'',
 		'mw_wc_qbo_sync_session_cn_ls_chk' => 'false',
-		'mw_wc_qbo_sync_customer_qbo_check_billing_company' => isset($_POST['mw_wc_qbo_sync_customer_qbo_check_billing_company'])?$_POST['mw_wc_qbo_sync_customer_qbo_check_billing_company']:'false',
+		'mw_wc_qbo_sync_customer_qbo_check_billing_company' => isset($_POST['mw_wc_qbo_sync_customer_qbo_check_billing_company'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_customer_qbo_check_billing_company'])):'false',
 		
-		'mw_wc_qbo_sync_customer_qbo_check_billing_f_l_name' => isset($_POST['mw_wc_qbo_sync_customer_qbo_check_billing_f_l_name'])?$_POST['mw_wc_qbo_sync_customer_qbo_check_billing_f_l_name']:'false',
+		'mw_wc_qbo_sync_customer_qbo_check_billing_f_l_name' => isset($_POST['mw_wc_qbo_sync_customer_qbo_check_billing_f_l_name'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_customer_qbo_check_billing_f_l_name'])):'false',
 		
-		'mw_wc_qbo_sync_wam_mng_inv_ed' => isset($_POST['mw_wc_qbo_sync_wam_mng_inv_ed'])?$_POST['mw_wc_qbo_sync_wam_mng_inv_ed']:'false',
+		'mw_wc_qbo_sync_wam_mng_inv_ed' => isset($_POST['mw_wc_qbo_sync_wam_mng_inv_ed'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_wam_mng_inv_ed'])):'false',
 		
-		'mw_wc_qbo_sync_sqaiw_v_sec' => isset($_POST['mw_wc_qbo_sync_sqaiw_v_sec'])?$_POST['mw_wc_qbo_sync_sqaiw_v_sec']:'false',
-		'mw_wc_qbo_sync_wam_mng_inv_qrts' => isset($_POST['mw_wc_qbo_sync_wam_mng_inv_qrts'])?$_POST['mw_wc_qbo_sync_wam_mng_inv_qrts']:'',
+		'mw_wc_qbo_sync_sqaiw_v_sec' => isset($_POST['mw_wc_qbo_sync_sqaiw_v_sec'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_sqaiw_v_sec'])):'false',
+		'mw_wc_qbo_sync_wam_mng_inv_qrts' => isset($_POST['mw_wc_qbo_sync_wam_mng_inv_qrts'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_wam_mng_inv_qrts'])):'',
 		
-		'mw_wc_qbo_sync_force_shipping_line_item' => isset($_POST['mw_wc_qbo_sync_force_shipping_line_item'])?$_POST['mw_wc_qbo_sync_force_shipping_line_item']:'false',
+		'mw_wc_qbo_sync_force_shipping_line_item' => isset($_POST['mw_wc_qbo_sync_force_shipping_line_item'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_force_shipping_line_item'])):'false',
 		
-		'mw_wc_qbo_sync_skip_os_lid' => isset($_POST['mw_wc_qbo_sync_skip_os_lid'])?$_POST['mw_wc_qbo_sync_skip_os_lid']:'false',
-		'mw_wc_qbo_sync_inv_sr_qb_lid_val' => isset($_POST['mw_wc_qbo_sync_inv_sr_qb_lid_val'])?$_POST['mw_wc_qbo_sync_inv_sr_qb_lid_val']:'',
+		'mw_wc_qbo_sync_skip_os_lid' => isset($_POST['mw_wc_qbo_sync_skip_os_lid'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_skip_os_lid'])):'false',
+		'mw_wc_qbo_sync_inv_sr_qb_lid_val' => isset($_POST['mw_wc_qbo_sync_inv_sr_qb_lid_val'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_inv_sr_qb_lid_val'])):'',
 		//
-		'mw_wc_qbo_sync_qb_ord_df_val' => isset($_POST['mw_wc_qbo_sync_qb_ord_df_val'])?$_POST['mw_wc_qbo_sync_qb_ord_df_val']:'',
+		'mw_wc_qbo_sync_qb_ord_df_val' => isset($_POST['mw_wc_qbo_sync_qb_ord_df_val'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_qb_ord_df_val'])):'',
 		
-		'mw_wc_qbo_sync_qb_pmnt_ref_num_vf' => isset($_POST['mw_wc_qbo_sync_qb_pmnt_ref_num_vf'])?$_POST['mw_wc_qbo_sync_qb_pmnt_ref_num_vf']:'',
-		
-		//
-		'mw_wc_qbo_sync_qb_o_print_status_v' => isset($_POST['mw_wc_qbo_sync_qb_o_print_status_v'])?$_POST['mw_wc_qbo_sync_qb_o_print_status_v']:'',
-		'mw_wc_qbo_sync_qb_etpe_ops_o' => isset($_POST['mw_wc_qbo_sync_qb_etpe_ops_o'])?$_POST['mw_wc_qbo_sync_qb_etpe_ops_o']:'',
-		'mw_wc_qbo_sync_qb_soli_sv' => isset($_POST['mw_wc_qbo_sync_qb_soli_sv'])?$_POST['mw_wc_qbo_sync_qb_soli_sv']:'',
-		
-		'mw_wc_qbo_sync_wolim_iqilid_desc' => isset($_POST['mw_wc_qbo_sync_wolim_iqilid_desc'])?$_POST['mw_wc_qbo_sync_wolim_iqilid_desc']:'false',
-		//
-		'mw_wc_qbo_sync_oaslim_iqbld' => isset($_POST['mw_wc_qbo_sync_oaslim_iqbld'])?trim($_POST['mw_wc_qbo_sync_oaslim_iqbld']):'',
-		
-		'mw_wc_qbo_sync_send_inv_sr_afsi_qb' => isset($_POST['mw_wc_qbo_sync_send_inv_sr_afsi_qb'])?$_POST['mw_wc_qbo_sync_send_inv_sr_afsi_qb']:'false',
-
-		'mw_wc_qbo_sync_send_inv_sr_afsi_qb_option' => isset($_POST['mw_wc_qbo_sync_send_inv_sr_afsi_qb_option'])?$_POST['mw_wc_qbo_sync_send_inv_sr_afsi_qb_option']:'d_n_e',
-		
-		'mw_wc_qbo_sync_no_ad_discount_li' => isset($_POST['mw_wc_qbo_sync_no_ad_discount_li'])?$_POST['mw_wc_qbo_sync_no_ad_discount_li']:'false',
-		
-		'mw_wc_qbo_sync_qb_sdioli_isli' => isset($_POST['mw_wc_qbo_sync_qb_sdioli_isli'])?$_POST['mw_wc_qbo_sync_qb_sdioli_isli']:'false',
+		'mw_wc_qbo_sync_qb_pmnt_ref_num_vf' => isset($_POST['mw_wc_qbo_sync_qb_pmnt_ref_num_vf'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_qb_pmnt_ref_num_vf'])):'',
 		
 		//
-		'mw_wc_qbo_sync_sync_txn_fee_as_ng_li' => isset($_POST['mw_wc_qbo_sync_sync_txn_fee_as_ng_li'])?$_POST['mw_wc_qbo_sync_sync_txn_fee_as_ng_li']:'false',
+		'mw_wc_qbo_sync_qb_o_print_status_v' => isset($_POST['mw_wc_qbo_sync_qb_o_print_status_v'])?sanitize_text_field($_POST['mw_wc_qbo_sync_qb_o_print_status_v']):'',
+		'mw_wc_qbo_sync_qb_etpe_ops_o' => isset($_POST['mw_wc_qbo_sync_qb_etpe_ops_o'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_qb_etpe_ops_o'])):'',
+		'mw_wc_qbo_sync_qb_soli_sv' => isset($_POST['mw_wc_qbo_sync_qb_soli_sv'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_qb_soli_sv'])):'',
+		
+		'mw_wc_qbo_sync_wolim_iqilid_desc' => isset($_POST['mw_wc_qbo_sync_wolim_iqilid_desc'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_wolim_iqilid_desc'])):'false',
 		//
-		'mw_wc_qbo_sync_sync_skip_cf_ibs_addr' => isset($_POST['mw_wc_qbo_sync_sync_skip_cf_ibs_addr'])?$_POST['mw_wc_qbo_sync_sync_skip_cf_ibs_addr']:'false',
+		'mw_wc_qbo_sync_oaslim_iqbld' => isset($_POST['mw_wc_qbo_sync_oaslim_iqbld'])?sanitize_text_field(trim(wp_unslash($_POST['mw_wc_qbo_sync_oaslim_iqbld']))):'', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		
-		'mw_wc_qbo_sync_use_qb_ba_for_eqc' => isset($_POST['mw_wc_qbo_sync_use_qb_ba_for_eqc'])?$_POST['mw_wc_qbo_sync_use_qb_ba_for_eqc']:'false',
+		'mw_wc_qbo_sync_send_inv_sr_afsi_qb_option' => isset($_POST['mw_wc_qbo_sync_send_inv_sr_afsi_qb_option'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_send_inv_sr_afsi_qb_option'])):'d_n_e',
 		
-		'mw_wc_qbo_sync_qb_ns_shipping_li_if_z' => isset($_POST['mw_wc_qbo_sync_qb_ns_shipping_li_if_z'])?$_POST['mw_wc_qbo_sync_qb_ns_shipping_li_if_z']:'false',
+		'mw_wc_qbo_sync_no_ad_discount_li' => isset($_POST['mw_wc_qbo_sync_no_ad_discount_li'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_no_ad_discount_li'])):'false',
 		
-		'mw_wc_qbo_sync_qb_ap_tx_aft_discount' => isset($_POST['mw_wc_qbo_sync_qb_ap_tx_aft_discount'])?$_POST['mw_wc_qbo_sync_qb_ap_tx_aft_discount']:'false',
+		'mw_wc_qbo_sync_qb_sdioli_isli' => isset($_POST['mw_wc_qbo_sync_qb_sdioli_isli'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_qb_sdioli_isli'])):'false',
 		
-		'mw_wc_qbo_sync_specific_order_status' => (isset($_POST['mw_wc_qbo_sync_specific_order_status']) && is_array($_POST['mw_wc_qbo_sync_specific_order_status']) && count($_POST['mw_wc_qbo_sync_specific_order_status']))?implode(',',$_POST['mw_wc_qbo_sync_specific_order_status']):'',
+		//
+		'mw_wc_qbo_sync_sync_txn_fee_as_ng_li' => isset($_POST['mw_wc_qbo_sync_sync_txn_fee_as_ng_li'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_sync_txn_fee_as_ng_li'])):'false',
+		//
+		'mw_wc_qbo_sync_sync_skip_cf_ibs_addr' => isset($_POST['mw_wc_qbo_sync_sync_skip_cf_ibs_addr'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_sync_skip_cf_ibs_addr'])):'false',
 		
-		'mw_wc_qbo_sync_wc_cust_role' => (isset($_POST['mw_wc_qbo_sync_wc_cust_role']) && is_array($_POST['mw_wc_qbo_sync_wc_cust_role']) && count($_POST['mw_wc_qbo_sync_wc_cust_role']))?implode(',',$_POST['mw_wc_qbo_sync_wc_cust_role']):'',
+		'mw_wc_qbo_sync_use_qb_ba_for_eqc' => isset($_POST['mw_wc_qbo_sync_use_qb_ba_for_eqc'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_use_qb_ba_for_eqc'])):'false',
 		
-		'mw_wc_qbo_sync_wc_cust_role_sync_as_cus' => (isset($_POST['mw_wc_qbo_sync_wc_cust_role_sync_as_cus']) && is_array($_POST['mw_wc_qbo_sync_wc_cust_role_sync_as_cus']) && count($_POST['mw_wc_qbo_sync_wc_cust_role_sync_as_cus']))?implode(',',$_POST['mw_wc_qbo_sync_wc_cust_role_sync_as_cus']):'',
+		'mw_wc_qbo_sync_qb_ns_shipping_li_if_z' => isset($_POST['mw_wc_qbo_sync_qb_ns_shipping_li_if_z'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_qb_ns_shipping_li_if_z'])):'false',
 		
-		'mw_wc_qbo_sync_os_mapped_not_matched_invt_lvl' => isset($_POST['mw_wc_qbo_sync_os_mapped_not_matched_invt_lvl'])?$_POST['mw_wc_qbo_sync_os_mapped_not_matched_invt_lvl']:'false',
+		'mw_wc_qbo_sync_qb_ap_tx_aft_discount' => isset($_POST['mw_wc_qbo_sync_qb_ap_tx_aft_discount'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_qb_ap_tx_aft_discount'])):'false',
 		
-		'mw_wc_qbo_sync_os_mapped_not_matched_invt_lvl_pull' => isset($_POST['mw_wc_qbo_sync_os_mapped_not_matched_invt_lvl_pull'])?$_POST['mw_wc_qbo_sync_os_mapped_not_matched_invt_lvl_pull']:'false',
+		'mw_wc_qbo_sync_specific_order_status' => (isset($_POST['mw_wc_qbo_sync_specific_order_status']) && is_array($_POST['mw_wc_qbo_sync_specific_order_status']) && count($_POST['mw_wc_qbo_sync_specific_order_status']))?implode(',',array_map('sanitize_text_field', wp_unslash($_POST['mw_wc_qbo_sync_specific_order_status']))):'',
 		
-		'mw_wc_qbo_sync_invnt_pull_set_prd_stock_sts' => isset($_POST['mw_wc_qbo_sync_invnt_pull_set_prd_stock_sts'])?$_POST['mw_wc_qbo_sync_invnt_pull_set_prd_stock_sts']:'false',
+		'mw_wc_qbo_sync_wc_cust_role' => (isset($_POST['mw_wc_qbo_sync_wc_cust_role']) && is_array($_POST['mw_wc_qbo_sync_wc_cust_role']) && count($_POST['mw_wc_qbo_sync_wc_cust_role']))?implode(',',array_map('sanitize_text_field', wp_unslash($_POST['mw_wc_qbo_sync_wc_cust_role']))):'',
 		
-		'mw_wc_qbo_sync_hide_vpp_fmp_pages' => isset($_POST['mw_wc_qbo_sync_hide_vpp_fmp_pages'])?$_POST['mw_wc_qbo_sync_hide_vpp_fmp_pages']:'false',
+		'mw_wc_qbo_sync_wc_cust_role_sync_as_cus' => (isset($_POST['mw_wc_qbo_sync_wc_cust_role_sync_as_cus']) && is_array($_POST['mw_wc_qbo_sync_wc_cust_role_sync_as_cus']) && count($_POST['mw_wc_qbo_sync_wc_cust_role_sync_as_cus']))?implode(',',array_map('sanitize_text_field', wp_unslash($_POST['mw_wc_qbo_sync_wc_cust_role_sync_as_cus']))):'',
+		
+		'mw_wc_qbo_sync_os_mapped_not_matched_invt_lvl' => isset($_POST['mw_wc_qbo_sync_os_mapped_not_matched_invt_lvl'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_os_mapped_not_matched_invt_lvl'])):'false',
+		
+		'mw_wc_qbo_sync_os_mapped_not_matched_invt_lvl_pull' => isset($_POST['mw_wc_qbo_sync_os_mapped_not_matched_invt_lvl_pull'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_os_mapped_not_matched_invt_lvl_pull'])):'false',
+		
+		'mw_wc_qbo_sync_invnt_pull_set_prd_stock_sts' => isset($_POST['mw_wc_qbo_sync_invnt_pull_set_prd_stock_sts'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_invnt_pull_set_prd_stock_sts'])):'false',
+		
+		'mw_wc_qbo_sync_hide_vpp_fmp_pages' => isset($_POST['mw_wc_qbo_sync_hide_vpp_fmp_pages'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_hide_vpp_fmp_pages'])):'false',
 		/*
-		'mw_wc_qbo_sync_ignore_cdc_for_invnt_import' => isset($_POST['mw_wc_qbo_sync_ignore_cdc_for_invnt_import'])?$_POST['mw_wc_qbo_sync_ignore_cdc_for_invnt_import']:'false',
+		'mw_wc_qbo_sync_ignore_cdc_for_invnt_import' => isset($_POST['mw_wc_qbo_sync_ignore_cdc_for_invnt_import'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_ignore_cdc_for_invnt_import'])):'false',
 		*/
 		
 		//
-		'mw_wc_qbo_sync_allow_cdc_for_invnt_import' => isset($_POST['mw_wc_qbo_sync_allow_cdc_for_invnt_import'])?$_POST['mw_wc_qbo_sync_allow_cdc_for_invnt_import']:'false',
+		'mw_wc_qbo_sync_allow_cdc_for_invnt_import' => isset($_POST['mw_wc_qbo_sync_allow_cdc_for_invnt_import'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_allow_cdc_for_invnt_import'])):'false',
 		
 		//
-		'mw_wc_qbo_sync_allow_cdc_for_prc_import' => isset($_POST['mw_wc_qbo_sync_allow_cdc_for_prc_import'])?$_POST['mw_wc_qbo_sync_allow_cdc_for_prc_import']:'false',
+		'mw_wc_qbo_sync_allow_cdc_for_prc_import' => isset($_POST['mw_wc_qbo_sync_allow_cdc_for_prc_import'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_allow_cdc_for_prc_import'])):'false',
 		
-		'mw_wc_qbo_sync_ivnt_pull_interval_time' => isset($_POST['mw_wc_qbo_sync_ivnt_pull_interval_time'])?$_POST['mw_wc_qbo_sync_ivnt_pull_interval_time']:'',
-		
-		//
-		'mw_wc_qbo_sync_prc_pull_interval_time' => isset($_POST['mw_wc_qbo_sync_prc_pull_interval_time'])?$_POST['mw_wc_qbo_sync_prc_pull_interval_time']:'',
+		'mw_wc_qbo_sync_ivnt_pull_interval_time' => isset($_POST['mw_wc_qbo_sync_ivnt_pull_interval_time'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_ivnt_pull_interval_time'])):'',
 		
 		//
-		'mw_wc_qbo_sync_os_price_fp_update' => isset($_POST['mw_wc_qbo_sync_os_price_fp_update'])?$_POST['mw_wc_qbo_sync_os_price_fp_update']:'false',
-		
-		'mw_wc_qbo_sync_sync_product_images_pp' => isset($_POST['mw_wc_qbo_sync_sync_product_images_pp'])?$_POST['mw_wc_qbo_sync_sync_product_images_pp']:'false',
-		
-		'mw_wc_qbo_sync_ca_ruso_dqs' => isset($_POST['mw_wc_qbo_sync_ca_ruso_dqs'])?$_POST['mw_wc_qbo_sync_ca_ruso_dqs']:'false',
-		'mw_wc_qbo_sync_qb_ed_invt_s_frc' => isset($_POST['mw_wc_qbo_sync_qb_ed_invt_s_frc'])?$_POST['mw_wc_qbo_sync_qb_ed_invt_s_frc']:'false',
-		
-		'mw_wc_qbo_sync_os_skip_uprice_l_item' => isset($_POST['mw_wc_qbo_sync_os_skip_uprice_l_item'])?$_POST['mw_wc_qbo_sync_os_skip_uprice_l_item']:'false',
-		
-		'mw_wc_qbo_sync_use_lt_if_ist_l_item' => isset($_POST['mw_wc_qbo_sync_use_lt_if_ist_l_item'])?$_POST['mw_wc_qbo_sync_use_lt_if_ist_l_item']:'false',
-		
-		'mw_wc_qbo_sync_enable_d_o_q_add_p' => isset($_POST['mw_wc_qbo_sync_enable_d_o_q_add_p'])?$_POST['mw_wc_qbo_sync_enable_d_o_q_add_p']:'false',
+		'mw_wc_qbo_sync_prc_pull_interval_time' => isset($_POST['mw_wc_qbo_sync_prc_pull_interval_time'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_prc_pull_interval_time'])):'',
 		
 		//
-		'mw_wc_qbo_sync_zero_ord_spl_qb_class' => isset($_POST['mw_wc_qbo_sync_zero_ord_spl_qb_class'])?$_POST['mw_wc_qbo_sync_zero_ord_spl_qb_class']:'',
+		'mw_wc_qbo_sync_os_price_fp_update' => isset($_POST['mw_wc_qbo_sync_os_price_fp_update'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_os_price_fp_update'])):'false',
+		'mw_wc_qbo_sync_os_cost_fp_update' => isset($_POST['mw_wc_qbo_sync_os_cost_fp_update'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_os_cost_fp_update'])):'false',
+		
+		'mw_wc_qbo_sync_sync_product_images_pp' => isset($_POST['mw_wc_qbo_sync_sync_product_images_pp'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_sync_product_images_pp'])):'false',
+		
+		'mw_wc_qbo_sync_ca_ruso_dqs' => isset($_POST['mw_wc_qbo_sync_ca_ruso_dqs'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_ca_ruso_dqs'])):'false',
+		'mw_wc_qbo_sync_qb_ed_invt_s_frc' => isset($_POST['mw_wc_qbo_sync_qb_ed_invt_s_frc'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_qb_ed_invt_s_frc'])):'false',
+		
+		'mw_wc_qbo_sync_os_skip_uprice_l_item' => isset($_POST['mw_wc_qbo_sync_os_skip_uprice_l_item'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_os_skip_uprice_l_item'])):'false',
+		
+		'mw_wc_qbo_sync_use_lt_if_ist_l_item' => isset($_POST['mw_wc_qbo_sync_use_lt_if_ist_l_item'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_use_lt_if_ist_l_item'])):'false',
+		
+		'mw_wc_qbo_sync_enable_d_o_q_add_p' => isset($_POST['mw_wc_qbo_sync_enable_d_o_q_add_p'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_enable_d_o_q_add_p'])):'false',
+		
+		//
+		'mw_wc_qbo_sync_zero_ord_spl_qb_class' => isset($_POST['mw_wc_qbo_sync_zero_ord_spl_qb_class'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_zero_ord_spl_qb_class'])):'',
 
 		//
-		'mw_wc_qbo_sync_all_order_to_customer' => isset($_POST['mw_wc_qbo_sync_all_order_to_customer'])?$_POST['mw_wc_qbo_sync_all_order_to_customer']:'',
+		'mw_wc_qbo_sync_all_order_to_customer' => isset($_POST['mw_wc_qbo_sync_all_order_to_customer'])?sanitize_text_field(wp_unslash($_POST['mw_wc_qbo_sync_all_order_to_customer'])):'',
 		
 		
 		);
@@ -1059,7 +1097,6 @@ public function get_select2_js($item='select', $d_item='', $pvep='no') {
 		'mw_wc_qbo_sync_force_shipping_line_item',
 		'mw_wc_qbo_sync_skip_os_lid',
 		'mw_wc_qbo_sync_wolim_iqilid_desc',
-		'mw_wc_qbo_sync_send_inv_sr_afsi_qb',
 		'mw_wc_qbo_sync_send_inv_sr_afsi_qb_option',
 		'mw_wc_qbo_sync_no_ad_discount_li',
 		'mw_wc_qbo_sync_qb_sdioli_isli',
@@ -1115,6 +1152,7 @@ public function get_select2_js($item='select', $d_item='', $pvep='no') {
 		'mw_wc_qbo_sync_payment_pull_interval_time',
 		//
 		'mw_wc_qbo_sync_os_price_fp_update',
+		'mw_wc_qbo_sync_os_cost_fp_update',
 		'mw_wc_qbo_sync_sync_product_images_pp',
 		'mw_wc_qbo_sync_compt_np_oli_fee_sync',
 		'mw_wc_qbo_sync_compt_np_nfli_asli',

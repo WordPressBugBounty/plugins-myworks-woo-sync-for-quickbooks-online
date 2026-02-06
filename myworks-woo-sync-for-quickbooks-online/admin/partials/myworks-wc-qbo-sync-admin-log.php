@@ -37,9 +37,12 @@ if ( ! defined( 'ABSPATH' ) )
  $whr = '';
  if($log_search!=''){
 	//$whr.=" AND (`details` LIKE '%$log_search%' OR `log_type` LIKE '%$log_search%' OR `log_title` LIKE '%$log_search%' ) ";
-	$whr.=$wpdb->prepare(" AND (`details` LIKE '%%%s%%' OR `log_type` LIKE '%%%s%%' OR `log_title` LIKE '%%%s%%' ) ",$log_search,$log_search,$log_search);
+	$escaped_search = '%' . $wpdb->esc_like($log_search) . '%';
+	$whr.=$wpdb->prepare(" AND (`details` LIKE %s OR `log_type` LIKE %s OR `log_title` LIKE %s ) ",$escaped_search,$escaped_search,$escaped_search);
  }
- $total_records = $wpdb->get_var("SELECT COUNT(*) FROM `".$wpdb->prefix."mw_wc_qbo_sync_log` WHERE `id` >0 $whr ");
+ $table_name = $wpdb->prefix . 'mw_wc_qbo_sync_log';
+ // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $whr safely constructed with $wpdb->prepare()
+ $total_records = $wpdb->get_var("SELECT COUNT(*) FROM `" . esc_sql($table_name) . "` WHERE `id` >0 $whr ");
  
  $page = $MSQS_QL->get_page_var();
  
@@ -57,9 +60,9 @@ if ( ! defined( 'ABSPATH' ) )
  ?>
  </br></br>
  <div class="container log-outr-sec mq_lp_cont">
- <div class="page_title"><h4><?php _e( 'Sync Log', 'mw_wc_qbo_sync' );?></h4></div>
+ <div class="page_title"><h4><?php esc_html_e( 'Sync Log', 'mw_wc_qbo_sync' );?></h4></div>
  <div class="mw_wc_filter"> 
-  <input placeholder="Search Log" type="text" id="log_search" value="<?php echo $log_search;?>">
+  <input placeholder="Search Log" type="text" id="log_search" value="<?php echo esc_attr($log_search);?>">
   &nbsp;		
   <button onclick="javascript:search_item();" class="btn btn-info">Filter</button>
   &nbsp;
@@ -68,8 +71,8 @@ if ( ! defined( 'ABSPATH' ) )
   <span class="filter-right-sec">
 	  <span class="entries">Show</span>
 	  &nbsp;	
-	  <select class="mq_lp_sel" onchange="javascript:window.location='<?php echo $page_url;?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-		<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+	  <select class="mq_lp_sel" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_js($MSQS_QL->per_page_keyword);?>='+this.value;">
+		<?php echo wp_kses($MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 	 </select>
 	 &nbsp;
 	 <span>entries</span>
@@ -77,7 +80,7 @@ if ( ! defined( 'ABSPATH' ) )
  </div>
  <br />
  
- <div class="mq_lp_cdt"><?php _e( 'Current Datetime', 'mw_wc_qbo_sync' );?>: <?php echo $MSQS_QL->now('Y-m-d ');?> <b><?php echo $MSQS_QL->now('h:i:s A');?></b></div>
+ <div class="mq_lp_cdt"><?php esc_html_e( 'Current Datetime', 'mw_wc_qbo_sync' );?>: <?php echo esc_html($MSQS_QL->now('Y-m-d '));?> <b><?php echo esc_html($MSQS_QL->now('h:i:s A'));?></b></div>
  <br />
  <div class="myworks-wc-qbo-sync-table-responsive">
  <table class="wp-list-table widefat fixed striped posts  menu-blue-bg">
@@ -98,29 +101,29 @@ if ( ! defined( 'ABSPATH' ) )
 		$lm_dt = $MSQS_QL->log_page_msg_col_output($data);
 	?>
 	<tr>
-		<td style="text-align:center;"><?php echo $data['id']?></td>
+		<td style="text-align:center;"><?php echo esc_html($data['id'] ?? '')?></td>
 		<td>
-		<h4 class="mq_lp_lth"><?php echo $data['log_type']?></h4>
+		<h4 class="mq_lp_lth"><?php echo esc_html($data['log_type'] ?? '')?></h4>
 		<div class="mq_lp_tbd <?php if( !$data['success']):?>cl_err<?php endif;?>">
-			<?php echo nl2br(stripslashes($data['log_title']));?>
+			<?php echo !empty($data['log_title']) ? nl2br(stripslashes($data['log_title'])) : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</div>
 		</td>
 		
 		<td <?php if( !$data['success']):?>style="color:red;"<?php endif;?>>
 			<?php //echo nl2br(stripslashes($data['details']));?>
-			<?php echo $lm_dt['details'];?>
+			<?php echo !empty($lm_dt['details']) ? $lm_dt['details'] : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</td>
 		
 		<td>
-		<span class="mq_lp_ltime"><?php echo date('h:i:s A',strtotime($data['added_date']));?></span>
-		<span><?php echo date('Y-m-d',strtotime($data['added_date']));?></span>
+		<span class="mq_lp_ltime"><?php echo esc_html(date('h:i:s A',strtotime($data['added_date'])));?></span>
+		<span><?php echo esc_html(date('Y-m-d',strtotime($data['added_date'])));?></span>
 		</td>
 		<td style="text-align:center;">
-		<a class="mwqslld_btn" title="Delete" href="javascript:void(0);" onclick="javascript:if(confirm('<?php echo __('Are you sure, you want to delete this!','mw_wc_qbo_sync')?>')){window.location='<?php echo  $page_url;?>&del_log=<?php echo $data['id']?>';}">x</a>
-		<?php echo $qb_view_link;?>
+		<a class="mwqslld_btn" title="Delete" href="javascript:void(0);" onclick="javascript:if(confirm('<?php echo esc_html__('Are you sure, you want to delete this!','mw_wc_qbo_sync')?>')){window.location='<?php echo  esc_url_raw($page_url);?>&del_log=<?php echo esc_attr($data['id'])?>';}" >x</a>
+		<?php echo !empty($qb_view_link) ? $qb_view_link : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		
 		<?php if(!empty($lm_dt['oth']) && isset($lm_dt['oth']['error_code'])):?>
-		<a target="_blank" class="lg_qb_view lg_qb_ecode" href="<?php echo $lm_dt['oth']['error_code_url'];?>" title="View QuickBooks Error Code Information (<?php echo $lm_dt['oth']['error_code'];?>)">?</a>
+		<a target="_blank" class="lg_qb_view lg_qb_ecode" href="<?php echo esc_url($lm_dt['oth']['error_code_url']);?>" title="View QuickBooks Error Code Information (<?php echo esc_attr($lm_dt['oth']['error_code']);?>)">?</a>
 		<?php endif;?>
 		
 		</td>
@@ -130,16 +133,16 @@ if ( ! defined( 'ABSPATH' ) )
 	</tbody>
  </table>
 </div>
- <?php echo $pagination_links?>
+ <?php echo !empty($pagination_links) ? $pagination_links : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
  
  <?php if(count($log_data)):?>
  <br />
  <div> 
 <?php wp_nonce_field( 'myworks_wc_qbo_sync_clear_all_logs', 'mwqs_clear_all_logs' ); ?>
-<button id="mwqs_clear_all_logs_btn"><?php _e( 'Clear Entire Log', 'mw_wc_qbo_sync' );?></button>
+<button id="mwqs_clear_all_logs_btn"><?php esc_html_e( 'Clear Entire Log', 'mw_wc_qbo_sync' );?></button>
 &nbsp;
 <?php wp_nonce_field( 'myworks_wc_qbo_sync_clear_all_log_errors', 'mwqs_clear_all_log_errors' ); ?>
-<button id="mwqs_clear_all_log_errors_btn"><?php _e( 'Clear Error Logs', 'mw_wc_qbo_sync' );?></button>
+<button id="mwqs_clear_all_log_errors_btn"><?php esc_html_e( 'Clear Error Logs', 'mw_wc_qbo_sync' );?></button>
 <br/>
 <br/>
 <br/>
@@ -151,20 +154,20 @@ if ( ! defined( 'ABSPATH' ) )
 	function search_item(){		
 		var log_search = jQuery('#log_search').val();
 		if(log_search!=''){
-			window.location = '<?php echo $page_url;?>&log_search='+log_search;
+			window.location = '<?php echo esc_url_raw($page_url);?>&log_search='+log_search;
 		}else{
-			alert('<?php echo __('Please enter search keyword.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_js(__('Please enter search keyword.','mw_wc_qbo_sync')); ?>');
 		}
 	}
 
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&log_search=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&log_search=';
 	}
 	
 	<?php if(count($log_data)):?>
 	jQuery(document).ready(function($){		
 		$('#mwqs_clear_all_logs_btn').click(function(){
-			if(confirm('<?php echo __('This will clear all log entries. OK to proceed?','mw_wc_qbo_sync')?>')){
+			if(confirm('<?php echo esc_html__('This will clear all log entries. OK to proceed?','mw_wc_qbo_sync')?>')){
 				var data = {
 					"action": 'mw_wc_qbo_sync_clear_all_logs',
 					"mwqs_clear_all_logs": jQuery('#mwqs_clear_all_logs').val(),
@@ -183,7 +186,7 @@ if ( ! defined( 'ABSPATH' ) )
 					   $('#mwqs_clear_all_logs_btn').html(btn_text);
 					   if(result!=0 && result!=''){
 						 //alert('Success');
-						 window.location='<?php echo $page_url;?>';
+						 window.location='<?php echo esc_url_raw($page_url);?>';
 					   }else{
 						 alert('Error!');			 
 					   }					   	
@@ -197,7 +200,7 @@ if ( ! defined( 'ABSPATH' ) )
 		});
 		
 		$('#mwqs_clear_all_log_errors_btn').click(function(){			
-			if(confirm('<?php echo __('This will clear all error log entries. OK to proceed?','mw_wc_qbo_sync')?>')){
+			if(confirm('<?php echo esc_html__('This will clear all error log entries. OK to proceed?','mw_wc_qbo_sync')?>')){
 				var data = {
 					"action": 'mw_wc_qbo_sync_clear_all_log_errors',
 					"mwqs_clear_all_log_errors": jQuery('#mwqs_clear_all_log_errors').val(),
@@ -217,7 +220,7 @@ if ( ! defined( 'ABSPATH' ) )
 					    $('#mwqs_clear_all_log_errors_btn').html(btn_text);
 					   if(result!=0 && result!=''){
 						 //alert('Success');
-						 window.location='<?php echo $page_url;?>';
+						 window.location='<?php echo esc_url_raw($page_url);?>';
 					   }else{
 						 alert('Error!');			 
 					   }				  

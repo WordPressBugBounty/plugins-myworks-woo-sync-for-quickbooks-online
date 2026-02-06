@@ -1,0 +1,29 @@
+name: QIT Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  qit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install PHP & Composer
+        run: sudo apt-get update && sudo apt-get install -y php-cli php-zip unzip
+
+      - name: Install QIT CLI
+        run: |
+          composer global require woocommerce/qit-cli
+          echo "$HOME/.composer/vendor/bin" >> $GITHUB_PATH
+          echo "$HOME/.config/composer/vendor/bin" >> $GITHUB_PATH
+
+      - name: Authenticate QIT
+        run: qit partner:add --user='${{ secrets.QIT_USER }}' --application_password='${{ secrets.QIT_APP_PASS }}'
+
+      - name: Run Security Test
+        run: qit run:security myworks-woo-sync-for-quickbooks-online --wait

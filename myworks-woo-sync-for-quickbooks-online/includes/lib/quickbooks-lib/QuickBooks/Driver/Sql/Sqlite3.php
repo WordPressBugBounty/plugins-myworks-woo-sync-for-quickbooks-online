@@ -301,7 +301,7 @@ class QuickBooks_Driver_Sql_Sqlite3 extends QuickBooks_Driver_Sql
             $this->_conn = new SQLite3($db);
         }
         catch(\Exception $ex) {
-            die('db: '. $db . 'ex: ' . $ex->getMessage());
+            die('db: '. esc_html($db) . 'ex: ' . esc_html($ex->getMessage()));
         }
         return true;
     }
@@ -350,12 +350,12 @@ class QuickBooks_Driver_Sql_Sqlite3 extends QuickBooks_Driver_Sql
                 $errnum = -99;
                 $errmsg = 'SQLLite Query Error';
 
-                trigger_error('Error Num.: ' . $errnum . "\n" . 'Error Msg.:' . $errmsg . "\n" . 'SQL: ' . $sql, E_USER_ERROR);
+                trigger_error('Error Num.: ' . esc_html($errnum) . "\n" . 'Error Msg.:' . esc_html($errmsg) . "\n" . 'SQL: ' . esc_html($sql), E_USER_ERROR);
                 return false;
             }
         }
         catch(\Exception $e) {
-            trigger_error($e->getMessage());
+            trigger_error(esc_html($e->getMessage()));
         }
 
         return $res;

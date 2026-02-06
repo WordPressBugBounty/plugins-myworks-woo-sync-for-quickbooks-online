@@ -246,7 +246,7 @@ class QuickBooks_IPP_Object
 		}
 		else
 		{
-			trigger_error('Call to undefined method $' . get_class($this) . '->' . $name . '(...)', E_USER_ERROR);
+			trigger_error('Call to undefined method $' . esc_html(get_class($this)) . '->' . esc_html($name) . '(...)', E_USER_ERROR);
 			return false;
 		}
 	}
@@ -462,19 +462,19 @@ class QuickBooks_IPP_Object
 			{
 				$for_qbxml = false;
 				
-				if (substr($key, -3, 3) == 'Ref' and $value[0] == '{')
+				if (substr($key, -3, 3) == 'Ref' and is_string($value) && strlen($value) > 0 && $value[0] == '{')
 				{
 					$value = trim($value, '{}-');
 				}
-				else if ($key == 'Id' and $value[0] == '{')
+				else if ($key == 'Id' and is_string($value) && strlen($value) > 0 && $value[0] == '{')
 				{
 					$value = trim($value, '{}-');	
 				}
-				else if ($key == 'DefinitionId' and $value[0] == '{')
+				else if ($key == 'DefinitionId' and is_string($value) && strlen($value) > 0 && $value[0] == '{')
 				{
 					$value = trim($value, '{}-');
 				}
-				else if ($key == 'TxnId' and $value[0] == '{')
+				else if ($key == 'TxnId' and is_string($value) && strlen($value) > 0 && $value[0] == '{')
 				{
 					$value = trim($value, '{}-');
 				}				

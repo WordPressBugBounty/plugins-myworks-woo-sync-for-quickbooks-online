@@ -109,7 +109,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Session_Handler extends WC_Session {
 	}
 	
 	public function get_session_cookie() {
-		$cookie_value = isset( $_COOKIE[ $this->_cookie ] ) ? wp_unslash( $_COOKIE[ $this->_cookie ] ) : false;
+		$cookie_value = isset( $_COOKIE[ $this->_cookie ] ) ? sanitize_text_field( wp_unslash( $_COOKIE[ $this->_cookie ] ) ) : false;
 
 		if ( empty( $cookie_value ) || ! is_string( $cookie_value ) ) {
 			return false;
@@ -154,7 +154,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Session_Handler extends WC_Session {
 
 			$wpdb->query(
 				$wpdb->prepare(
-					"INSERT INTO {$this->_table} (`session_key`, `session_value`, `session_expiry`) VALUES (%s, %s, %d)
+					"INSERT INTO " . esc_sql($this->_table) . " (`session_key`, `session_value`, `session_expiry`) VALUES (%s, %s, %d)
  					ON DUPLICATE KEY UPDATE `session_value` = VALUES(`session_value`), `session_expiry` = VALUES(`session_expiry`)",
 					$this->_customer_id,
 					maybe_serialize( $this->_data ),
@@ -200,7 +200,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Session_Handler extends WC_Session {
 	public function cleanup_sessions() {
 		global $wpdb;
 
-		$wpdb->query( $wpdb->prepare( "DELETE FROM {$this->_table} WHERE session_expiry < %d", time() ) );
+		$wpdb->query( $wpdb->prepare( "DELETE FROM " . esc_sql($this->_table) . " WHERE session_expiry < %d", time() ) );
 
 		if ( class_exists( 'WC_Cache_Helper' ) ) {
 			wp_cache_set( $this->_scg_p . $this->_scg_name . '_cache_prefix', microtime(), $this->_scg_name );
@@ -218,7 +218,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Session_Handler extends WC_Session {
 		$value = wp_cache_get( $this->get_cache_prefix() . $customer_id, $this->_scg_name );
 
 		if ( false === $value ) {
-			$value = $wpdb->get_var( $wpdb->prepare( "SELECT session_value FROM {$this->_table} WHERE session_key = %s", $customer_id ) );
+			$value = $wpdb->get_var( $wpdb->prepare( "SELECT session_value FROM " . esc_sql($this->_table) . " WHERE session_key = %s", $customer_id ) );
 
 			if ( is_null( $value ) ) {
 				$value = $default;

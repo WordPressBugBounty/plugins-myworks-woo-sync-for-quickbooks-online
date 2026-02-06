@@ -33,7 +33,7 @@ if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
 $req_headers = apache_request_headers();
 //echo '<pre>';print_r($req_headers);echo '</pre>';
 
-if(isset($_GET['debug']) && $_GET['debug'] == '1'){
+if(isset($_GET['debug']) && sanitize_text_field($_GET['debug']) == '1'){
 	if(!empty($req_headers)){
 		//$MSQS_QL->save_log('Deposit Cron Debug Data',print_r($req_headers,true),'Deposit',3);
 	}	

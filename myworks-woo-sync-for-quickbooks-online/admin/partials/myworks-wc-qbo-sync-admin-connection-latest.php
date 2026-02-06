@@ -40,7 +40,7 @@ $license_status = $MWQS_OF->get_license_status();
 				<h2>Welcome!</h2>
 				<h3>MyWorks Sync <span>QuickBooks Online</span></h3>
 				<div class="icon_panel" id="mwlc_ip">
-					<img id="mwlc_ip_img" src="<?php echo plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic1.png');?>" class="img-responsive" alt="">
+					<img id="mwlc_ip_img" src="<?php echo esc_url( plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic1.png') );?>" class="img-responsive" alt="">
 					<h3 id="mwlc_ip_h3">Activate Your Licence</h3>
 					<p id="mwlc_ip_p" class="mwsnc_lrm"></p>
 				</div>
@@ -48,7 +48,7 @@ $license_status = $MWQS_OF->get_license_status();
 			<div class="side_panel">
 				<div class="heading_panel">
 					<h2>License Key &amp; Access Token</h2>
-					<img src="<?php echo plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-logo.png');?>" class="img-responsive" alt="">
+					<img src="<?php echo esc_url( plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-logo.png') );?>" class="img-responsive" alt="">
 				</div>
 				<div class="form_section">
 					<div class="form_info">
@@ -94,21 +94,21 @@ $license_status = $MWQS_OF->get_license_status();
 				<h2>Welcome!</h2>
 				<h3>MyWorks Sync <span>QuickBooks Online</span></h3>
 				<div class="icon_panel">
-					<img title="License Activated" src="<?php echo plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic2.png');?>" class="img-responsive" alt="">			
+					<img title="License Activated" src="<?php echo esc_url( plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic2.png') );?>" class="img-responsive" alt="">			
 				</div>
 				<div class="form_section">
-					<form method="post" action="<?php echo $page_url;?>">
+					<form method="post" action="<?php echo esc_url($page_url);?>">
 						<div class="form_info">
 							<label for="mw_wc_qbo_sync_license" title="License Key">License Key:</label>
-							<p title="To update your license key, deactivate and re-activate the plugin. All your settings and mappings will be saved." id="mw_wc_qbo_sync_license"><?php echo $mw_wc_qbo_sync_license;?></p>
-							<a id="mwqs_dllk" title="<?php echo __('Refresh your license information','mw_wc_qbo_sync');?>" href="javascript:void(0)" onclick="">
+							<p title="To update your license key, deactivate and re-activate the plugin. All your settings and mappings will be saved." id="mw_wc_qbo_sync_license"><?php echo esc_html($mw_wc_qbo_sync_license);?></p>
+							<a id="mwqs_dllk" title="<?php echo esc_attr__('Refresh your license information','mw_wc_qbo_sync');?>" href="javascript:void(0)" onclick="">
 								<i class="fa fa-refresh"></i>
 							</a>
 							<?php wp_nonce_field( 'myworks_wc_qbo_sync_del_license_local_key', 'del_license_local_key' );?>
 						</div>
 						<div class="form_info">
 							<label title="Access Token" for="mw_wc_qbo_sync_access_token">Access Token:</label>
-							<input class="form-control" type="text" name="mw_wc_qbo_sync_access_token" id="mw_wc_qbo_sync_access_token" value="<?php echo $MSQS_QL->get_option('mw_wc_qbo_sync_access_token');?>" placeholder="Access Token">
+							<input class="form-control" type="text" name="mw_wc_qbo_sync_access_token" id="mw_wc_qbo_sync_access_token" value="<?php echo esc_attr($MSQS_QL->get_option('mw_wc_qbo_sync_access_token'));?>" placeholder="Access Token">
 						</div>
 						<input type="submit" class="btn" id="lcp2sb" value="Update" disabled>
 						<?php wp_nonce_field( 'myworks_wc_qbo_save_access_token', 'update_access_token' ); ?>
@@ -117,15 +117,15 @@ $license_status = $MWQS_OF->get_license_status();
 			</div>
 			<div class="side_panel">
 				<div class="heading_panel">				
-					<img src="<?php echo plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-icon3.png');?>" class="img-responsive" alt="">
+					<img src="<?php echo esc_url( plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-icon3.png') );?>" class="img-responsive" alt="">
 					<h2>QuickBooks Connection Info</h2>
 					<?php if($is_qbo_connected):?>
-					<img src="<?php echo plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connect-icon.png');?>" class="img-responsive" alt="Connected">
+					<img src="<?php echo esc_url( plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connect-icon.png') );?>" class="img-responsive" alt="Connected">
 					<?php else:?>
-					<img src="<?php echo plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/not-connected.png');?>" class="img-responsive" alt="Not Connected">
+					<img src="<?php echo esc_url( plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/not-connected.png') );?>" class="img-responsive" alt="Not Connected">
 					<?php endif;?>
 					
-					<a id="mwqs_dqcclk" title="<?php echo __('Refresh QuickBooks Connection Status','mw_wc_qbo_sync');?>" href="javascript:void(0)" onclick="">
+					<a id="mwqs_dqcclk" title="<?php echo esc_attr__('Refresh QuickBooks Connection Status','mw_wc_qbo_sync');?>" href="javascript:void(0)" onclick="">
 						<i class="fa fa-refresh"></i>
 					</a>
 					<?php wp_nonce_field( 'myworks_wc_qbo_sync_del_conn_cred_local_key', 'del_conn_cred_local_key' );?>
@@ -136,14 +136,14 @@ $license_status = $MWQS_OF->get_license_status();
 				<div class="quick_book_info">
 					<p>
 						<span>Realm:</span>
-						<?php echo $realm; ?>
+						<?php echo esc_html($realm); ?>
 					</p>
 					
 					<p>
 						<span>Company:</span>					
 						<?php
 						if($quickbooks_CompanyInfo->countCompanyName()){
-							print($quickbooks_CompanyInfo->getCompanyName());
+							echo esc_html($quickbooks_CompanyInfo->getCompanyName());
 						}	 
 						?>
 					</p>
@@ -153,7 +153,7 @@ $license_status = $MWQS_OF->get_license_status();
 						<?php
 						if($quickbooks_CompanyInfo->countEmail()){		
 							if(is_object($quickbooks_CompanyInfo->getEmail()) && $quickbooks_CompanyInfo->getEmail()->countAddress()){
-								print($quickbooks_CompanyInfo->getEmail()->getAddress());
+								echo esc_html($quickbooks_CompanyInfo->getEmail()->getAddress());
 							}
 						}	
 						?>
@@ -163,7 +163,7 @@ $license_status = $MWQS_OF->get_license_status();
 						<span>Country:</span>					
 						<?php
 						if($quickbooks_CompanyInfo->countCountry()){
-							print($quickbooks_CompanyInfo->getCountry());
+							echo esc_html($quickbooks_CompanyInfo->getCountry());
 						}	 
 						?>
 					</p>				
@@ -201,7 +201,7 @@ $license_status = $MWQS_OF->get_license_status();
 				$('#lc_lfp_txt').html('Loading...').show();
 				
 				$('#mwlc_ip').removeClass('lc_error');
-				$('#mwlc_ip_img').attr('src','<?php echo plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic1.png');?>');
+				$('#mwlc_ip_img').attr('src','<?php echo esc_url( plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic1.png') );?>');
 				$('#mwlc_ip_h3').text('Activate Your Licence');
 				$('#mwlc_ip_p').text('');
 				
@@ -232,14 +232,14 @@ $license_status = $MWQS_OF->get_license_status();
 									$('#lc_lfp_txt').html('Reloading Page...').show();
 									
 									$('#mwlc_ip').addClass('lc_success');
-									$('#mwlc_ip_img').attr('src','<?php echo plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic3.png');?>');
+									$('#mwlc_ip_img').attr('src','<?php echo esc_url( plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic3.png') );?>');
 									$('#mwlc_ip_h3').text('License Key Activated');
 									$('#mwlc_ip_p').text('');
 									//location.reload();
 									setTimeout(function(){ location.reload(); }, 2000);
 								}else{
 									$('#mwlc_ip').addClass('lc_error');
-									$('#mwlc_ip_img').attr('src','<?php echo plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic-cross.png');?>');
+									$('#mwlc_ip_img').attr('src','<?php echo esc_url( plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic-cross.png') );?>');
 									$('#mwlc_ip_h3').text('Invalid License Key');
 									$('#mwlc_ip_p').text(result.message);
 								}
@@ -250,7 +250,7 @@ $license_status = $MWQS_OF->get_license_status();
 								$('#lc_lfp_txt').html('').hide();
 								
 								$('#mwlc_ip').addClass('lc_error');
-								$('#mwlc_ip_img').attr('src','<?php echo plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic-cross.png');?>');
+								$('#mwlc_ip_img').attr('src','<?php echo esc_url( plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic-cross.png') );?>');
 								$('#mwlc_ip_h3').text('Invalid Response');
 								$('#mwlc_ip_p').text('Invalid response format.');
 							}
@@ -259,7 +259,7 @@ $license_status = $MWQS_OF->get_license_status();
 							$('#lc_lfp_txt').html('').hide();
 							
 							$('#mwlc_ip').addClass('lc_error');
-							$('#mwlc_ip_img').attr('src','<?php echo plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic-cross.png');?>');
+							$('#mwlc_ip_img').attr('src','<?php echo esc_url( plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic-cross.png') );?>');
 							//?t=Date.now()
 							$('#mwlc_ip_h3').text('Invalid Response');
 							$('#mwlc_ip_p').text('No response received from server.');
@@ -270,7 +270,7 @@ $license_status = $MWQS_OF->get_license_status();
 						$('#lc_lfp_txt').html('').hide();
 						
 						$('#mwlc_ip').addClass('lc_error');
-						$('#mwlc_ip_img').attr('src','<?php echo plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic-cross.png');?>');
+						$('#mwlc_ip_img').attr('src','<?php echo esc_url( plugins_url('myworks-woo-sync-for-quickbooks-online/admin/image/connection-pic-cross.png') );?>');
 						$('#mwlc_ip_h3').text('Invalid Response');
 						$('#mwlc_ip_p').text('Something is wrong, plesae try again later.');
 					}

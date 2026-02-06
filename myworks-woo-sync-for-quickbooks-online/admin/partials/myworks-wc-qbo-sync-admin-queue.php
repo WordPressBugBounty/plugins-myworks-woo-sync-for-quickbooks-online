@@ -37,9 +37,12 @@ if ( ! defined( 'ABSPATH' ) )
  $whr = '';
  if($queue_search!=''){
 	//$whr.=" AND (`item_type` LIKE '%$queue_search%' OR `item_action` LIKE '%$queue_search%' OR `item_id` = '{$queue_search}' ) ";
-	$whr.=$wpdb->prepare(" AND (`item_type` LIKE '%%%s%%' OR `item_action` LIKE '%%%s%%' OR `item_id` = %s ) ",$queue_search,$queue_search,$queue_search);
+	$escaped_search = '%' . $wpdb->esc_like($queue_search) . '%';
+	$whr.=$wpdb->prepare(" AND (`item_type` LIKE %s OR `item_action` LIKE %s OR `item_id` = %s ) ",$escaped_search,$escaped_search,$queue_search);
  }
- $total_records = $wpdb->get_var("SELECT COUNT(*) FROM `".$wpdb->prefix."mw_wc_qbo_sync_real_time_sync_queue` WHERE `id` >0 AND `run` = 0 $whr ");
+ $table_name = $wpdb->prefix . 'mw_wc_qbo_sync_real_time_sync_queue';
+ // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $whr safely constructed with $wpdb->prepare()
+ $total_records = $wpdb->get_var("SELECT COUNT(*) FROM `" . esc_sql($table_name) . "` WHERE `id` >0 AND `run` = 0 $whr ");
  
  $page = $MSQS_QL->get_page_var();
  
@@ -54,6 +57,7 @@ if ( ! defined( 'ABSPATH' ) )
  if(isset($oqbc_nc) && $oqbc_nc){
 	 echo '<style type="text/css">.mw-qbo-sync-welcome{display:none;}</style>';
  }
+
  ?>
  </br></br>
  <div class="container queue-outr-sec">
@@ -61,7 +65,7 @@ if ( ! defined( 'ABSPATH' ) )
  <div class="mw_wc_filter">
  <span class="search_text">Search queue</span>
   &nbsp;
-  <input type="text" id="queue_search" value="<?php echo $queue_search;?>">
+  <input type="text" id="queue_search" value="<?php echo esc_attr($queue_search);?>">
   &nbsp;		
   <button onclick="javascript:search_item();" class="btn btn-info">Filter</button>
   &nbsp;
@@ -70,21 +74,23 @@ if ( ! defined( 'ABSPATH' ) )
   <span class="filter-right-sec">
 	  <span class="entries">Show entries</span>
 	  &nbsp;	
-	  <select style="width:50px;" onchange="javascript:window.location='<?php echo $page_url;?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-		<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+	  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_attr($MSQS_QL->per_page_keyword);?>='+this.value;">
+		<?php echo wp_kses($MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 	 </select>
  </span>
  </div>
  <br />
  
-<!--  <div style="padding:10px;"><?php _e( 'Current Datetime', 'mw_wc_qbo_sync' );?>: <?php echo $MSQS_QL->now('Y-m-d H:i:s');?></div> -->
-  
- <?php 
+ <?php
  //$cdt = $MSQS_QL->now('Y-m-d H:i:s');
  $cdt = date('Y-m-d H:i:s');
  $next_queue_cron_run = wp_next_scheduled( 'mw_qbo_sync_queue_cron_hook' );
  //
  $s_ncrt_cdt_diff = $next_queue_cron_run-strtotime($cdt);
+// Ensure we don't have negative time difference
+if($s_ncrt_cdt_diff < 0){
+	$s_ncrt_cdt_diff = 0;
+}
  
  $next_queue_cron_run = date('Y-m-d H:i:s',$next_queue_cron_run);
  $start_date = new DateTime($cdt);
@@ -105,11 +111,10 @@ if ( ! defined( 'ABSPATH' ) )
 	$ncrt_int = 5;
  }
  
- $ncrt_int = $ncrt_int*60;
- ?> 
+ $ncrt_int = $ncrt_int*60;?> 
  
  <div id="mwqs_q_ncr_tdv">
-  <h3 style="text-align:center"><?php echo $min_d;?> min, <?php echo $min_s;?> sec</h3>
+  <h3 style="text-align:center"><?php echo esc_html($min_d);?> min, <?php echo esc_html($min_s);?> sec</h3>
   <p style="text-align:center; margin-top:-20px;">until next queue sync</p>
  </div>
  <div class="myworks-wc-qbo-sync-table-responsive">
@@ -128,12 +133,12 @@ if ( ! defined( 'ABSPATH' ) )
 	<?php if(count($queue_data)): $i=1;?>	
 	<?php foreach($queue_data as $data):?>	
 	<tr>
-		<td><?php echo $data['id']?></td>
-		<td><?php echo $data['item_type']?></td>
-		<td><?php echo $data['item_action']?></td>
-		<td><?php echo $data['item_id']?></td>		
-		<td><?php echo $data['added_date']?></td>
-		<td style="text-align:center;"><a class="mwqslld_btn" title="Delete" href="javascript:void(0);" onclick="javascript:if(confirm('<?php echo __('Are you sure, you want to delete this!','mw_wc_qbo_sync')?>')){window.location='<?php echo  $page_url;?>&del_queue=<?php echo $data['id']?>';}">x</a></td>
+		<td><?php echo esc_html($data['id'])?></td>
+		<td><?php echo esc_html($data['item_type'])?></td>
+		<td><?php echo esc_html($data['item_action'])?></td>
+		<td><?php echo esc_html($data['item_id'])?></td>		
+		<td><?php echo esc_html($data['added_date'])?></td>
+		<td style="text-align:center;"><a class="mwqslld_btn" title="Delete" href="javascript:void(0);" onclick="javascript:if(confirm('<?php echo esc_html__('Are you sure, you want to delete this!','mw_wc_qbo_sync')?>')){window.location='<?php echo  esc_url_raw($page_url);?>&del_queue=<?php echo esc_attr($data['id'])?>';}">x</a></td>
 		
 	</tr>
 	<?php $i++;endforeach;?>
@@ -141,13 +146,13 @@ if ( ! defined( 'ABSPATH' ) )
 	</tbody>
  </table>
 </div>
- <?php echo $pagination_links?>
+ <?php echo !empty($pagination_links) ? $pagination_links : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
  
  <?php if(count($queue_data)):?>
  <br />
  <div>
 <?php wp_nonce_field( 'myworks_wc_qbo_sync_clear_all_queues', 'mwqs_clear_all_queues' ); ?>
-<button id="mwqs_clear_all_queues_btn"><?php _e( 'Clear all queues', 'mw_wc_qbo_sync' );?></button>
+<button id="mwqs_clear_all_queues_btn"><?php esc_html_e( 'Clear all queues', 'mw_wc_qbo_sync' );?></button>
 <!--
 &nbsp;
 <?php //wp_nonce_field( 'myworks_wc_qbo_sync_clear_all_queue_errors', 'mwqs_clear_all_queue_errors' ); ?>
@@ -159,33 +164,39 @@ if ( ! defined( 'ABSPATH' ) )
 </div>
 <?php endif;?>
 <?php wp_nonce_field( 'myworks_wc_qbo_sync_get_nqc_time_diff', 'nqc_time_diff' ); ?>
-</div> 
+</div>
  <script type="text/javascript">
 	function search_item(){		
 		var queue_search = jQuery('#queue_search').val();
 		if(queue_search!=''){
-			window.location = '<?php echo $page_url;?>&queue_search='+queue_search;
+			window.location = '<?php echo esc_url_raw($page_url);?>&queue_search='+queue_search;
 		}else{
-			alert('<?php echo __('Please enter search keyword.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_js(__('Please enter search keyword.','mw_wc_qbo_sync')); ?>');
 		}
 	}
 
-	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&queue_search=';
+	function reset_item(){
+		window.location = '<?php echo esc_url_raw($page_url);?>&queue_search=';
 	}
 	
 	function qct_counter(duration){
+		// Convert duration to integer and ensure it's positive
+		var timer = parseInt(duration, 10);
+		if(timer < 0) timer = 0;
 		
-		 var timer = duration, minutes, seconds;
+		var minutes, seconds;
 		var x = setInterval(function() {
 			minutes = parseInt(timer / 60, 10);
 			seconds = parseInt(timer % 60, 10);
-			if(seconds>=0){
-				document.getElementById("mwqs_q_ncr_tdv").innerHTML = '<h3 style="text-align:center">'+minutes+' min, '+seconds+' sec</h3><p style="text-align:center; margin-top:-20px;">until next queue sync</p>';
-			}			
 			
-			if (--timer < 0) {
-				timer = '<?php echo $ncrt_int;?>';
+			// Always update the display
+			document.getElementById("mwqs_q_ncr_tdv").innerHTML = '<h3 style="text-align:center">'+minutes+' min, '+seconds+' sec</h3><p style="text-align:center; margin-top:-20px;">until next queue sync</p>';
+			
+			if (timer <= 0) {
+				// Reset to full interval when timer reaches 0
+				timer = parseInt('<?php echo esc_js($ncrt_int);?>', 10);
+			} else {
+				timer--;
 			}						
 		}, 1000);
 	}
@@ -193,7 +204,7 @@ if ( ! defined( 'ABSPATH' ) )
 	jQuery(document).ready(function($){
 		<?php if(count($queue_data)):?>
 		$('#mwqs_clear_all_queues_btn').click(function(){
-			if(confirm('<?php echo __('Are you sure, you want to clear all queues?','mw_wc_qbo_sync')?>')){
+			if(confirm('<?php echo esc_html__('Are you sure, you want to clear all queues?','mw_wc_qbo_sync')?>')){
 				var data = {
 					"action": 'mw_wc_qbo_sync_clear_all_queues',
 					"mwqs_clear_all_queues": jQuery('#mwqs_clear_all_queues').val(),
@@ -212,7 +223,7 @@ if ( ! defined( 'ABSPATH' ) )
 					   $('#mwqs_clear_all_queues_btn').html(btn_text);
 					   if(result!=0 && result!=''){
 						 //alert('Success');
-						 window.location='<?php echo $page_url;?>';
+						 window.location='<?php echo esc_url_raw($page_url);?>';
 					   }else{
 						 alert('Error!');			 
 					   }					   	
@@ -226,7 +237,7 @@ if ( ! defined( 'ABSPATH' ) )
 		});
 		
 		$('#mwqs_clear_all_queue_errors_btn').click(function(){			
-			if(confirm('<?php echo __('Are you sure, you want to clear all queue errors?','mw_wc_qbo_sync')?>')){
+			if(confirm('<?php echo esc_html__('Are you sure, you want to clear all queue errors?','mw_wc_qbo_sync')?>')){
 				var data = {
 					"action": 'mw_wc_qbo_sync_clear_all_queue_errors',
 					"mwqs_clear_all_queue_errors": jQuery('#mwqs_clear_all_queue_errors').val(),
@@ -246,7 +257,7 @@ if ( ! defined( 'ABSPATH' ) )
 					    $('#mwqs_clear_all_queue_errors_btn').html(btn_text);
 					   if(result!=0 && result!=''){
 						 //alert('Success');
-						 window.location='<?php echo $page_url;?>';
+						 window.location='<?php echo esc_url_raw($page_url);?>';
 					   }else{
 						 alert('Error!');			 
 					   }				  
@@ -259,8 +270,8 @@ if ( ! defined( 'ABSPATH' ) )
 			}
 		});
 		<?php endif;?>
-		qct_counter('<?php echo $s_ncrt_cdt_diff;?>');
+		// Debug info: Initial timer value is <?php echo esc_js($s_ncrt_cdt_diff);?> seconds
+		qct_counter('<?php echo esc_js($s_ncrt_cdt_diff);?>');
 	});
-	
 	
  </script>

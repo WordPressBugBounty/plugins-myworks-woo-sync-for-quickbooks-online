@@ -88,13 +88,13 @@ class QuickBooks_UnitTest
 		{
 			if ($Result->result())
 			{
-				print($class . '->' . $Result->name() . ' PASSED!' . "\n");
+				print(esc_html($class) . '->' . esc_html($Result->name()) . ' PASSED!' . "\n");
 			}
 			else
 			{
-				print($class . '->' . $Result->name() . ' FAILED! ' . "\n");
-				print("\t\t" . 'Expected: ' . $Result->expected() . ', Actual: ' . $Result->actual() . "\n");
-				print("\t\t" . $Result->message() . "\n");
+				print(esc_html($class) . '->' . esc_html($Result->name()) . ' FAILED! ' . "\n");
+				print("\t\t" . 'Expected: ' . esc_html($Result->expected()) . ', Actual: ' . esc_html($Result->actual()) . "\n");
+				print("\t\t" . esc_html($Result->message()) . "\n");
 			}
 		}
 	}

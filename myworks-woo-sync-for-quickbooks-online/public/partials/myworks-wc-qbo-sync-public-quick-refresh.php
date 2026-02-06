@@ -36,7 +36,7 @@ if(isset($_GET['data_type']) && $_GET['data_type']!='customer' && $_GET['data_ty
 
 $go_back_txt = '<a href="'.admin_url('admin.php?page=myworks-wc-qbo-sync').'">Return to Dashboard</a>';
 if(!$is_valid_user){	
-	die($MWQS_OF->get_html_msg(__('Not Authorized','mw_wc_qbo_sync'),'<h1>'.__('Not Authorized','mw_wc_qbo_sync').'</h1>'));
+	die(wp_kses_post($MWQS_OF->get_html_msg(esc_html__('Not Authorized','mw_wc_qbo_sync'),'<h1>'.esc_html__('Not Authorized','mw_wc_qbo_sync').'</h1>')));
 }
 
 global $wpdb;
@@ -46,7 +46,7 @@ if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
 }
 
 if($MSQS_QL->is_connected()){
-	$data_type = (isset($_GET['data_type']))?$_GET['data_type']:'';
+	$data_type = (isset($_GET['data_type'])) ? sanitize_text_field($_GET['data_type']) : '';
 	
 	$count_msg = '';
 	
@@ -96,8 +96,8 @@ if($MSQS_QL->is_connected()){
 		exit();
 	}
 	
-	echo $MWQS_OF->get_html_msg(__('Myworks QuickBooks Sync Quick Refresh','mw_wc_qbo_sync'),'<h2>'.__('QuickBooks Online Data Successfully Recognized','mw_wc_qbo_sync').'</h2>'.$count_msg);
+	echo wp_kses_post($MWQS_OF->get_html_msg(esc_html__('Myworks QuickBooks Sync Quick Refresh','mw_wc_qbo_sync'),'<h2>'.esc_html__('QuickBooks Online Data Successfully Recognized','mw_wc_qbo_sync').'</h2>'.esc_html($count_msg)));
 }else{
-	echo $MWQS_OF->get_html_msg(__('Myworks QuickBooks Sync Quick Refresh','mw_wc_qbo_sync'),'<h2>'.__('QuickBooks Not Connected','mw_wc_qbo_sync').'</h2>');
+	echo wp_kses_post($MWQS_OF->get_html_msg(esc_html__('Myworks QuickBooks Sync Quick Refresh','mw_wc_qbo_sync'),'<h2>'.esc_html__('QuickBooks Not Connected','mw_wc_qbo_sync').'</h2>'));
 }
-echo $go_back_txt;
+echo wp_kses_post($go_back_txt);

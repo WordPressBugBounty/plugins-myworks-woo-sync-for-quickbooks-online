@@ -15,29 +15,36 @@ $show_avl_fields = (isset($_GET['show_fields']) && $_GET['show_fields']=='1')?tr
 if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_cf', 'map_wc_qbo_cf' ) ) {
 	
 	//$MSQS_QL->_p($_POST);
-	$wpdb->query("DELETE FROM `".$table."` WHERE `id` > 0 ");
-	$wpdb->query("TRUNCATE TABLE `".$table."` ");
+	// Use hardcoded table name to prevent SQL injection - table names cannot be prepared
+	$table_name = $wpdb->prefix . 'mw_wc_qbo_sync_wq_cf_map';
+	if ($table === $table_name) {
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safely constructed from wpdb prefix
+		$wpdb->query($wpdb->prepare("DELETE FROM `{$table_name}` WHERE `id` > %d", 0));
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safely constructed from wpdb prefix
+		$wpdb->query("TRUNCATE TABLE `{$table_name}");
+	}
 	
 	if(isset($_POST['wq_mcf_wcf']) && is_array($_POST['wq_mcf_wcf']) && isset($_POST['wq_mcf_qcf']) && is_array($_POST['wq_mcf_qcf'])){
-		$wq_mcf_wcf = array_map('trim',$_POST['wq_mcf_wcf']);
+		$wq_mcf_wcf = array_map('sanitize_text_field', array_map('trim', wp_unslash($_POST['wq_mcf_wcf']))); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		if(array_filter($wq_mcf_wcf)) {
-			$wq_mcf_qcf = array_map('trim',$_POST['wq_mcf_qcf']);
+			$wq_mcf_qcf = array_map('sanitize_text_field', array_map('trim', wp_unslash($_POST['wq_mcf_qcf']))); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			
 			$values = array();
 			$place_holders = array();
-			$query = "INSERT INTO `{$table}` (wc_field, qb_field) VALUES ";
+			// Use hardcoded table name to prevent SQL injection
+			$table_name = $wpdb->prefix . 'mw_wc_qbo_sync_wq_cf_map';
 			
 			for($i = 0; $i < count($wq_mcf_wcf); $i++){
 				if($wq_mcf_wcf[$i]!='' && isset($wq_mcf_qcf[$i]) && $wq_mcf_qcf[$i]!=''){
-					array_push($values, esc_sql($wq_mcf_wcf[$i]), esc_sql($wq_mcf_qcf[$i]));
-					$place_holders[] = "('%s', '%s')";
+					array_push($values, $wq_mcf_wcf[$i], $wq_mcf_qcf[$i]);
+					$place_holders[] = "(%s, %s)";
 				}				
 			}
-			$query .= implode(', ', $place_holders);
+			
 			if(count($values)){
-				$query = $wpdb->prepare("$query ", $values);
-				//echo $query;
-				$wpdb->query($query);
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safely constructed from wpdb prefix
+				$query = "INSERT INTO `{$table_name}` (wc_field, qb_field) VALUES " . implode(', ', $place_holders);
+				$wpdb->query($wpdb->prepare($query, $values)); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			}			
 		}
 	}
@@ -49,11 +56,11 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 ?>
 <?php require_once plugin_dir_path( __FILE__ ) . 'myworks-wc-qbo-sync-admin-map-nav.php' ?>
 <div class="container map-tax-class-outer map-product-responsive">
-	<div class="page_title"><h4><?php _e( 'Custom Fields Mappings', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Custom Fields Mappings', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card">
 		<div class="card-content">
 			<div class="row mcf_cont">
-				<form method="POST" class="col s12 m12 l12" action="<?php echo $page_url;?>">
+				<form method="POST" class="col s12 m12 l12" action="<?php echo esc_url($page_url);?>">
 					<div class="row">
 						<div class="col s12 m12 l12">
 						<div class="myworks-wc-qbo-sync-table-responsive">
@@ -74,9 +81,9 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 									<?php if(is_array($cf_map_data) && count($cf_map_data)):?>
 									<?php foreach($cf_map_data as $cfm_data):?>
 									<tr>
-										<td><input type="text" value="<?php echo $cfm_data['wc_field'];?>" class="mcf_txt" name="wq_mcf_wcf[]"/></td>
+										<td><input type="text" value="<?php echo esc_attr($cfm_data['wc_field']);?>" class="mcf_txt" name="wq_mcf_wcf[]"/></td>
 										<td></td>
-										<td><input type="text" value="<?php echo $cfm_data['qb_field'];?>" class="mcf_txt"  name="wq_mcf_qcf[]"/></td>
+										<td><input type="text" value="<?php echo esc_attr($cfm_data['qb_field']);?>" class="mcf_txt"  name="wq_mcf_qcf[]"/></td>
 										<td><a href="#" class="remove_field">Remove</a></td>
 									</tr>
 									<?php endforeach;?>
@@ -148,7 +155,7 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 								<td>
 									<div class="material-icons tooltipped tooltip">?
 										<span class="tooltiptext">
-											<?php _e( 'Please Enter QBO Custom Field ID and Name Like 2,Location', 'mw_wc_qbo_sync' );?>
+											<?php esc_html_e( 'Please Enter QBO Custom Field ID and Name Like 2,Location', 'mw_wc_qbo_sync' );?>
 										</span>
 									</div>
 								</td>
@@ -161,7 +168,7 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 								<td>
 									<div class="material-icons tooltipped tooltip">?
 										<span class="tooltiptext">
-											<?php _e( 'This option will work if the WooCommerce Checkout Field Editor (woocommerce-checkout-field-editor) plugin is active', 'mw_wc_qbo_sync' );?>
+											<?php esc_html_e( 'This option will work if the WooCommerce Checkout Field Editor (woocommerce-checkout-field-editor) plugin is active', 'mw_wc_qbo_sync' );?>
 										</span>
 									</div>
 								</td>
@@ -174,7 +181,7 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 								<td>
 									<div class="material-icons tooltipped tooltip">?
 										<span class="tooltiptext">
-											<?php _e( 'This option will work if the Woo Checkout Field Editor Pro (woo-checkout-field-editor-pro) plugin is active', 'mw_wc_qbo_sync' );?>
+											<?php esc_html_e( 'This option will work if the Woo Checkout Field Editor Pro (woo-checkout-field-editor-pro) plugin is active', 'mw_wc_qbo_sync' );?>
 										</span>
 									</div>
 								</td>
@@ -187,7 +194,7 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 								<td>
 									<div class="material-icons tooltipped tooltip">?
 										<span class="tooltiptext">
-											<?php _e( 'This option will work if the WooCommerce Checkout Field Editor Pro (woocommerce-checkout-field-editor-pro) plugin is active', 'mw_wc_qbo_sync' );?>
+											<?php esc_html_e( 'This option will work if the WooCommerce Checkout Field Editor Pro (woocommerce-checkout-field-editor-pro) plugin is active', 'mw_wc_qbo_sync' );?>
 										</span>
 									</div>
 								</td>
@@ -200,7 +207,7 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 								<td>
 									<div class="material-icons tooltipped tooltip">?
 										<span class="tooltiptext">
-											<?php _e( 'This option will work if the WooCommerce Checkout Field Editor Pro (woocommerce-checkout-field-editor-pro) plugin is active', 'mw_wc_qbo_sync' );?>
+											<?php esc_html_e( 'This option will work if the WooCommerce Checkout Field Editor Pro (woocommerce-checkout-field-editor-pro) plugin is active', 'mw_wc_qbo_sync' );?>
 										</span>
 									</div>
 								</td>
@@ -213,7 +220,7 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 								<td>
 									<div class="material-icons tooltipped tooltip">?
 										<span class="tooltiptext">
-											<?php _e( 'This option will work if the WooCommerce Checkout Field Editor Pro (woocommerce-checkout-field-editor-pro) plugin is active', 'mw_wc_qbo_sync' );?>
+											<?php esc_html_e( 'This option will work if the WooCommerce Checkout Field Editor Pro (woocommerce-checkout-field-editor-pro) plugin is active', 'mw_wc_qbo_sync' );?>
 										</span>
 									</div>
 								</td>
@@ -227,7 +234,7 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 								<td>
 									<div class="material-icons tooltipped tooltip">?
 										<span class="tooltiptext">
-											<?php _e( 'Please Enter QBO Custom Field ID and Name Separated By Comma(,)', 'mw_wc_qbo_sync' );?>
+											<?php esc_html_e( 'Please Enter QBO Custom Field ID and Name Separated By Comma(,)', 'mw_wc_qbo_sync' );?>
 										</span>
 									</div>
 								</td>

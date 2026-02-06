@@ -35,7 +35,7 @@ if(is_user_logged_in() && current_user_can('manage_woocommerce')){
 }
 
 if(!$is_valid_user){
-	die($MWQS_OF->get_html_msg(__('Not Authorized','mw_wc_qbo_sync'),'<h1>'.__('Not Authorized','mw_wc_qbo_sync').'</h1>'));
+	die(wp_kses_post($MWQS_OF->get_html_msg(esc_html__('Not Authorized','mw_wc_qbo_sync'),'<h1>'.esc_html__('Not Authorized','mw_wc_qbo_sync').'</h1>')));
 }
 
 global $wpdb;
@@ -43,12 +43,12 @@ global $wpdb;
 $is_valid_sync = true;
 $ajaxurl = admin_url( 'admin-ajax.php' );
 
-$sync_type = (isset($_GET['sync_type']))?$_GET['sync_type']:'';
+$sync_type = (isset($_GET['sync_type'])) ? sanitize_text_field($_GET['sync_type']) : '';
 if($sync_type!='push' && $sync_type!='pull'){
 	$is_valid_sync = false;
 }
 
-$item_type = (isset($_GET['item_type']))?$_GET['item_type']:'';
+$item_type = (isset($_GET['item_type'])) ? sanitize_text_field($_GET['item_type']) : '';
 if($item_type!='customer' && $item_type!='invoice' && $item_type!='payment' && $item_type!='product' && $item_type!='inventory'  && $item_type!='v_inventory' && $item_type!='category' && $item_type!='variation' && $item_type!='refund' && $item_type!='vendor'){	
 	$is_valid_sync = false;
 }
@@ -58,7 +58,7 @@ if($is_valid_sync && $item_type == 'vendor' && !$MSQS_QL->is_wq_vendor_pm_enable
 }
 
 $tot = 0;
-$item_ids = (isset($_GET['item_ids']))?trim($_GET['item_ids']):'';
+$item_ids = (isset($_GET['item_ids'])) ? sanitize_text_field(trim(wp_unslash($_GET['item_ids']))) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 if($item_ids!=''){
 	$item_ids = $MSQS_QL->sanitize($item_ids);
 	$item_ids_arr = explode(',',$item_ids);
@@ -142,8 +142,8 @@ if($item_ids!=''){
 	<script type='text/javascript' src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.js"></script>
 	<script type='text/javascript' src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
 	
-	<link rel='stylesheet' href="<?php echo plugin_dir_url( dirname(dirname(__FILE__)) ) . 'admin/css/font-awesome.css';?>" type='text/css' media='all' />
-	<link rel='stylesheet' href="<?php echo plugin_dir_url( dirname(__FILE__) ) . 'css/myworks-wc-qbo-sync-window.css';?>" type='text/css' media='all' />	
+	<link rel='stylesheet' href="<?php echo esc_url(plugin_dir_url( dirname(dirname(__FILE__)) ) . 'admin/css/font-awesome.css');?>" type='text/css' media='all' />
+	<link rel='stylesheet' href="<?php echo esc_url(plugin_dir_url( dirname(__FILE__) ) . 'css/myworks-wc-qbo-sync-window.css');?>" type='text/css' media='all' />	
 	
 	<?php if($is_valid_sync):?>
 	<script type="text/javascript">
@@ -166,8 +166,8 @@ if($item_ids!=''){
 		
 	}
 
-	var item_ids = '<?php echo esc_html($item_ids);?>';
-	var item_type = '<?php echo esc_html($item_type);?>';
+	var item_ids = '<?php echo esc_js($item_ids);?>';
+	var item_type = '<?php echo esc_js($item_type);?>';
 
 	function start_ajax_push(){	
 		if(item_ids!=''){
@@ -197,8 +197,8 @@ if($item_ids!=''){
 		if(jQuery('#stop_process').val()==0){
 						
 			var ai_id = ids_arr[i];					
-			var ajaxurl = '<?php echo $ajaxurl;?>';
-			var sync_type = '<?php echo esc_html($sync_type);?>';
+			var ajaxurl = '<?php echo esc_js($ajaxurl);?>';
+			var sync_type = '<?php echo esc_js($sync_type);?>';
 			
 			var data = '';
 			
@@ -217,18 +217,17 @@ if($item_ids!=''){
 			};
 			
 			if(sync_type=='pull'){
-				complete_msg = "<span class='success_green'><?php echo esc_html(ucfirst($item_type_txt));?> Pull Complete</span>";
+				complete_msg = "<span class='success_green'><?php echo esc_js(ucfirst($item_type_txt));?> Pull Complete</span>";
 			}else if(sync_type=='push'){
-				complete_msg = "<span class='success_green'><?php echo esc_html(ucfirst($item_type_txt));?> Push Complete</span>";
+				complete_msg = "<span class='success_green'><?php echo esc_js(ucfirst($item_type_txt));?> Push Complete</span>";
 			}else{
-				complete_msg = "<span class='success_green'><?php echo esc_html(ucfirst($item_type_txt));?> Sync Complete</span>";
+				complete_msg = "<span class='success_green'><?php echo esc_js(ucfirst($item_type_txt));?> Sync Complete</span>";
 			}
 			
 			
 			if(data!=''){
-				data_json = jQuery.param(data);		
-				
-				
+				data_json = jQuery.param(data);
+
 				jqXHR = jQuery.ajax({
 				   type: "POST",
 				   url: ajaxurl,

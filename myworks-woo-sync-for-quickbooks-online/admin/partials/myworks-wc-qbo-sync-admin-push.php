@@ -15,7 +15,7 @@ $show_srmi = true; # Setup restricted menu items
 <?php require_once plugin_dir_path( __FILE__ ) . 'myworks-wc-qbo-sync-admin-push-nav.php' ?>
 
 <?php
-$tab = isset($_GET['tab']) ? $_GET['tab'] : '' ;
+$tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : '';
 
 if($tab=='customer' && !$MSQS_QL->is_plugin_active('customer-custom-post-type-map-for-myworks-qbo-sync')){
 	if(!$MSQS_QL->option_checked('mw_wc_qbo_sync_orders_to_specific_cust_opt') || !empty($MSQS_QL->get_option('mw_wc_qbo_sync_wc_cust_role_sync_as_cus'))){
@@ -65,7 +65,7 @@ if($tab=='customer' && !$MSQS_QL->is_plugin_active('customer-custom-post-type-ma
 	if($MSQS_QL->option_checked('mw_qbo_sync_activation_redirect')){
 		if(!$MSQS_QL->option_checked('mw_wc_qbo_sync_order_as_estimate')){
 			if($MSQS_QL->option_checked('mw_wc_qbo_sync_order_as_sales_receipt')){
-				echo '<h4>'.__('WooCommerce Orders as Sales Receipts Option Enabled in Settings. ','mw_wc_qbo_sync'). '</h4>';
+				echo '<h4>'.esc_html__('WooCommerce Orders as Sales Receipts Option Enabled in Settings. ','mw_wc_qbo_sync'). '</h4>';
 			}else{
 				require_once plugin_dir_path( __FILE__ ) . 'myworks-wc-qbo-sync-admin-push-payment.php';
 			}

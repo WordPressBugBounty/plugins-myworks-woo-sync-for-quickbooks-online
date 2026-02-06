@@ -33,7 +33,7 @@ $wc_currency = get_woocommerce_currency();
 $wc_currency_symbol = get_woocommerce_currency_symbol($wc_currency);
 ?>
 <div class="container">
-	<div class="page_title"><h4><?php _e( 'Invoice Pull', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Invoice Pull', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card">
 		<div class="card-content">
 			<div class="row">
@@ -44,11 +44,11 @@ $wc_currency_symbol = get_woocommerce_currency_symbol($wc_currency);
 									<div class="mw_wc_filter">
 									 <span class="search_text">Search</span>
 									  &nbsp;
-									  <input placeholder="<?php echo __('Name / Company','mw_wc_qbo_sync')?>" type="text" id="invoice_pull_search" value="<?php echo $invoice_pull_search;?>">
+									  <input placeholder="<?php echo esc_attr__('Name / Company','mw_wc_qbo_sync')?>" type="text" id="invoice_pull_search" value="<?php echo esc_attr($invoice_pull_search);?>">
 									  &nbsp;
-									  <input class="mwqs_datepicker" placeholder="<?php echo __('From yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="invoice_pull_date_from" value="<?php echo $invoice_pull_date_from;?>">
+									  <input class="mwqs_datepicker" placeholder="<?php echo esc_attr__('From yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="invoice_pull_date_from" value="<?php echo esc_attr($invoice_pull_date_from);?>">
 									  &nbsp;
-									  <input class="mwqs_datepicker" placeholder="<?php echo __('To yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="invoice_pull_date_to" value="<?php echo $invoice_pull_date_to;?>">
+									  <input class="mwqs_datepicker" placeholder="<?php echo esc_attr__('To yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="invoice_pull_date_to" value="<?php echo esc_attr($invoice_pull_date_to);?>">
 									  &nbsp;									  
 									  <button onclick="javascript:search_item();" class="btn btn-info">Filter</button>
 									  &nbsp;
@@ -57,8 +57,8 @@ $wc_currency_symbol = get_woocommerce_currency_symbol($wc_currency);
 									  <span class="filter-right-sec">
 										  <span class="entries">Show entries</span>
 										  &nbsp;
-										  <select style="width:50px;" onchange="javascript:window.location='<?php echo $page_url;?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-											<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+										  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_js($MSQS_QL->per_page_keyword);?>='+this.value;">
+											<?php echo $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										 </select>
 									 </span>
 									 </div>
@@ -68,9 +68,9 @@ $wc_currency_symbol = get_woocommerce_currency_symbol($wc_currency);
 									<table id="mwqs_invoice_pull_table" class="table tablesorter" width="100%">
 									
 									</table>
-									<?php echo $pagination_links?>
+									<?php echo $pagination_links; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 									<?php else:?>
-									<p><?php _e( 'No invoice found.', 'mw_wc_qbo_sync' );?></p>
+									<p><?php esc_html_e( 'No invoice found.', 'mw_wc_qbo_sync' );?></p>
 									<?php endif;?>
 								
 								</div>
@@ -80,8 +80,8 @@ $wc_currency_symbol = get_woocommerce_currency_symbol($wc_currency);
 						
 					<div class="row">						
 						<div class="input-field col s12 m12 14">
-							<button id="pull_selected_invoice_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo __('pull Selected invoices','mw_wc_qbo_sync')?></button>
-							<button id="pull_all_invoice_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo __('pull All invoices','mw_wc_qbo_sync')?></button>
+							<button id="pull_selected_invoice_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo esc_html__('pull Selected invoices','mw_wc_qbo_sync')?></button>
+							<button id="pull_all_invoice_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo esc_html__('pull All invoices','mw_wc_qbo_sync')?></button>
 							
 						</div>
 					</div>
@@ -107,14 +107,14 @@ $wc_currency_symbol = get_woocommerce_currency_symbol($wc_currency);
 		invoice_pull_date_to = jQuery.trim(invoice_pull_date_to);
 		
 		if(invoice_pull_search!='' || invoice_pull_date_from!='' || invoice_pull_date_to!=''){		
-			window.location = '<?php echo $page_url;?>&invoice_pull_search='+invoice_pull_search+'&invoice_pull_date_from='+invoice_pull_date_from+'&invoice_pull_date_to='+invoice_pull_date_to;
+			window.location = '<?php echo esc_url_raw($page_url);?>&invoice_pull_search='+invoice_pull_search+'&invoice_pull_date_from='+invoice_pull_date_from+'&invoice_pull_date_to='+invoice_pull_date_to;
 		}else{
-			alert('<?php echo __('Please enter search keyword or dates.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_js(__('Please enter search keyword or dates.','mw_wc_qbo_sync')); ?>');
 		}
 	}
 
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&invoice_pull_search=&invoice_pull_date_from=&invoice_pull_date_to=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&invoice_pull_search=&invoice_pull_date_from=&invoice_pull_date_to=';
 	}
 	
 	jQuery(document).ready(function($) {
@@ -139,16 +139,16 @@ $wc_currency_symbol = get_woocommerce_currency_symbol($wc_currency);
 			}
 			
 			if(item_checked==0){
-				alert('<?php echo __('Please select at least one item.','mw_wc_qbo_sync');?>');
+				alert('<?php echo esc_js(__('Please select at least one item.','mw_wc_qbo_sync')); ?>');
 				return false;
 			}
 			
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=pull&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_invoice_pull',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=pull&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_invoice_pull',0,0,650,350);
 			return false;
 		});
 		
 		$('#pull_all_invoice_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=pull&sync_all=1&item_type='+item_type,'mw_qs_invoice_pull',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=pull&sync_all=1&item_type='+item_type,'mw_qs_invoice_pull',0,0,650,350);
 			return false;
 		});	
 		
@@ -166,4 +166,4 @@ $wc_currency_symbol = get_woocommerce_currency_symbol($wc_currency);
 		);
 	  } );
  </script>
- <?php echo $MWQS_OF->get_tablesorter_js('#mwqs_invoice_pull_table');?>
+<?php echo wp_kses( $MWQS_OF->get_tablesorter_js('#mwqs_invoice_pull_table'), array('script' => array('src' => array(), 'type' => array(), 'crossorigin' => array(), 'onerror' => array()), 'style' => array()) );?>

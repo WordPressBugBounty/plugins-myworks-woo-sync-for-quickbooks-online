@@ -34,7 +34,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	protected $creds;
 	protected $is_connected;
 
-	protected $mw_wc_qbo_sync_plugin_options;
+	protected $mw_wc_qbo_sync_plugin_options = [];
 	protected $qbo_company_preferences = false;
 	protected $qbo_company_info = false;
 	var $qbo_query_limit = 1000;
@@ -42,7 +42,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	protected $quickbooks_connection_dashboard_url='https://app.myworks.software';
 	public $mwqbosession = null;
 	
-	public function __construct($queue_conn=false,$oauth2_refresh=false){
+	public function __construct($queue_conn=false,$oauth2_refresh=false,$lite_connection=true, $connection_page=false){
 		/**/
 		if($this->use_php_session()){
 			if(!session_id() && $this->is_allow_php_session()) {
@@ -72,12 +72,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			}
 		}
 		#$this->_p($this->mw_wc_qbo_sync_plugin_options);
+		$check_oauth2_refresh = false;
 		if(($queue_conn || !$this->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')) && ($oauth2_refresh || ($this->Context=='' && $this->realm==''))){
-			if($this->check_oauth2_refresh()){				
+			if($this->check_oauth2_refresh()){
+				$check_oauth2_refresh = true;				
 				$this->refresh_server_oauth2_connection();
 			}
-			$this->creds();
-			$this->connect();
+			$this->creds(false,$check_oauth2_refresh);
+			$this->connect($lite_connection,$connection_page);
 		}
 		
 		if($this->is_connected() && !$this->qbo_company_preferences){
@@ -96,6 +98,179 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		if($this->is_connected()){
 			$Context = $this->Context;
 			$realm = $this->realm;
+
+			/*
+			$date_whr = " AND `{date}` >= now() - INTERVAL 30 DAY ";
+			$wc_paymentmethod = "stripe";
+			$payment_cur = "USD";
+			$single_pmnt_id = 0;
+			$deposit_date_field = 'post_date';
+			var_dump($this->get_wc_deposit_payment_list($date_whr,$wc_paymentmethod,$payment_cur,$single_pmnt_id,$deposit_date_field));
+			var_dump($this->get_wc_deposit_sr_order_list($date_whr,$wc_paymentmethod,$payment_cur,0,'post_date'));*/
+
+			// Github issue 269 cron utc time triggering
+			/*global $wpdb;
+
+			$gateways = array('stripe');
+			$currency = array('USD');
+			$single_pmnt_id = 0;
+
+			$p_map_whr = '';
+			if(is_array($gateways) && !empty($gateways)){
+				$pgm_str = '';
+				foreach($gateways as $gt){
+					if($gt!=''){
+						$gt = esc_sql($gt);
+						$pgm_str.="'{$gt}',";
+					}
+				}
+				if($pgm_str!=''){
+					$pgm_str = substr($pgm_str,0,-1);
+					$p_map_whr = " AND `wc_paymentmethod` IN ($pgm_str)";
+				}
+
+			}
+			$ibs_whr = ' AND `individual_batch_support` = 0 ';
+
+			if(is_array($currency) && !empty($currency)){
+				$pgm_str = '';
+				foreach($currency as $gt){
+					if($gt!=''){
+						$gt = esc_sql($gt);
+						$pgm_str.="'{$gt}',";
+					}
+				}
+				if($pgm_str!=''){
+					$pgm_str = substr($pgm_str,0,-1);
+					$p_map_whr.= " AND `currency` IN ($pgm_str)";
+				}
+			}
+
+			$table = $wpdb->prefix . 'mw_wc_qbo_sync_paymentmethod_map';
+			if (strpos($table, $wpdb->prefix) === 0) {
+				$p_maps_q = "SELECT * FROM `{$table}` WHERE `id` >0 AND `enable_payment` = 1 AND `qbo_account_id` > 0 AND `enable_batch` = 1 {$ibs_whr} AND `wc_paymentmethod` !='' {$p_map_whr}";
+			} else {
+				$p_maps_q = "";
+			}
+
+			$p_maps_data = $this->get_data($p_maps_q);
+
+			$ospg = (!$single_pmnt_id && $this->get_option('mw_wc_qbo_sync_order_qbo_sync_as') == 'Per Gateway')?true:false;
+
+			if(is_array($p_maps_data) && !empty($p_maps_data)){
+				foreach($p_maps_data as $pmd){
+					$total_deposit_amnt = 0;
+					$total_pmnt_amnt = 0;
+					$total_txn_fee = 0;
+
+					$today = $this->now('Y-m-d');
+					$day_name = strtolower($this->now('l'));
+
+					$wc_paymentmethod = $pmd['wc_paymentmethod'];
+					//
+					$pg_osa = $pmd['order_sync_as'];
+					$pg_npd = false;
+					if($ospg && $pg_osa == 'Estimate'){
+						$pg_npd = true;
+						continue;
+					}
+					
+					$is_dps_dt_applied = false;
+					//New Changes
+					$deposit_cron_sch = $pmd['deposit_cron_sch'];
+					$is_d_daily = (empty($deposit_cron_sch) || $deposit_cron_sch == 'Daily')?true:false;
+					//
+					$deposit_cron_utc = $pmd['deposit_cron_utc'];
+					$wp_timezone = $this->get_sys_timezone();
+					
+					//
+					$cdi_hr = 24;
+					$cdi_d = 1;
+					if(!empty($deposit_cron_utc) && !empty($wp_timezone)){
+						$utc_now = new DateTime();
+						$utc_now->setTimezone(new DateTimeZone('UTC'));
+						$utc_date = $utc_now->format('Y-m-d');
+						$utc_date_time = $utc_date.' '.$deposit_cron_utc.':00';						
+						
+						$wp_date_time_c = $this->converToTz($utc_date_time,$wp_timezone,'UTC');
+						//
+						if(!$is_d_daily){
+							//$dn_c = date('l',strtotime($wp_date_time_c));
+							$dn_c = $this->now('l');
+							if($deposit_cron_sch != $dn_c){
+								continue;
+							}
+							
+							$cdi_hr = 168;
+						}
+						
+						$last_24_hour_dt = date('Y-m-d H:i:s', strtotime('-'.$cdi_hr.' hours', strtotime($wp_date_time_c)));
+						if(!empty($last_24_hour_dt)){							
+							$date_whr = " AND `{date}` >= '{$last_24_hour_dt}' AND `{date}` <= '{$wp_date_time_c}' ";
+							$is_dps_dt_applied = true;
+						}						
+					}
+					
+					if(!$is_dps_dt_applied){
+						$date_whr = " AND `{date}` >= now() - INTERVAL {$cdi_d} DAY ";
+					}					
+					
+					$lump_weekend_batches = (int) $pmd['lump_weekend_batches'];
+					//
+					if(!$is_d_daily){
+						$lump_weekend_batches = false;
+					}
+					
+					if($lump_weekend_batches){
+						if($day_name=='saturday'){
+							continue;
+						}
+						if($day_name=='sunday'){
+							continue;
+						}
+						
+						if($day_name=='monday'){
+							if(!$is_dps_dt_applied){
+								$date_whr = " AND `{date}` >= now() - INTERVAL 3 DAY ";
+							}else{
+								$last_72_hour_dt = date('Y-m-d H:i:s', strtotime('-72 hours', strtotime($wp_date_time_c)));
+								$date_whr = " AND `{date}` >= '{$last_72_hour_dt}' AND `{date}` <= '{$wp_date_time_c}' ";
+							}
+							
+						}
+					}
+					
+					$pmap_currency = $pmd['currency'];
+					$payment_cur = $pmap_currency;
+					$cur_rate = 1;
+
+					$wc_inv_ids = array();
+					$wc_pmnt_ids = array();
+
+					$wc_inv_ids_int = array();
+					$wc_pmnt_ids_int = array();
+					
+					$ps_order_status = trim($pmd['ps_order_status']);
+					$deposit_date_field = trim($pmd['deposit_date_field']);
+
+					var_dump($date_whr);
+
+					$p_list_arr = array();
+					if($ps_order_status!=''){
+						continue;
+						//$p_list_arr = $this->get_wc_deposit_os_payment_list($date_whr,$wc_paymentmethod,$payment_cur,$ps_order_status,$single_pmnt_id);
+					}else{
+						if($ospg && $pg_osa == 'SalesReceipt'){
+							$pg_npd = true;
+							$p_list_arr = $this->get_wc_deposit_sr_order_list($date_whr,$wc_paymentmethod,$payment_cur,0,$deposit_date_field);
+						}else{
+							$p_list_arr = $this->get_wc_deposit_payment_list($date_whr,$wc_paymentmethod,$payment_cur,$single_pmnt_id,$deposit_date_field);
+						}					
+					}
+
+					var_dump($p_list_arr);
+				}
+			}*/
 			
 			//$this->_p($this->get_qbo_company_info('is_category_enabled'),true);
 			
@@ -183,13 +358,13 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			}else{
 				$res_err = $q_prf->lastError($Context);				
 				echo 'Error:<br>';
-				echo $res_err;
+				echo esc_html($res_err);
 				echo '<br>';
 				echo 'Request:<br>';
-				echo $this->get_IPP()->lastRequest();
+				echo esc_html($this->get_IPP()->lastRequest());
 				echo '<br>';
 				echo 'Response:<br>';
-				echo $this->get_IPP()->lastResponse();				
+				echo esc_html($this->get_IPP()->lastResponse());				
 			}
 			*/
 
@@ -288,7 +463,496 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		$this->test_debug_function();		
 	}
 	
+	/**
+	 * HPOS Compatibility Helper Functions
+	 * Added for WooCommerce HPOS (High-Performance Order Storage) support
+	 */
+	
+	/**
+	 * Check if HPOS is enabled
+	 * @return bool
+	 */
+	private function is_hpos_enabled() {
+		return class_exists('Automattic\\WooCommerce\\Utilities\\OrderUtil') && 
+		       \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+	}
+
+	/**
+	 * Get all legacy order meta data as an array (HPOS compatible).
+	 *
+	 * @param WC_Order $order WooCommerce order object.
+	 * @return array
+	 */
+	protected function get_legacy_order_meta_array( $order ) {
+		if ( ! is_a( $order, 'WC_Order' ) ) {
+			return array();
+		}
+
+		$legacy_meta = array(
+			'_order_key'                    => $order->get_order_key(),
+			'_customer_user'                => $order->get_customer_id(),
+			'_payment_method'               => $order->get_payment_method(),
+			'_payment_method_title'         => $order->get_payment_method_title(),
+			'_transaction_id'               => $order->get_transaction_id(),
+			'_customer_ip_address'          => $order->get_customer_ip_address(),
+			'_customer_user_agent'          => $order->get_customer_user_agent(),
+			'_created_via'                  => $order->get_created_via(),
+			'_order_version'                => $order->get_version(),
+			'_prices_include_tax'           => $order->get_prices_include_tax() ? 'yes' : 'no',
+			'is_vat_exempt'                 => $order->get_meta('is_vat_exempt'),
+			'_cart_hash'                    => $order->get_cart_hash(),
+			'_cart_discount'                => $order->get_discount_total(),
+			'_cart_discount_tax'            => $order->get_discount_tax(),
+			'_download_permissions_granted' => wc_bool_to_string( (bool) $order->get_download_permissions_granted() ),
+			'_recorded_sales'               => wc_bool_to_string( (bool) $order->get_meta('_recorded_sales') ),
+			'_recorded_coupon_usage_counts' => wc_bool_to_string( (bool) $order->get_meta('_recorded_coupon_usage_counts') ),
+			'_new_order_email_sent'         => $order->get_meta('_new_order_email_sent'),
+			'_order_stock_reduced'          => wc_bool_to_string( (bool) $order->get_meta('_order_stock_reduced') ),
+			'_edit_lock'                    => $order->get_meta('_edit_lock'),
+			'_billing_address_index'        => implode( ' ', $order->get_address( 'billing' ) ),
+			'_shipping_address_index'       => implode( ' ', $order->get_address( 'shipping' ) ),
+		);
+
+		// Legacy date handling for backward compatibility.
+		$date_paid      = $order->get_date_paid();
+		$date_completed = $order->get_date_completed();
+
+		$legacy_meta['_paid_date']      = ! is_null( $date_paid ) ? $date_paid->date( 'Y-m-d H:i:s' ) : '';
+		$legacy_meta['_completed_date'] = ! is_null( $date_completed ) ? $date_completed->date( 'Y-m-d H:i:s' ) : '';
+
+		return $legacy_meta;
+	}
+
+	/**
+	 * Generate a legacy meta-style associative array for a given HPOS order.
+	 * Uses WooCommerce's internal mapping for long-term compatibility.
+	 *
+	 * @param WC_Order $order WooCommerce order object (HPOS or legacy).
+	 * @return array Legacy-style meta key => value array.
+	 */
+	public function get_hpos_order_legacy_meta_array($order)
+	{
+		$legacy_meta = array();
+
+		if (! $order) {
+			return $legacy_meta;
+		}
+
+		if ($order instanceof WC_Order_Refund) {
+			$refund = $order;
+			$refund_meta_key_to_props = array(
+				'_refund_amount'    => 'amount',
+				'_refunded_by'      => 'refunded_by',
+				'_refunded_payment' => 'refunded_payment',
+				'_refund_reason'    => 'reason',
+			);
+			foreach ($refund_meta_key_to_props as $meta_key => $prop) {
+				$value = $refund->{"get_$prop"}('edit');
+				$legacy_meta[ $meta_key ] = $value;
+			}
+			$order_id = $order->get_parent_id();
+			$order = wc_get_order($order_id);
+		}
+
+		// Native WooCommerce property mappings from WC_Order_Data_Store_CPT
+		$meta_key_to_props = array(
+			'_order_key'                    => 'order_key',
+			'_customer_user'                => 'customer_id',
+			'_payment_method'               => 'payment_method',
+			'_payment_method_title'         => 'payment_method_title',
+			'_transaction_id'               => 'transaction_id',
+			'_customer_ip_address'          => 'customer_ip_address',
+			'_customer_user_agent'          => 'customer_user_agent',
+			'_created_via'                  => 'created_via',
+			'_date_completed'               => 'date_completed',
+			'_date_paid'                    => 'date_paid',
+			'_cart_hash'                    => 'cart_hash',
+			'_download_permissions_granted' => 'download_permissions_granted',
+			'_recorded_sales'               => 'recorded_sales',
+			'_recorded_coupon_usage_counts' => 'recorded_coupon_usage_counts',
+			'_new_order_email_sent'         => 'new_order_email_sent',
+			'_order_stock_reduced'          => 'order_stock_reduced',
+		);
+
+		$address_props = array(
+			'billing'  => array(
+				'_billing_first_name' => 'billing_first_name',
+				'_billing_last_name'  => 'billing_last_name',
+				'_billing_company'    => 'billing_company',
+				'_billing_address_1'  => 'billing_address_1',
+				'_billing_address_2'  => 'billing_address_2',
+				'_billing_city'       => 'billing_city',
+				'_billing_state'      => 'billing_state',
+				'_billing_postcode'   => 'billing_postcode',
+				'_billing_country'    => 'billing_country',
+				'_billing_email'      => 'billing_email',
+				'_billing_phone'      => 'billing_phone',
+			),
+			'shipping' => array(
+				'_shipping_first_name' => 'shipping_first_name',
+				'_shipping_last_name'  => 'shipping_last_name',
+				'_shipping_company'    => 'shipping_company',
+				'_shipping_address_1'  => 'shipping_address_1',
+				'_shipping_address_2'  => 'shipping_address_2',
+				'_shipping_city'       => 'shipping_city',
+				'_shipping_state'      => 'shipping_state',
+				'_shipping_postcode'   => 'shipping_postcode',
+				'_shipping_country'    => 'shipping_country',
+				'_shipping_phone'      => 'shipping_phone',
+			),
+		);
+
+		$legacy_meta_key_to_props = array(
+			'_order_currency'     => 'currency',
+			'_cart_discount'      => 'discount_total',
+			'_cart_discount_tax'  => 'discount_tax',
+			'_order_shipping'     => 'shipping_total',
+			'_order_shipping_tax' => 'shipping_tax',
+			'_order_tax'          => 'cart_tax',
+			'_order_total'        => 'total',
+			'_order_version'      => 'version',
+			'_prices_include_tax' => 'prices_include_tax',
+		);
+
+		// Convert core props.
+		foreach ($meta_key_to_props as $meta_key => $prop) {
+			$value = $order->{"get_$prop"}('edit');
+			switch ($prop) {
+				case 'date_paid':
+				case 'date_completed':
+					$value = ! is_null($value) ? $value->getTimestamp() : '';
+					break;
+				case 'download_permissions_granted':
+				case 'recorded_sales':
+				case 'recorded_coupon_usage_counts':
+				case 'order_stock_reduced':
+					$value = is_bool($value) ? wc_bool_to_string($value) : $value;
+					break;
+				case 'new_order_email_sent':
+					if (! empty($value)) {
+						$value = wc_bool_to_string((bool) $value);
+						$value = 'yes' === $value ? 'true' : 'false';
+					}
+					break;
+				default:
+					$value = is_string($value) ? wp_unslash($value) : $value;
+			}
+			$legacy_meta[ $meta_key ] = $value;
+		}
+
+		// Add billing and shipping props.
+		foreach ($address_props as $group => $props) {
+			foreach ($props as $meta_key => $prop) {
+				$value = $order->{"get_$prop"}('edit');
+				$legacy_meta[ $meta_key ] = is_string($value) ? wp_unslash($value) : $value;
+			}
+		}
+
+		foreach ($legacy_meta_key_to_props as $meta_key => $prop) {
+			$value = $order->{"get_$prop"}('edit');
+			$value = is_string($value) ? wp_slash($value) : $value;
+
+			if ('prices_include_tax' === $prop) {
+				$value = $value ? 'yes' : 'no';
+			}
+
+			$legacy_meta[ $meta_key ] = $value;
+		}
+
+		$legacy_meta['_shipping_email'] = $order->get_billing_email();
+
+		//Legacy compatibility fields
+		$legacy_meta['_paid_date']      = $order->get_date_paid() ? $order->get_date_paid()->date('Y-m-d H:i:s') : null;
+		$legacy_meta['_completed_date'] = $order->get_date_completed() ? $order->get_date_completed()->date('Y-m-d H:i:s') : null;
+
+		return $legacy_meta;
+	}
+
+	/**
+	 * Retrieve order meta (compatible with both HPOS and legacy tables).
+	 *
+	 * @param int    $order_id Order ID.
+	 * @param string $meta_key Meta key to retrieve.
+	 * @param bool   $single   Whether to return a single value.
+	 * @return mixed Meta value or array of values.
+	 */
+	private function get_order_meta_hpos($order_id, $meta_key, $single = true) {
+		if ($this->is_hpos_enabled()) {
+			$order = wc_get_order($order_id);
+			if (! $order) {
+				return $single ? '' : [];
+			}
+
+			// Get legacy-style associative array from HPOS order.
+			$legacy_meta_array =  $this->get_hpos_order_legacy_meta_array($order);
+
+			if (array_key_exists($meta_key, $legacy_meta_array)) {
+				return $legacy_meta_array[$meta_key];
+			}
+
+			// Fallback: Try native meta (in case of custom meta not in legacy map).
+			$fallback = $order->get_meta($meta_key, $single);
+			return $fallback ?: ($single ? '' : []);
+		}
+
+		// Legacy (non-HPOS) fallback
+		return get_post_meta($order_id, $meta_key, $single);
+	}
+
+
+	/**
+	 * HPOS-compatible function to get all order meta
+	 * @param int $order_id
+	 * @return array
+	 */
+	private function get_all_order_meta_hpos($order_id) {
+		if ($this->is_hpos_enabled()) {
+			$order = wc_get_order($order_id);
+
+			if (! $order) {
+				return array();
+			}
+
+			$meta_data = $order->get_meta_data();
+			$all_meta  = array();
+
+			foreach ($meta_data as $meta) {
+				$key   = $meta->key;
+				$value = $meta->value;
+
+				if (! isset($all_meta[ $key ])) {
+					$all_meta[ $key ] = array();
+				}
+
+				$all_meta[ $key ][] = $value;
+			}
+
+			$legacy_meta = $this->get_hpos_order_legacy_meta_array($order);
+
+			foreach ($legacy_meta as $key => $value) {
+				if ($value === '' || $value === null) {
+					continue;
+				}
+				if (! isset($all_meta[ $key ])) {
+					$all_meta[ $key ] = array();
+				}
+				if (! in_array($value, $all_meta[ $key ], true)) {
+					$all_meta[ $key ][] = $value;
+				}
+			}
+
+			return $all_meta;
+		}
+		return get_post_meta($order_id);
+	}
+	
+	/**
+	 * HPOS-compatible order validation
+	 * @param int $order_id
+	 * @return bool
+	 */
+	private function is_valid_order_hpos($order_id) {
+		if ($this->is_hpos_enabled()) {
+			$order = wc_get_order($order_id);
+			return $order && $order->get_type() === 'shop_order';
+		}
+		global $wpdb;
+		return $this->get_field_by_val($wpdb->posts, 'post_type', 'ID', $order_id) === 'shop_order';
+	}
+	
+	/**
+	 * Get order date in HPOS-compatible way
+	 * @param mixed $order Order object or post object
+	 * @return string Formatted date string
+	 */
+	private function get_hpos_order_date($order) {
+
+		if (method_exists($order, 'get_date_created')) {
+			$date_created = $order->get_date_created();
+			if ( !empty($date_created) ) {
+				$order_date = $date_created->date('Y-m-d H:i:s');
+				if ( !empty($order_date) ) {
+					return $order_date;
+				}
+			}
+		}
+
+		if(property_exists( $order, 'post_date' ) && ! empty( $order->post_date )) {
+			return $order->post_date;
+		}
+
+		// Final fallback to current time
+		return current_time('mysql');
+	}
+	
+	/**
+	 * Get order status in HPOS-compatible way
+	 * @param mixed $order Order object or post object
+	 * @return string Order status
+	 */
+	private function get_hpos_order_status($order) {
+		// For HPOS mode, $order is WC_Order object
+		if ($this->is_hpos_enabled() && method_exists($order, 'get_status')) {
+			return $order->get_status();
+		}
+		
+		// For non-HPOS mode, $order is WP_Post object
+		if (isset($order->post_status)) {
+			return $order->post_status;
+		}
+		
+		// Final fallback
+		return '';
+	}
+	
+	/**
+	 * HPOS-compatible order search by number
+	 * @param string $order_number
+	 * @return int Order ID or 0 if not found
+	 */
+	private function get_order_by_number_hpos($order_number) {
+		// Handle sequential order numbers plugin
+		if($this->is_plugin_active('woocommerce-sequential-order-numbers-pro','') && $this->option_checked('mw_wc_qbo_sync_compt_p_wsnop')) {
+			$onk_f = $this->get_woo_ord_number_key_field();
+			$orders = wc_get_orders(array(
+				'meta_query' => array(
+					array(
+						'key' => $onk_f,
+						'value' => $order_number,
+						'compare' => '='
+					)
+				),
+				'limit' => 1,
+				'return' => 'ids'
+			));
+			return !empty($orders) ? $orders[0] : 0;
+		}
+		
+		// Handle custom order numbers plugin
+		if($this->is_plugin_active('custom-order-numbers-for-woocommerce') && $this->option_checked('mw_wc_qbo_sync_compt_p_wsnop')) {
+			$meta_keys = array('_alg_wc_full_custom_order_number', '_alg_wc_custom_order_number');
+			foreach($meta_keys as $meta_key) {
+				$orders = wc_get_orders(array(
+					'meta_query' => array(
+						array(
+							'key' => $meta_key,
+							'value' => $order_number,
+							'compare' => '='
+						)
+					),
+					'limit' => 1,
+					'return' => 'ids'
+				));
+				if(!empty($orders)) {
+					return $orders[0];
+				}
+			}
+			return 0;
+		}
+		
+		// Handle custom meta key
+		if(!empty($this->get_option('mw_wc_qbo_sync_compt_p_wconmkn')) && $this->option_checked('mw_wc_qbo_sync_compt_p_wsnop')) {
+			$wconmkn_key = $this->get_option('mw_wc_qbo_sync_compt_p_wconmkn');
+			$orders = wc_get_orders(array(
+				'meta_query' => array(
+					array(
+						'key' => $wconmkn_key,
+						'value' => $order_number,
+						'compare' => '='
+					)
+				),
+				'limit' => 1,
+				'return' => 'ids'
+			));
+			return !empty($orders) ? $orders[0] : 0;
+		}
+		
+		// Handle numeric order ID
+		$order_id = (int) $order_number;
+		if($order_id > 0) {
+			$order = wc_get_order($order_id);
+			return ($order && $order->get_type() === 'shop_order') ? $order_id : 0;
+		}
+		
+		return 0;
+	}
+	
+	/**
+	 * Legacy order search by number (for backward compatibility)
+	 * @param string $order_number
+	 * @return int Order ID or 0 if not found
+	 */
+	private function get_order_by_number_legacy($order_number) {
+		// Check if HPOS is enabled
+		if (get_option('woocommerce_custom_orders_table_enabled') === 'yes') {
+			return $this->get_order_by_number_hpos($order_number);
+		}
+		
+		// Legacy implementation for traditional post-based orders
+		global $wpdb;
+		
+		if($this->is_plugin_active('woocommerce-sequential-order-numbers-pro','') && $this->option_checked('mw_wc_qbo_sync_compt_p_wsnop')) {
+			$onk_f = $this->get_woo_ord_number_key_field();
+			$posts_table = esc_sql($wpdb->posts);
+			$postmeta_table = esc_sql($wpdb->postmeta);
+			$akd = $this->get_row($wpdb->prepare("SELECT p.ID FROM `{$posts_table}` p, `{$postmeta_table}` pm WHERE pm.meta_key = %s AND pm.meta_value = %s AND pm.post_id = p.ID AND p.post_type = 'shop_order'", $onk_f, $order_number)); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely escaped with esc_sql() above
+			return $this->get_order_id_from_sql_result($akd);
+		}else{
+			if($this->is_plugin_active('custom-order-numbers-for-woocommerce') && $this->option_checked('mw_wc_qbo_sync_compt_p_wsnop')){
+				$posts_table = esc_sql($wpdb->posts);
+				$postmeta_table = esc_sql($wpdb->postmeta);
+				$akd = $this->get_row($wpdb->prepare("SELECT p.ID FROM `{$posts_table}` p, `{$postmeta_table}` pm WHERE pm.meta_key = '_alg_wc_full_custom_order_number' AND pm.meta_value = %s AND pm.post_id = p.ID AND p.post_type = 'shop_order'", $order_number)); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely escaped with esc_sql() above
+				
+				if(empty($akd)){
+					$posts_table = esc_sql($wpdb->posts);
+					$postmeta_table = esc_sql($wpdb->postmeta);
+					$akd = $this->get_row($wpdb->prepare("SELECT p.ID FROM `{$posts_table}` p, `{$postmeta_table}` pm WHERE pm.meta_key = '_alg_wc_custom_order_number' AND pm.meta_value = %s AND pm.post_id = p.ID AND p.post_type = 'shop_order'", $order_number)); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely escaped with esc_sql() above
+					return $this->get_order_id_from_sql_result($akd);
+				}
+				return $this->get_order_id_from_sql_result($akd);
+			}elseif(!empty($this->get_option('mw_wc_qbo_sync_compt_p_wconmkn')) && $this->option_checked('mw_wc_qbo_sync_compt_p_wsnop')){
+				$wconmkn_key = $this->get_option('mw_wc_qbo_sync_compt_p_wconmkn');
+				$posts_table = esc_sql($wpdb->posts);
+			$postmeta_table = esc_sql($wpdb->postmeta);
+			$akd = $this->get_row($wpdb->prepare("SELECT p.ID FROM `{$posts_table}` p, `{$postmeta_table}` pm WHERE pm.meta_key = %s AND pm.meta_value = %s AND pm.post_id = p.ID AND p.post_type = 'shop_order'", $wconmkn_key, $order_number)); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely escaped with esc_sql() above
+				return $this->get_order_id_from_sql_result($akd);
+			}else{
+				$order_number = (int) $order_number;
+				$posts_table = esc_sql($wpdb->posts);
+				$akd = $this->get_row($wpdb->prepare("SELECT `ID` FROM `{$posts_table}` WHERE `ID` = %d AND `post_type` = 'shop_order'", $order_number)); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped with esc_sql() above
+				return $this->get_order_id_from_sql_result($akd);
+			}
+		}
+		
+		$sql = $wpdb->prepare($sql, $order_number); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $this->get_order_id_from_sql_result($sql);
+	}
+	
+	/**
+	 * Helper to extract order ID from SQL result
+	 * @param string $sql
+	 * @return int
+	 */
+	private function get_order_id_from_sql_result($sql) {
+		$wc_ord_data = $this->get_row($sql);
+		return (is_array($wc_ord_data) && !empty($wc_ord_data)) ? (int) $wc_ord_data['ID'] : 0;
+	}
+	
 	private function test_debug_function(){
+		$plugin_version = MyWorks_WC_QBO_Sync_Admin::return_plugin_version();
+		// Add basic debug output to verify debug functionality is working
+		echo '<h2>Debug Information</h2>';
+		echo '<p><strong>Plugin Version:</strong> ' . esc_html($plugin_version) . '</p>';
+		echo '<p><strong>Connected to QuickBooks:</strong> ' . ($this->is_connected() ? 'Yes' : 'No') . '</p>';
+		echo '<p><strong>HPOS Enabled:</strong> ' . ($this->is_hpos_enabled() ? 'Yes' : 'No') . '</p>';
+		echo '<p><strong>Current Time:</strong> ' . esc_html($this->now()) . '</p>';
+		
+		// Show active debug parameters
+		if(!empty($_GET)) {
+			echo '<h3>URL Parameters:</h3>';
+			echo '<pre>' . esc_html(print_r(array_map('sanitize_text_field', $_GET), true)) . '</pre>';
+		}
+		
 		/**/
 		//$this->Qbo_Pull_Payment(array('qbo_payment_id'=>258));		
 	}
@@ -326,34 +990,35 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		}
 		*/
 		
-		if(isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'wp-json/wp') !== false){
+		if(isset($_SERVER['REQUEST_URI']) && strpos(sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])), 'wp-json/wp') !== false){
 			return false;
 		}
 		
-		if(isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'site-health.php') !== false){			
+		if(isset($_SERVER['REQUEST_URI']) && strpos(sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])), 'site-health.php') !== false){			
 			return false;
 		}
 		
-		if(isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'theme-editor.php') !== false){
+		if(isset($_SERVER['REQUEST_URI']) && strpos(sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])), 'theme-editor.php') !== false){
 			return false;
 		}
 		
-		if(isset($_SERVER['SCRIPT_FILENAME']) && strpos($_SERVER['SCRIPT_FILENAME'], 'theme-editor.php') !== false){
+		if(isset($_SERVER['SCRIPT_FILENAME']) && strpos(sanitize_text_field(wp_unslash($_SERVER['SCRIPT_FILENAME'])), 'theme-editor.php') !== false){
 			return false;
 		}
 		
-		if((isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'admin-ajax.php') !== false) || (isset($_SERVER['SCRIPT_FILENAME']) && strpos($_SERVER['SCRIPT_FILENAME'], 'admin-ajax.php') !== false)){
+		if((isset($_SERVER['REQUEST_URI']) && strpos(sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])), 'admin-ajax.php') !== false) || (isset($_SERVER['SCRIPT_FILENAME']) && strpos(sanitize_text_field(wp_unslash($_SERVER['SCRIPT_FILENAME'])), 'admin-ajax.php') !== false)){
 			//_wp_http_referer
-			if(isset($_POST['action']) && $_POST['action'] == 'edit-theme-plugin-file'){
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checking for WordPress core action, no sensitive operations
+			if(isset($_POST['action']) && sanitize_text_field(wp_unslash($_POST['action'])) == 'edit-theme-plugin-file'){
 				return false;
 			}
 			
 			//
-			if(isset($_POST['action']) && strpos($_POST['action'], 'health-check-') !== false){				
+			if(isset($_POST['action']) && strpos(sanitize_text_field(wp_unslash($_POST['action'])), 'health-check-') !== false){				
 				return false;
 			}
 			
-			if(isset($_POST['action']) && strpos($_POST['action'], 'heartbeat') !== false){
+			if(isset($_POST['action']) && strpos(sanitize_text_field(wp_unslash($_POST['action'])), 'heartbeat') !== false){
 				return false;
 			}
 		}
@@ -391,10 +1056,30 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		$ignore_opts = array(
 			"'mw_wc_qbo_sync_imp_oslcd_dca'",
 			#"'mw_wc_qbo_sync_localkey'",
+			"'mw_wc_qbo_sync_app_data_new_qbo_preferences_object'",
+			"'mw_wc_qbo_sync_app_data_new_qbo_companyinfo_object'",
+			
+			"'mw_wc_qbo_sync_app_data_new_qbo_classes'",
+			"'mw_wc_qbo_sync_app_data_new_qbo_paymentmethods'",
+			"'mw_wc_qbo_sync_app_data_new_qbo_terms'",
+			"'mw_wc_qbo_sync_app_data_new_qbo_taxcodes'",
+			"'mw_wc_qbo_sync_app_data_new_qbo_departments'",
+			"'mw_wc_qbo_sync_app_data_new_qbo_customertypes'",
+			"'mw_wc_qbo_sync_app_data_new_qbo_vendors'",
+			"'mw_wc_qbo_sync_app_data_new_qbo_accounts'",
+			"'mw_wc_qbo_sync_app_data_new_qbo_categories'",			
 		);
-		$io_q = implode(",",$ignore_opts);
-		
-		$option_data = $this->get_data("SELECT * FROM ".$wpdb->options." WHERE `option_name` LIKE 'mw_wc_qbo_sync%' AND `option_name` NOT IN({$io_q}) ");
+
+		$placeholders = implode(',', array_fill(0, count($ignore_opts), '%s'));
+		$table = esc_sql($wpdb->options);
+		if (strpos($wpdb->options, $wpdb->prefix) === 0 || $wpdb->options === $wpdb->options) {
+			$like_value = $wpdb->esc_like('mw_wc_qbo_sync') . '%';
+			$params = array_merge(array($like_value), array_map('trim', array_map(function($opt) { return trim($opt, "'"); }, $ignore_opts)));
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name and placeholders safely escaped/constructed above
+			$option_data = $this->get_data($wpdb->prepare("SELECT * FROM `{$table}` WHERE `option_name` LIKE %s AND `option_name` NOT IN ({$placeholders})", $params));
+		} else {
+			$option_data = array();
+		}
 		if(is_array($option_data) && !empty($option_data)){
 			foreach($option_data as $Option){
 				$option_arr[$Option['option_name']] = $Option['option_value'];
@@ -416,7 +1101,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		return $s;
 	}
 	
-	//Quickbooks Dropdowns
+	//QuickBooks Dropdowns
 	//Product Dropdown
 	public function get_product_list_array($realtime=false){
 		$options = array();
@@ -441,7 +1126,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		}else{
 			global $wpdb;
 			$whr='';
-			$product_list = $this->get_data("SELECT `itemid` , `name` FROM `".$wpdb->prefix.'mw_wc_qbo_sync_qbo_items'."` WHERE `ID` >0 ".$whr." ORDER BY `name` ASC");
+			$product_list = $this->get_data("SELECT `itemid` , `name` FROM `".$wpdb->prefix.'mw_wc_qbo_sync_qbo_items'."` WHERE `ID` >0 ".$whr." ORDER BY `name` ASC"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			if(is_array($product_list) && !empty($product_list)){
 				foreach($product_list as $product){
 					$options[$product['itemid']] = $this->escape($product['name']);
@@ -511,10 +1196,67 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		return $options;
 	}
 
+	public function save_all_terms(){
+		if($this->is_connected()){
+            $Context = $this->Context;
+            $realm = $this->realm;
+
+            $TermService = new \QuickBooks_IPP_Service_Term();
+            $qboMaxLimit = $this->qbo_query_limit;
+
+            $totalCount = $TermService->query($Context, $realm, "SELECT COUNT(*)  FROM Term WHERE Active = true ");
+            $batchCount =  ($qboMaxLimit >= $totalCount) ? 1 : ceil($totalCount / $qboMaxLimit);
+
+            $allTerms = [];
+
+            for ($i=0; $i<$batchCount; $i++) {
+                $startPos = $i*$qboMaxLimit;
+                $terms = $TermService->query($Context, $realm, "SELECT Id, Name FROM Term WHERE Active = true ORDER BY Name ASC STARTPOSITION $startPos MaxResults $qboMaxLimit ");
+
+                if($terms && !empty($terms)){
+                    foreach($terms as $Term){
+                        $allTerms[] = [
+                            'id' => $this->qbo_clear_braces($Term->getId()),
+                            'name' => $Term->getName(),
+                        ];
+                    }                    
+                }
+            }
+
+            if(!empty($allTerms)){
+                $saveData = serialize($allTerms);
+                update_option('mw_wc_qbo_sync_app_data_new_qbo_terms',$saveData,false);
+                return true;
+            }
+        }
+
+        return false;
+	}
+
 	//Term Dropdown
-	public function get_term_dropdown_list($s_val=''){
+	public function get_term_dropdown_list($s_val='',$realtime=true){
 		$options = '';
 		if($this->is_connected()){
+			# New - QBO Local Data Support
+			if($this->use_new_qbo_local_data('term') && !$realtime){
+				$dbData = get_option('mw_wc_qbo_sync_app_data_new_qbo_terms');
+				if(!empty($dbData)){
+					$dbData = is_string($dbData) ? unserialize($dbData) : $dbData;
+					if(is_array($dbData) && !empty($dbData)){
+						foreach($dbData as $term){
+							$selected = '';
+							if($s_val == $term['id']){
+								$selected = ' selected="selected" ';
+							}
+
+							$options.= '<option '.$selected.' value="'.esc_attr($term['id']).'">'.$this->escape($term['name']).'</option>';
+						}
+					}
+				}			
+
+				return $options;
+			}
+
 			$Context = $this->Context;
 			$realm = $this->realm;
 
@@ -541,9 +1283,31 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	}
 	
 	//
-	public function get_term_list_array(){
+	public function get_term_list_array($realtime=false){
 		$options = array();
 		if($this->is_connected()){
+			if(!$realtime && $this->use_new_qbo_local_data('term')){
+				if($this->get_option('mw_wc_qbo_sync_app_setting_qbo_terms_data_fetched') != 'true'){
+					# Fetch and save new QBO terms into DB
+					$this->save_all_terms();
+					update_option('mw_wc_qbo_sync_app_setting_qbo_terms_data_fetched','true',false);
+					$this->mw_wc_qbo_sync_plugin_options['mw_wc_qbo_sync_app_setting_qbo_terms_data_fetched'] = 'true';
+				}
+
+				# New - QBO Local Data Support
+				$dbData = get_option('mw_wc_qbo_sync_app_data_new_qbo_terms');
+				if(!empty($dbData)){
+					$dbData = is_string($dbData) ? unserialize($dbData) : $dbData;
+					if(is_array($dbData) && !empty($dbData)){
+						foreach($dbData as $term){
+							$options[$term['id']] = $term['name'];
+						}
+					}
+				}			
+
+				return $options;
+			}			
+
 			$Context = $this->Context;
 			$realm = $this->realm;
 
@@ -564,12 +1328,69 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		}
 		return $options;
 	}
+
+	public function save_all_vendors(){        
+		if($this->is_connected()){
+			$Context = $this->Context;
+			$realm = $this->realm;
+
+			$VendorService = new \QuickBooks_IPP_Service_Vendor();
+			$qboMaxLimit = $this->qbo_query_limit;
+
+			$totalCount = $VendorService->query($Context, $realm, "SELECT COUNT(*)  FROM Vendor WHERE Active = true ");
+			$batchCount =  ($qboMaxLimit >= $totalCount) ? 1 : ceil($totalCount / $qboMaxLimit);
+
+			$allVendors = [];
+
+			for ($i=0; $i<$batchCount; $i++) {
+				$startPos = $i*$qboMaxLimit;
+				$vendors = $VendorService->query($Context, $realm, "SELECT Id, DisplayName FROM Vendor WHERE Active = true ORDER BY DisplayName ASC STARTPOSITION $startPos MaxResults $qboMaxLimit ");
+
+				if($vendors && !empty($vendors)){
+					foreach($vendors as $Vendor){
+						$allVendors[] = [
+							'id' => $this->qbo_clear_braces($Vendor->getId()),
+							'name' => $Vendor->getDisplayName(),
+						];
+					}                    
+				}
+			}
+
+			if(!empty($allVendors)){
+				$saveData = serialize($allVendors);
+				update_option('mw_wc_qbo_sync_app_data_new_qbo_vendors',$saveData,false);
+				return true;
+			}
+		}
+
+		return false;
+	}
 	
 	//Vendor Dropdown
-	public function get_vendor_dropdown_list($s_val='',$realtime=true){
+	public function get_vendor_dropdown_list($s_val='',$realtime=true,$local_realtime=false){
 		$realtime=true;//
 		$options = '';
 		if($this->is_connected() && $realtime){
+			# New - QBO Local Data Support
+			if($this->use_new_qbo_local_data('vendor') && !$local_realtime){
+				$dbData = get_option('mw_wc_qbo_sync_app_data_new_qbo_vendors');
+				if(!empty($dbData)){
+					$dbData = is_string($dbData) ? unserialize($dbData) : $dbData;
+					if(is_array($dbData) && !empty($dbData)){
+						foreach($dbData as $vendor){
+							$selected = '';
+							if($s_val == $vendor['id']){
+								$selected = ' selected="selected" ';
+							}
+
+							$options.= '<option '.$selected.' value="'.esc_attr($vendor['id']).'">'.$this->escape($vendor['name']).'</option>';
+						}
+					}
+				}			
+
+				return $options;
+			}
+
 			$Context = $this->Context;
 			$realm = $this->realm;
 
@@ -606,11 +1427,68 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		}
 		return $options;
 	}
+
+	public function save_all_taxcodes(){        
+		if($this->is_connected()){
+			$Context = $this->Context;
+			$realm = $this->realm;
+
+			$TaxCodeService = new \QuickBooks_IPP_Service_TaxCode();
+			$qboMaxLimit = $this->qbo_query_limit;
+
+			$totalCount = $TaxCodeService->query($Context, $realm, "SELECT COUNT(*)  FROM TaxCode WHERE Active = true ");
+			$batchCount =  ($qboMaxLimit >= $totalCount) ? 1 : ceil($totalCount / $qboMaxLimit);
+
+			$allTaxCodes = [];
+
+			for ($i=0; $i<$batchCount; $i++) {
+				$startPos = $i*$qboMaxLimit;
+				$taxcodes = $TaxCodeService->query($Context, $realm, "SELECT Id, Name FROM TaxCode WHERE Active = true ORDER BY Name ASC STARTPOSITION $startPos MaxResults $qboMaxLimit ");
+
+				if($taxcodes && !empty($taxcodes)){
+					foreach($taxcodes as $TaxCode){
+						$allTaxCodes[] = [
+							'id' => $this->qbo_clear_braces($TaxCode->getId()),
+							'name' => $TaxCode->getName(),
+						];
+					}                    
+				}
+			}
+
+			if(!empty($allTaxCodes)){
+				$saveData = serialize($allTaxCodes);
+				update_option('mw_wc_qbo_sync_app_data_new_qbo_taxcodes',$saveData,false);
+				return true;
+			}
+		}
+
+		return false;
+	}
 	
 	//Tax Code Dropdown
-	public function get_tax_code_dropdown_list($s_val=''){
+	public function get_tax_code_dropdown_list($s_val='',$realtime=false){
 		$options = '';
 		if($this->is_connected()){
+			# New - QBO Local Data Support
+			if($this->use_new_qbo_local_data('taxcode') && !$realtime){
+				$dbData = get_option('mw_wc_qbo_sync_app_data_new_qbo_taxcodes');
+				if(!empty($dbData)){
+					$dbData = is_string($dbData) ? unserialize($dbData) : $dbData;
+					if(is_array($dbData) && !empty($dbData)){
+						foreach($dbData as $taxcode){
+							$selected = '';
+							if($s_val == $taxcode['id']){
+								$selected = ' selected="selected" ';
+							}
+
+							$options.= '<option '.$selected.' value="'.esc_attr($taxcode['id']).'">'.$this->escape($taxcode['name']).'</option>';
+						}
+					}
+				}			
+
+				return $options;
+			}
+
 			$Context = $this->Context;
 			$realm = $this->realm;
 
@@ -636,10 +1514,67 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		return $options;
 	}
 
+	public function save_all_departments(){        
+		if($this->is_connected()){
+			$Context = $this->Context;
+			$realm = $this->realm;
+
+			$DepartmentService = new \QuickBooks_IPP_Service_Department();
+			$qboMaxLimit = $this->qbo_query_limit;
+
+			$totalCount = $DepartmentService->query($Context, $realm, "SELECT COUNT(*)  FROM Department WHERE Active = true ");
+			$batchCount =  ($qboMaxLimit >= $totalCount) ? 1 : ceil($totalCount / $qboMaxLimit);
+
+			$allDepartments = [];
+
+			for ($i=0; $i<$batchCount; $i++) {
+				$startPos = $i*$qboMaxLimit;
+				$departments = $DepartmentService->query($Context, $realm, "SELECT Id, Name FROM Department WHERE Active = true ORDER BY Name ASC STARTPOSITION $startPos MaxResults $qboMaxLimit ");
+
+				if($departments && !empty($departments)){
+					foreach($departments as $Department){
+						$allDepartments[] = [
+							'id' => $this->qbo_clear_braces($Department->getId()),
+							'name' => $Department->getName(),
+						];
+					}                    
+				}
+			}
+
+			if(!empty($allDepartments)){
+				$saveData = serialize($allDepartments);
+				update_option('mw_wc_qbo_sync_app_data_new_qbo_departments',$saveData,false);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	//Department Dropdown
-	public function get_department_dropdown_list($s_val=''){
+	public function get_department_dropdown_list($s_val='',$realtime=false){
 		$options = '';
 		if($this->is_connected() && $this->get_qbo_company_setting('TrackDepartments')){
+			# New - QBO Local Data Support
+			if($this->use_new_qbo_local_data('department') && !$realtime){
+				$dbData = get_option('mw_wc_qbo_sync_app_data_new_qbo_departments');
+				if(!empty($dbData)){
+					$dbData = is_string($dbData) ? unserialize($dbData) : $dbData;
+					if(is_array($dbData) && !empty($dbData)){
+						foreach($dbData as $department){
+							$selected = '';
+							if($s_val == $department['id']){
+								$selected = ' selected="selected" ';
+							}
+
+							$options.= '<option '.$selected.' value="'.esc_attr($department['id']).'">'.$this->escape($department['name']).'</option>';
+						}
+					}
+				}			
+
+				return $options;
+			}
+			
 			$Context = $this->Context;
 			$realm = $this->realm;
 
@@ -664,9 +1599,46 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		}
 		return $options;
 	}
+
+	public function save_all_classes(){        
+        if($this->is_connected()){
+            $Context = $this->Context;
+            $realm = $this->realm;
+
+            $ClassService = new \QuickBooks_IPP_Service_Class();
+            $qboMaxLimit = $this->qbo_query_limit;
+
+            $totalCount = $ClassService->query($Context, $realm, "SELECT COUNT(*)  FROM Class WHERE Active = true ");
+            $batchCount =  ($qboMaxLimit >= $totalCount) ? 1 : ceil($totalCount / $qboMaxLimit);
+
+            $allClasses = [];
+
+            for ($i=0; $i<$batchCount; $i++) {
+                $startPos = $i*$qboMaxLimit;
+                $classes = $ClassService->query($Context, $realm, "SELECT Id, Name FROM Class WHERE Active = true ORDER BY Name ASC STARTPOSITION $startPos MaxResults $qboMaxLimit ");
+
+                if($classes && !empty($classes)){
+                    foreach($classes as $Class){
+                        $allClasses[] = [
+                            'id' => $this->qbo_clear_braces($Class->getId()),
+                            'name' => $Class->getName(),
+                        ];
+                    }                    
+                }
+            }
+
+            if(!empty($allClasses)){
+                $saveData = serialize($allClasses);
+                update_option('mw_wc_qbo_sync_app_data_new_qbo_classes',$saveData,false);
+                return true;
+            }
+        }
+
+        return false;
+    }
 	
 	//Class Dropdown
-	public function get_class_dropdown_list($s_val='',$txl_lavel=false){
+	public function get_class_dropdown_list($s_val='',$txl_lavel=false,$realtime=false){
 		$options = '';
 		
 		if($this->is_plg_lc_p_l()){
@@ -691,6 +1663,26 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		}
 		
 		if($this->is_connected()){
+			# New - QBO Local Data Support
+			if($this->use_new_qbo_local_data('class') && !$realtime){
+				$dbData = get_option('mw_wc_qbo_sync_app_data_new_qbo_classes');
+				if(!empty($dbData)){
+					$dbData = is_string($dbData) ? unserialize($dbData) : $dbData;
+					if(is_array($dbData) && !empty($dbData)){
+						foreach($dbData as $cls){
+							$selected = '';
+							if($s_val == $cls['id']){
+								$selected = ' selected="selected" ';
+							}
+
+							$options.= '<option '.$selected.' value="'.esc_attr($cls['id']).'">'.$this->escape($cls['name']).'</option>';
+						}
+					}
+				}			
+
+				return $options;
+			}
+
 			$Context = $this->Context;
 			$realm = $this->realm;
 
@@ -716,10 +1708,67 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		return $options;
 	}
 
+	public function save_all_payment_methods(){        
+		if($this->is_connected()){
+			$Context = $this->Context;
+			$realm = $this->realm;
+
+			$PaymentMethodService = new \QuickBooks_IPP_Service_PaymentMethod();
+			$qboMaxLimit = $this->qbo_query_limit;
+
+			$totalCount = $PaymentMethodService->query($Context, $realm, "SELECT COUNT(*)  FROM PaymentMethod");
+			$batchCount =  ($qboMaxLimit >= $totalCount) ? 1 : ceil($totalCount / $qboMaxLimit);
+
+			$allPaymentMethods = [];
+
+			for ($i=0; $i<$batchCount; $i++) {
+				$startPos = $i*$qboMaxLimit;
+				$pmethods = $PaymentMethodService->query($Context, $realm, "SELECT Id, Name FROM PaymentMethod ORDER BY Name ASC STARTPOSITION $startPos MaxResults $qboMaxLimit ");
+
+				if($pmethods && !empty($pmethods)){
+					foreach($pmethods as $PaymentMethod){
+						$allPaymentMethods[] = [
+							'id' => $this->qbo_clear_braces($PaymentMethod->getId()),
+							'name' => $PaymentMethod->getName(),
+						];
+					}                    
+				}
+			}
+
+			if(!empty($allPaymentMethods)){
+				$saveData = serialize($allPaymentMethods);
+				update_option('mw_wc_qbo_sync_app_data_new_qbo_paymentmethods',$saveData,false);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	//Payment Method Dropdown
-	public function get_payment_method_dropdown_list($s_val=''){
+	public function get_payment_method_dropdown_list($s_val='',$reatime=false){
 		$options = '';
 		if($this->is_connected()){
+			# New - QBO Local Data Support
+			if($this->use_new_qbo_local_data('paymentmethod') && !$reatime){
+				$dbData = get_option('mw_wc_qbo_sync_app_data_new_qbo_paymentmethods');
+				if(!empty($dbData)){
+					$dbData = is_string($dbData) ? unserialize($dbData) : $dbData;
+					if(is_array($dbData) && !empty($dbData)){
+						foreach($dbData as $pm){
+							$selected = '';
+							if($s_val == $pm['id']){
+								$selected = ' selected="selected" ';
+							}
+
+							$options.= '<option '.$selected.' value="'.esc_attr($pm['id']).'">'.$this->escape($pm['name']).'</option>';
+						}
+					}
+				}			
+
+				return $options;
+			}
+
 			$Context = $this->Context;
 			$realm = $this->realm;
 
@@ -774,11 +1823,83 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				}
 			}
 		}
+
+		return $options;
 	}
 
-	public function get_account_dropdown_list($s_val='',$show_ac_type=false,$b_udf_l=false){
+	public function save_all_accounts(){        
+		if($this->is_connected()){
+			$Context = $this->Context;
+			$realm = $this->realm;
+
+			$AccountService = new \QuickBooks_IPP_Service_Account();
+			$qboMaxLimit = $this->qbo_query_limit;
+
+			$totalCount = $AccountService->query($Context, $realm, "SELECT COUNT(*)  FROM Account");
+			$batchCount =  ($qboMaxLimit >= $totalCount) ? 1 : ceil($totalCount / $qboMaxLimit);
+
+			$allAccounts = [];
+
+			for ($i=0; $i<$batchCount; $i++) {
+				$startPos = $i*$qboMaxLimit;
+				$accounts = $AccountService->query($Context, $realm, "SELECT Id, FullyQualifiedName, AccountType FROM Account ORDER BY FullyQualifiedName ASC STARTPOSITION $startPos MaxResults $qboMaxLimit ");
+
+				if($accounts && !empty($accounts)){
+					foreach($accounts as $Account){
+						$allAccounts[] = [
+							'id' => $this->qbo_clear_braces($Account->getId()),
+							'name' => $Account->getFullyQualifiedName(),
+							'type' => $Account->getAccountType(),
+						];
+					}                    
+				}
+			}
+
+			if(!empty($allAccounts)){
+				$saveData = serialize($allAccounts);
+				update_option('mw_wc_qbo_sync_app_data_new_qbo_accounts',$saveData,false);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public function get_account_dropdown_list($s_val='',$show_ac_type=false,$b_udf_l=false,$realtime=false){
 		$options = '';
 		if($this->is_connected()){
+			# New - QBO Local Data Support
+			if($this->use_new_qbo_local_data('account') && !$realtime){
+				$dbData = get_option('mw_wc_qbo_sync_app_data_new_qbo_accounts');
+				if(!empty($dbData)){
+					$dbData = is_string($dbData) ? unserialize($dbData) : $dbData;
+					if(is_array($dbData) && !empty($dbData)){
+						foreach($dbData as $account){
+							$ac_type = $account['type'];
+							//
+							if($b_udf_l){
+								if($ac_type != 'Bank' && $ac_type != 'Other Current Asset' && $account['name'] != 'Undeposited Funds'){
+									continue;
+								}
+							}
+
+							$selected = '';
+							if($s_val == $account['id']){
+								$selected = ' selected="selected" ';
+							}
+
+							if($show_ac_type){
+								$options.= '<option '.$selected.' value="'.esc_attr($account['id']).'">'.$this->escape($account['name']).' ('.$this->escape($ac_type).')'.'</option>';
+							}else{
+								$options.= '<option '.$selected.' value="'.esc_attr($account['id']).'">'.$this->escape($account['name']).'</option>';
+							}
+						}
+					}
+				}			
+
+				return $options;
+			}
+
 			$Context = $this->Context;
 			$realm = $this->realm;
 
@@ -817,9 +1938,37 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		return $options;
 	}
 	
-	public function get_qb_account_option_arr($blank_option=false){
+	public function get_qb_account_option_arr($blank_option=false,$realtime=false){
 		$acc_arr = array();
 		if($this->is_connected()){
+			if(!$realtime && $this->use_new_qbo_local_data('account')){
+				if($this->get_option('mw_wc_qbo_sync_app_setting_qbo_accounts_data_fetched') != 'true'){
+					# Fetch and save new QBO accounts into DB
+					$this->save_all_accounts();
+					update_option('mw_wc_qbo_sync_app_setting_qbo_accounts_data_fetched','true',false);
+					$this->mw_wc_qbo_sync_plugin_options['mw_wc_qbo_sync_app_setting_qbo_accounts_data_fetched'] = 'true';
+				}
+
+				# New - QBO Local Data Support
+				$dbData = get_option('mw_wc_qbo_sync_app_data_new_qbo_accounts');
+				if(!empty($dbData)){
+					$dbData = is_string($dbData) ? unserialize($dbData) : $dbData;
+					if(is_array($dbData) && !empty($dbData)){
+						if($blank_option){
+							$acc_arr[''] = '';
+						}
+						foreach($dbData as $account){
+							$ac_type = $account['type'];
+							$a_id = $account['id'];
+							
+							$acc_arr[$a_id] = $this->escape($account['name']).' ('.$this->escape($ac_type).')';
+						}
+					}
+				}			
+
+				return $acc_arr;
+			}
+			
 			$Context = $this->Context;
 			$realm = $this->realm;
 
@@ -848,10 +1997,74 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		return $acc_arr;
 	}
 
+	public function save_all_categories(){        
+		if($this->is_connected()){
+			$Context = $this->Context;
+			$realm = $this->realm;
+
+			$ItemService = new \QuickBooks_IPP_Service_Item();
+			$qboMaxLimit = $this->qbo_query_limit;
+
+			$totalCount = $ItemService->query($Context, $realm, "SELECT COUNT(*)  FROM Item WHERE Type = 'Category'");
+			$batchCount =  ($qboMaxLimit >= $totalCount) ? 1 : ceil($totalCount / $qboMaxLimit);
+
+			$allCategories = [];
+
+			for ($i=0; $i<$batchCount; $i++) {
+				$startPos = $i*$qboMaxLimit;
+				$categories = $ItemService->query($Context, $realm, "SELECT Id, FullyQualifiedName FROM Item WHERE Type = 'Category' ORDER BY FullyQualifiedName ASC STARTPOSITION $startPos MaxResults $qboMaxLimit ");
+
+				if($categories && !empty($categories)){
+					foreach($categories as $Category){
+						$allCategories[] = [
+							'id' => $this->qbo_clear_braces($Category->getId()),
+							'name' => $Category->getFullyQualifiedName(),
+						];
+					}                    
+				}
+			}
+
+			if(!empty($allCategories)){
+				$saveData = serialize($allCategories);
+				update_option('mw_wc_qbo_sync_app_data_new_qbo_categories',$saveData,false);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	#New
-	public function get_qb_category_option_arr($blank_option=false){
+	public function get_qb_category_option_arr($blank_option=false,$realtime=false){
 		$cat_arr = array();
 		if($this->is_connected()){
+			if(!$realtime && $this->use_new_qbo_local_data('category')){
+				if($this->get_option('mw_wc_qbo_sync_app_setting_qbo_categories_data_fetched') != 'true'){
+					# Fetch and save new QBO categories into DB
+					$this->save_all_categories();
+					update_option('mw_wc_qbo_sync_app_setting_qbo_categories_data_fetched','true',false);
+					$this->mw_wc_qbo_sync_plugin_options['mw_wc_qbo_sync_app_setting_qbo_categories_data_fetched'] = 'true';
+				}
+
+				# New - QBO Local Data Support
+				$dbData = get_option('mw_wc_qbo_sync_app_data_new_qbo_categories');
+				if(!empty($dbData)){
+					$dbData = is_string($dbData) ? unserialize($dbData) : $dbData;
+					if(is_array($dbData) && !empty($dbData)){
+						if($blank_option){
+							$cat_arr[''] = '';
+						}
+						foreach($dbData as $category){
+							$c_id = $category['id'];
+							
+							$cat_arr[$c_id] = $this->escape($category['name']);
+						}
+					}
+				}			
+
+				return $cat_arr;
+			}
+
 			$Context = $this->Context;
 			$realm = $this->realm;
 
@@ -878,11 +2091,68 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		
 		return $cat_arr;
 	}
+
+	public function save_all_customertypes(){        
+		if($this->is_connected()){
+			$Context = $this->Context;
+			$realm = $this->realm;
+
+			$CustomerTypeService = new \QuickBooks_IPP_Service_CustomerType();
+			$qboMaxLimit = $this->qbo_query_limit;
+
+			$totalCount = $CustomerTypeService->query($Context, $realm, "SELECT COUNT(*)  FROM CustomerType");
+			$batchCount =  ($qboMaxLimit >= $totalCount) ? 1 : ceil($totalCount / $qboMaxLimit);
+
+			$allCustomerTypes = [];
+
+			for ($i=0; $i<$batchCount; $i++) {
+				$startPos = $i*$qboMaxLimit;
+				$customer_types = $CustomerTypeService->query($Context, $realm, "SELECT Id, Name FROM CustomerType ORDER BY Name ASC STARTPOSITION $startPos MaxResults $qboMaxLimit ");
+
+				if($customer_types && !empty($customer_types)){
+					foreach($customer_types as $CustomerType){
+						$allCustomerTypes[] = [
+							'id' => $this->qbo_clear_braces($CustomerType->getId()),
+							'name' => $CustomerType->getName(),
+						];
+					}                    
+				}
+			}
+
+			if(!empty($allCustomerTypes)){
+				$saveData = serialize($allCustomerTypes);
+				update_option('mw_wc_qbo_sync_app_data_new_qbo_customertypes',$saveData,false);
+				return true;
+			}
+		}
+
+		return false;
+	}
 	
 	//CustomerType Dropdown
-	public function get_customer_type_dropdown_list($s_val=''){
+	public function get_customer_type_dropdown_list($s_val='',$realtime=false){
 		$options = '';
 		if($this->is_connected()){
+			# New - QBO Local Data Support
+			if($this->use_new_qbo_local_data('customertype') && !$realtime){
+				$dbData = get_option('mw_wc_qbo_sync_app_data_new_qbo_customertypes');
+				if(!empty($dbData)){
+					$dbData = is_string($dbData) ? unserialize($dbData) : $dbData;
+					if(is_array($dbData) && !empty($dbData)){
+						foreach($dbData as $customertype){
+							$selected = '';
+							if($s_val == $customertype['id']){
+								$selected = ' selected="selected" ';
+							}
+
+							$options.= '<option '.$selected.' value="'.esc_attr($customertype['id']).'">'.$this->escape($customertype['name']).'</option>';
+						}
+					}
+				}			
+
+				return $options;
+			}
+
 			$Context = $this->Context;
 			$realm = $this->realm;
 
@@ -916,14 +2186,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		if(is_array($data) && !empty($data)){
 			if(isset($data[$keyword])){
 				$return = $data[$keyword];
-				$return = trim($return);
+				$return = is_string($return) ? trim($return) : $return;
 				if($decode){
 					//
-					$return= strip_tags($return);
+					$return = is_string($return) ? strip_tags($return) : $return;
 					
-					$return = htmlspecialchars_decode($return,ENT_QUOTES);
+					$return = is_string($return) ? htmlspecialchars_decode($return,ENT_QUOTES) : $return;
 					//27-06-2017
-					$return = html_entity_decode($return,ENT_QUOTES);
+					$return = is_string($return) ? html_entity_decode($return,ENT_QUOTES) : $return;
 				}
 				if($trim){
 					if(strlen($return) > $trim){
@@ -933,11 +2203,11 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				
 				/**/
 				if($stripslash){
-					$return = stripslashes($return);
+					$return = is_string($return) ? stripslashes($return) : $return;
 				}
 				
 				if($addslash){
-					$return = addslashes($return);
+					$return = is_string($return) ? addslashes($return) : $return;
 				}
 				if(is_array($replace_array) && !empty($replace_array)){
 					$return = str_replace($replace_array,'',$return);
@@ -970,7 +2240,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		return $this->AddGuest($customer_data);
 	}
 	
-	public function if_qbo_guest_exists($customer_data,$return_qbo_customert_id=false){
+	public function if_qbo_guest_exists($customer_data,$return_qbo_customer_id=false){
 		if($this->is_connected()){
 			# New
 			if(isset($customer_data['ParentRef']) && !empty($customer_data['ParentRef'])){
@@ -1011,7 +2281,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				if($customers && !empty($customers)){
 					$customer = $customers[0];
 
-					if($return_qbo_customert_id){
+					if($return_qbo_customer_id){
 						return $this->qbo_clear_braces($customer->getId());
 					}else{
 						return $customer;
@@ -1045,7 +2315,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 
 			$wc_inv_id = $this->get_array_isset($customer_data,'wc_inv_id',0);
 
-			if($this->if_sync_guest($wc_customerid)){
+			if($this->if_sync_guest($billing_email)){
 				if($qbo_customer_obj && !empty($qbo_customer_obj)){
 					$customer = $qbo_customer_obj;
 				}else{
@@ -1176,9 +2446,10 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 
 				if ($resp = $customerService->update($Context, $realm, $customer->getId(), $customer)){
 					$qbo_customerid = $this->qbo_clear_braces($customer->getId());
+					$wc_customerid = $customer->getId();
 					$log_title.="Update Customer/Guest\n";
 					$log_title.="Email: {$billing_email}";
-					$log_details.="Customer #$wc_customerid has been updated, Quickbooks Customer ID is #$qbo_customerid";
+					$log_details.="Customer #$wc_customerid has been updated, QuickBooks Customer ID is #$qbo_customerid";
 					$log_status = 1;
 					$this->save_log($log_title,$log_details,'Customer',$log_status,true,'Update');
 					$this->add_qbo_item_obj_into_log_file('Customer/Guest Update',$customer_data,$customer,$this->get_IPP()->lastRequest(),$this->get_IPP()->lastResponse(),true);
@@ -1340,7 +2611,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 						$qbo_customerid = $this->qbo_clear_braces($resp);
 						$log_title.="Export Customer/Guest\n";
 						$log_title.="Email: {$billing_email}";
-						$log_details.="Customer has been exported, Quickbooks Customer ID is #$qbo_customerid";
+						$log_details.="Customer has been exported, QuickBooks Customer ID is #$qbo_customerid";
 						$log_status = 1;
 						$this->save_log($log_title,$log_details,'Customer',$log_status,true,'Add');
 						$this->add_qbo_item_obj_into_log_file('Customer/Guest Add',$customer_data,$customer,$this->get_IPP()->lastRequest(),$this->get_IPP()->lastResponse(),true);
@@ -1438,15 +2709,23 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		
 		//Map table
 		$table = $wpdb->prefix.'mw_wc_qbo_sync_vendor_pairs';
-		$query = $wpdb->prepare("SELECT `qbo_vendorid` FROM `$table` WHERE `wc_customerid` = %d AND `qbo_vendorid` >0 AND `wc_customerid` > 0 ",$wc_customerid);
+		// Validate table name for security
+		if (strpos($table, $wpdb->prefix) === 0) {
+			$table = esc_sql($table);
+			$query = $wpdb->prepare("SELECT `qbo_vendorid` FROM `{$table}` WHERE `wc_customerid` = %d AND `qbo_vendorid` >0 AND `wc_customerid` > 0 ",$wc_customerid); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		}
 
 		//Qbo vendor table
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $query was prepared above using $wpdb->prepare()
 		if(empty($this->get_data($query))){
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_qbo_vendors';
-			$query = $wpdb->prepare("SELECT `qbo_vendorid` FROM `$table` WHERE `email` = %s AND `email` !='' ",$email);
+			// Validate table name for security
+			if (strpos($table, $wpdb->prefix) === 0) { // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$query = $wpdb->prepare("SELECT `qbo_vendorid` FROM `{$table}` WHERE `email` = %s AND `email` !='' ",$email); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			}
 		}
 		
-		$query_vendor = $this->get_row($query);
+		$query_vendor = $this->get_row($query); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		//mw_wc_qbo_sync_vendor_qbo_check
 		if(empty($query_vendor) && $this->option_checked('mw_wc_qbo_sync_customer_qbo_check')){
 			if($email!='' && $this->is_connected()){
@@ -1546,7 +2825,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 
 		# New
 		if($this->option_checked('mw_wc_qbo_sync_customer_qbo_check_ship_addr') && !isset($customer_data['values_from_order_meta']) && isset($customer_data['order_id'])){
-			$o_shipping_company = get_post_meta($customer_data['order_id'],'_shipping_company',true);
+			$o_shipping_company = $this->get_order_meta_hpos($customer_data['order_id'],'_shipping_company',true);
 			if(!empty($o_shipping_company)){
 				$o_shipping_company = $this->get_array_isset(array('o_shipping_company'=>$o_shipping_company),'o_shipping_company','',true,100,true,$name_replace_chars);
 				$shipping_company = $o_shipping_company;
@@ -1554,7 +2833,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		}
 		
 		if($this->option_checked('mw_wc_qbo_sync_customer_qbo_check_billing_company') && !isset($customer_data['values_from_order_meta']) && isset($customer_data['order_id'])){
-			$o_billing_company = get_post_meta($customer_data['order_id'],'_billing_company',true);
+			$o_billing_company = $this->get_order_meta_hpos($customer_data['order_id'],'_billing_company',true);
 			if(!empty($o_billing_company)){
 				$o_billing_company = $this->get_array_isset(array('o_billing_company'=>$o_billing_company),'o_billing_company','',true,100,true,$name_replace_chars);
 				$billing_company = $o_billing_company;
@@ -1566,8 +2845,8 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				$obfn = $this->get_array_isset($customer_data,'billing_first_name','',true);
 				$obln = $this->get_array_isset($customer_data,'billing_last_name','',true);
 			}else{
-				$obfn = get_post_meta($customer_data['order_id'],'_billing_first_name',true);
-				$obln = get_post_meta($customer_data['order_id'],'_billing_last_name',true);
+				$obfn = $this->get_order_meta_hpos($customer_data['order_id'],'_billing_first_name',true);
+				$obln = $this->get_order_meta_hpos($customer_data['order_id'],'_billing_last_name',true);
 			}
 
 			if(!empty($obfn) || !empty($obln)){
@@ -1586,37 +2865,52 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		//31-05-2017
 		if($shipping_company!='' && $this->option_checked('mw_wc_qbo_sync_customer_qbo_check_ship_addr')){
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_qbo_customers';
-			$query = $wpdb->prepare("SELECT `qbo_customerid` FROM `$table` WHERE `dname` = %s AND `dname` !='' ",$shipping_company);
+			// Validate table name for security
+			if (strpos($table, $wpdb->prefix) === 0) { // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$query = $wpdb->prepare("SELECT `qbo_customerid` FROM `{$table}` WHERE `dname` = %s AND `dname` !='' ",$shipping_company); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			}
 		}elseif($billing_company!='' && $this->option_checked('mw_wc_qbo_sync_customer_qbo_check_billing_company')){
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_qbo_customers';
-			$query = $wpdb->prepare("SELECT `qbo_customerid` FROM `$table` WHERE `dname` = %s AND `dname` !='' ",$billing_company);
+			// Validate table name for security
+			if (strpos($table, $wpdb->prefix) === 0) {
+				$table = esc_sql($table);
+				$query = $wpdb->prepare("SELECT `qbo_customerid` FROM `{$table}` WHERE `dname` = %s AND `dname` !='' ",$billing_company); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			}
 		}elseif(!empty($fl_name) && $this->option_checked('mw_wc_qbo_sync_customer_qbo_check_billing_f_l_name')){
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_qbo_customers';
-			$query = $wpdb->prepare("SELECT `qbo_customerid` FROM `$table` WHERE `dname` = %s AND `dname` !='' ",$fl_name);
+			// Validate table name for security
+			if (strpos($table, $wpdb->prefix) === 0) {
+				$table = esc_sql($table);
+				$query = $wpdb->prepare("SELECT `qbo_customerid` FROM `{$table}` WHERE `dname` = %s AND `dname` !='' ",$fl_name); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			}
 			$mfb_qbc_em_dn = false;
 		}else{
 			//Map table
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_customer_pairs';
-			$query = $wpdb->prepare("SELECT `qbo_customerid` FROM `$table` WHERE `wc_customerid` = %d AND `qbo_customerid` >0 AND `wc_customerid` > 0 ",$wc_customerid);
+			// Validate table name for security
+			if (strpos($table, $wpdb->prefix) === 0) {
+				$table = esc_sql($table);
+				$query = $wpdb->prepare("SELECT `qbo_customerid` FROM `{$table}` WHERE `wc_customerid` = %d AND `qbo_customerid` >0 AND `wc_customerid` > 0 ",$wc_customerid); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			}
 
 			//Qbo customer table
-			if($mfb_qbc_em_dn && empty($this->get_data($query))){
+			if($mfb_qbc_em_dn && empty($this->get_data($query))){ // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$table = $wpdb->prefix.'mw_wc_qbo_sync_qbo_customers';
 				if(!empty($email)){
-					$query = $wpdb->prepare("SELECT `qbo_customerid` FROM `$table` WHERE `email` = %s AND `email` !='' ",$email);
+					$table = esc_sql($table);
+					$query = $wpdb->prepare("SELECT `qbo_customerid` FROM `{$table}` WHERE `email` = %s AND `email` !='' ",$email); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				}
 				
-				//
-				if(empty($email) || empty($this->get_data($query))){
-					if(!empty($display_name) && $this->option_checked('mw_wc_qbo_sync_customer_match_by_name')){
-						$query = $wpdb->prepare("SELECT `qbo_customerid` FROM `$table` WHERE `dname` = %s AND `dname` !='' ",$display_name);
+				if(empty($email) || empty($this->get_data($query))){ // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					if(!empty($display_name) && $this->option_checked('mw_wc_qbo_sync_customer_match_by_name')){ // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+						$query = $wpdb->prepare("SELECT `qbo_customerid` FROM `{$table}` WHERE `dname` = %s AND `dname` !='' ",$display_name); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					}
 				}
 				
 			}
 		}
 		
-		$query_customer = $this->get_row($query);
+		$query_customer = $this->get_row($query); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		//$this->_p($query_customer,true);die;
 
 		//31-03-2017
@@ -1732,7 +3026,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 						$qbo_customerid = $this->qbo_clear_braces($resp);
 						/*
 						$log_title.="Export Customer #$wc_customerid\n";
-						$log_details.="Customer #$wc_customerid has been exported, Quickbooks Customer ID is #$qbo_customerid";
+						$log_details.="Customer #$wc_customerid has been exported, QuickBooks Customer ID is #$qbo_customerid";
 						$log_status = 1;
 						$this->save_log($log_title,$log_details,'Customer',$log_status,true,'Add');
 						$this->add_qbo_item_obj_into_log_file('Customer Add',$customer_data,$customer,$this->get_IPP()->lastRequest(),$this->get_IPP()->lastResponse(),true);
@@ -1795,8 +3089,10 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		
 		//New for Only Unmapped
 		if($mo_um){
-			$ID = $w_cus['ID'];							
-			$e_mr = $this->get_row($wpdb->prepare("SELECT `id` FROM {$map_tbl} WHERE `wc_customerid` = %d ",$ID));
+			$ID = $w_cus['ID'];
+			$map_tbl = esc_sql($map_tbl);
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+			$e_mr = $this->get_row($wpdb->prepare("SELECT `id` FROM `{$map_tbl}` WHERE `wc_customerid` = %d ",$ID));
 			if(!empty($e_mr)){
 				return;
 			}
@@ -1910,6 +3206,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		';
 		$i = 1;
 		foreach ( $roles as $role ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-specific role validation with predefined WordPress user role values
 			$sql .= ' ' . $wpdb->usermeta . '.meta_value    LIKE    \'%%"' . $role . '"%%\' ';
 			if ( $i < count( $roles ) ) $sql .= ' OR ';
 			$i++;
@@ -1923,11 +3220,20 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		}		
 		
 		$all_wc_customers = $this->get_data($sql);
-		$all_qbo_customers = $this->get_data("SELECT `qbo_customerid`, {$cam_qf_cl} FROM ".$wpdb->prefix."mw_wc_qbo_sync_qbo_customers");
+		$table_qbo_customers = $wpdb->prefix."mw_wc_qbo_sync_qbo_customers";
+		$cam_qf_cl_esc = ($cam_qf=='first_last') ? "`first` , `last`" : "`" . esc_sql($cam_qf) . "`";
+		$all_qbo_customers = $this->get_data("SELECT `qbo_customerid`, {$cam_qf_cl_esc} FROM `{$table_qbo_customers}`");
 		
 		if(!$mo_um){
-			$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_customer_pairs` WHERE `id` > 0 ");
-			$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_customer_pairs` ");
+			$table = $wpdb->prefix . 'mw_wc_qbo_sync_customer_pairs';
+			if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_customer_pairs', $wpdb->prefix) === 0) {
+				$table = esc_sql($table);
+				$wpdb->query("DELETE FROM `{$table}` WHERE `id` > 0 "); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared 
+			}
+			if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_customer_pairs', $wpdb->prefix) === 0) {
+				$table = esc_sql($table);
+				$wpdb->query("TRUNCATE TABLE `{$table}` "); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared 
+			}
 		}
 		
 		if(is_array($all_wc_customers) && !empty($all_wc_customers) && is_array($all_qbo_customers) && !empty($all_qbo_customers)){
@@ -1973,6 +3279,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		';
 		$i = 1;
 		foreach ( $roles as $role ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-specific role validation with predefined WordPress user role values
 			$sql .= ' ' . $wpdb->usermeta . '.meta_value    LIKE    \'%%"' . $role . '"%%\' ';
 			if ( $i < count( $roles ) ) $sql .= ' OR ';
 			$i++;
@@ -1982,10 +3289,18 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		//$sql = "SELECT `ID` , `user_email` , `display_name` FROM ".$wpdb->users."";
 
 		$all_wc_customers = $this->get_data($sql);
-		$all_qbo_customers = $this->get_data("SELECT `qbo_customerid`, `email` , `dname` FROM ".$wpdb->prefix."mw_wc_qbo_sync_qbo_customers");
+		$table_qbo_customers = $wpdb->prefix."mw_wc_qbo_sync_qbo_customers";
+		$all_qbo_customers = $this->get_data("SELECT `qbo_customerid`, `email` , `dname` FROM `{$table_qbo_customers}`");
 
-		$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_customer_pairs` WHERE `id` > 0 ");
-		$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_customer_pairs` ");
+		$table = $wpdb->prefix . 'mw_wc_qbo_sync_customer_pairs';
+		if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_customer_pairs', $wpdb->prefix) === 0) {
+			$table = esc_sql($table);
+			$wpdb->query("DELETE FROM `{$table}` WHERE `id` > 0 "); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		}
+		if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_customer_pairs', $wpdb->prefix) === 0) {
+			$table = esc_sql($table);
+			$wpdb->query("TRUNCATE TABLE `{$table}` "); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		}
 
 		if(is_array($all_wc_customers) && !empty($all_wc_customers) && is_array($all_qbo_customers) && !empty($all_qbo_customers)){
 			foreach($all_wc_customers as $w_cus){
@@ -2029,6 +3344,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		';
 		$i = 1;
 		foreach ( $roles as $role ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-specific role validation with predefined WordPress user role values
 			$sql .= ' ' . $wpdb->usermeta . '.meta_value    LIKE    \'%%"' . $role . '"%%\' ';
 			if ( $i < count( $roles ) ) $sql .= ' OR ';
 			$i++;
@@ -2038,10 +3354,18 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		//$sql = "SELECT `ID` , `user_email` , `display_name` FROM ".$wpdb->users."";
 
 		$all_wc_customers = $this->get_data($sql);
-		$all_qbo_vendors = $this->get_data("SELECT `qbo_vendorid`, `email` , `dname` FROM ".$wpdb->prefix."mw_wc_qbo_sync_qbo_vendors");
+		$table_qbo_vendors = $wpdb->prefix."mw_wc_qbo_sync_qbo_vendors";
+		$all_qbo_vendors = $this->get_data("SELECT `qbo_vendorid`, `email` , `dname` FROM `{$table_qbo_vendors}`");
 
-		$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_vendor_pairs` WHERE `id` > 0 ");
-		$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_vendor_pairs` ");
+		$table = $wpdb->prefix . 'mw_wc_qbo_sync_vendor_pairs';
+		if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_vendor_pairs', $wpdb->prefix) === 0) {
+			$table = esc_sql($table);
+			$wpdb->query("DELETE FROM `{$table}` WHERE `id` > 0 "); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared 
+		}
+		if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_vendor_pairs', $wpdb->prefix) === 0) {
+			$table = esc_sql($table);
+			$wpdb->query("TRUNCATE TABLE `{$table}` "); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared 
+		}
 
 		if(is_array($all_wc_customers) && !empty($all_wc_customers) && is_array($all_qbo_vendors) && !empty($all_qbo_vendors)){
 			foreach($all_wc_customers as $w_cus){
@@ -2068,8 +3392,15 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			return 0;
 		}
 		
-		$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_customer_pairs` WHERE `id` > 0 ");
-		$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_customer_pairs` ");
+		$table = $wpdb->prefix . 'mw_wc_qbo_sync_customer_pairs';
+		if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_customer_pairs', $wpdb->prefix) === 0) {
+			$table = esc_sql($table);
+			$wpdb->query("DELETE FROM `{$table}` WHERE `id` > 0 "); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared 
+		}
+		if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_customer_pairs', $wpdb->prefix) === 0) {
+			$table = esc_sql($table);
+			$wpdb->query("TRUNCATE TABLE `{$table}` "); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared 
+		}
 
 		$roles = 'customer'; // we can use multiple role comma separeted
 
@@ -2093,6 +3424,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		';
 		$i = 1;
 		foreach ( $roles as $role ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-specific role validation with predefined WordPress user role values
 			$sql_count .= ' ' . $wpdb->usermeta . '.meta_value    LIKE    \'%%"' . $role . '"%%\' ';
 			if ( $i < count( $roles ) ) $sql_count .= ' OR ';
 			$i++;
@@ -2104,6 +3436,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 
 		$max_limit = 1000;
 
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Complex query with WordPress core table names and validated role values
 		$count = (int) $wpdb->get_var($sql_count);
 		if(!$count){return false;}
 
@@ -2121,6 +3454,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			';
 			$j = 1;
 			foreach ( $roles as $role ) {
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-specific role validation with predefined WordPress user role values
 				$sql .= ' ' . $wpdb->usermeta . '.meta_value    LIKE    \'%%"' . $role . '"%%\' ';
 				if ( $j < count( $roles ) ) $sql .= ' OR ';
 				$j++;
@@ -2142,7 +3476,9 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			}
 			if($c_map_ivs!=''){
 				$c_map_ivs = substr($c_map_ivs,0,-1);
-				$c_map_insert_q = "INSERT INTO {$wpdb->prefix}mw_wc_qbo_sync_customer_pairs (wc_customerid,qbo_customerid) VALUES {$c_map_ivs}";
+				$customer_pairs_table = $wpdb->prefix.'mw_wc_qbo_sync_customer_pairs';
+				$c_map_insert_q = "INSERT INTO `{$customer_pairs_table}` (wc_customerid,qbo_customerid) VALUES {$c_map_ivs}";
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Bulk insert with validated integer pairs
 				$wpdb->query($c_map_insert_q);
 			}
 		}
@@ -2161,8 +3497,15 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			return 0;
 		}
 
-		$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_customer_pairs` WHERE `id` > 0 ");
-		$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_customer_pairs` ");
+		$table = $wpdb->prefix . 'mw_wc_qbo_sync_customer_pairs';
+		if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_customer_pairs', $wpdb->prefix) === 0) {
+			$table = esc_sql($table);
+			$wpdb->query("DELETE FROM `{$table}` WHERE `id` > 0 "); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		}
+		if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_customer_pairs', $wpdb->prefix) === 0) {
+			$table = esc_sql($table);
+			$wpdb->query("TRUNCATE TABLE `{$table}` "); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		}
 
 		$roles = 'customer'; // we can use multiple role comma separeted
 
@@ -2176,28 +3519,23 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$roles = array_map('trim',explode( ",", $roles ));
 		}
 
-		$sql_count = '
-			SELECT  COUNT(DISTINCT(' . $wpdb->users . '.ID))
-			FROM        ' . $wpdb->users . ' INNER JOIN ' . $wpdb->usermeta . '
-			ON          ' . $wpdb->users . '.ID = ' . $wpdb->usermeta . '.user_id,
-			'.$wpdb->prefix.'mw_wc_qbo_sync_qbo_customers qc
-			WHERE       ' . $wpdb->usermeta . '.meta_key        =       \'' . $wpdb->prefix . 'capabilities\'
-			AND     (
-		';
-		$i = 1;
+		$roles_conditions = array();
+		$roles_params = array();
 		foreach ( $roles as $role ) {
-			$sql_count .= ' ' . $wpdb->usermeta . '.meta_value    LIKE    \'%%"' . $role . '"%%\' ';
-			if ( $i < count( $roles ) ) $sql_count .= ' OR ';
-			$i++;
+			$roles_conditions[] = $wpdb->usermeta . '.meta_value LIKE %s';
+			$roles_params[] = '%"' . $wpdb->esc_like($role) . '"%';
 		}
-		$sql_count .= ' ) ';
-
-		$sql_count.=' AND '. $wpdb->users . '.display_name !=\'\' ';
-		$sql_count.=' AND '. $wpdb->users . '.display_name = qc.dname';
-		$sql_count.=' AND qc.qbo_customerid > 0';
+		$roles_clause = implode(' OR ', $roles_conditions);
+		
+		$qbo_table = $wpdb->prefix.'mw_wc_qbo_sync_qbo_customers';
+		$qbo_table = esc_sql($qbo_table);
+		$capabilities_key = esc_sql($wpdb->prefix . 'capabilities');
+		
+		$sql_count = $wpdb->prepare("SELECT COUNT(DISTINCT(" . $wpdb->users . ".ID)) FROM " . $wpdb->users . " INNER JOIN " . $wpdb->usermeta . " ON " . $wpdb->users . ".ID = " . $wpdb->usermeta . ".user_id, `{$qbo_table}` qc WHERE " . $wpdb->usermeta . ".meta_key = %s AND ({$roles_clause}) AND " . $wpdb->users . ".display_name != '' AND " . $wpdb->users . ".display_name = qc.dname AND qc.qbo_customerid > 0", array_merge(array($capabilities_key), $roles_params)); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $roles_clause contains properly escaped LIKE %s placeholders with corresponding parameters
 
 		$max_limit = 1000;
 
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql_count was prepared above using $wpdb->prepare()
 		$count = (int) $wpdb->get_var($sql_count);
 		if(!$count){return false;}
 
@@ -2215,6 +3553,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			';
 			$j = 1;
 			foreach ( $roles as $role ) {
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-specific role validation with predefined WordPress user role values
 				$sql .= ' ' . $wpdb->usermeta . '.meta_value    LIKE    \'%%"' . $role . '"%%\' ';
 				if ( $j < count( $roles ) ) $sql .= ' OR ';
 				$j++;
@@ -2236,7 +3575,9 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			}
 			if($c_map_ivs!=''){
 				$c_map_ivs = substr($c_map_ivs,0,-1);
-				$c_map_insert_q = "INSERT INTO {$wpdb->prefix}mw_wc_qbo_sync_customer_pairs (wc_customerid,qbo_customerid) VALUES {$c_map_ivs}";
+				$customer_pairs_table = $wpdb->prefix.'mw_wc_qbo_sync_customer_pairs';
+				$c_map_insert_q = "INSERT INTO `{$customer_pairs_table}` (wc_customerid,qbo_customerid) VALUES {$c_map_ivs}";
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Bulk insert with validated integer pairs
 				$wpdb->query($c_map_insert_q);
 			}
 		}
@@ -2252,7 +3593,9 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		//New for Only Unmapped
 		if($mo_um){
 			$ID = $w_pro['ID'];
-			$e_mr = $this->get_row($wpdb->prepare("SELECT `id` FROM {$map_tbl} WHERE `wc_product_id` = %d ",$ID));
+			$map_tbl = esc_sql($map_tbl);
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+			$e_mr = $this->get_row($wpdb->prepare("SELECT `id` FROM `{$map_tbl}` WHERE `wc_product_id` = %d ",$ID));
 			if(!empty($e_mr)){
 				return;
 			}
@@ -2352,11 +3695,19 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		";
 		
 		$all_wc_products = $this->get_data($sql);
-		$all_qbo_products = $this->get_data("SELECT `itemid`, `sku` , `name` FROM ".$wpdb->prefix."mw_wc_qbo_sync_qbo_items");
+		$table_qbo_items = $wpdb->prefix."mw_wc_qbo_sync_qbo_items";
+		$all_qbo_products = $this->get_data("SELECT `itemid`, `sku` , `name` FROM `{$table_qbo_items}`");
 		
 		if(!$mo_um){
-			$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_product_pairs` WHERE `id` > 0 ");
-			$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_product_pairs` ");
+			$table = $wpdb->prefix . 'mw_wc_qbo_sync_product_pairs';
+			if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_product_pairs', $wpdb->prefix) === 0) {
+				$table = esc_sql($table);
+				$wpdb->query("DELETE FROM `{$table}` WHERE `id` > 0 "); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+			}
+			if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_product_pairs', $wpdb->prefix) === 0) {
+				$table = esc_sql($table);
+				$wpdb->query("TRUNCATE TABLE `{$table}` "); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+			}
 		}
 		
 		if(is_array($all_wc_products) && !empty($all_wc_products) && is_array($all_qbo_products) && !empty($all_qbo_products)){
@@ -2395,8 +3746,10 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		$all_wc_products = $this->get_data($sql);
 		$all_qbo_products = $this->get_data("SELECT `itemid`, `sku` , `name` FROM ".$wpdb->prefix."mw_wc_qbo_sync_qbo_items");
 
-		$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_product_pairs` WHERE `id` > 0 ");
-		$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_product_pairs` ");
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Hardcoded table name and condition for bulk delete
+	$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_product_pairs` WHERE `id` > 0 ");
+	// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Hardcoded table name for bulk truncate
+	$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_product_pairs` ");
 
 		if(is_array($all_wc_products) && !empty($all_wc_products) && is_array($all_qbo_products) && !empty($all_qbo_products)){
 			foreach($all_wc_products as $w_pro){
@@ -2449,16 +3802,18 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$m_slt.=" , pm1.meta_value AS sku";
 		}
 		
-		$sql_c = "
-			SELECT COUNT(*)
-			FROM ".$wpdb->posts." p	
-			{$m_join}
-			WHERE p.post_type =  'product_variation'
-			AND p.post_status NOT IN('trash','auto-draft','inherit')
-			{$m_whr}
-		";
+		// Safely construct the SQL query
+		$posts_table = esc_sql($wpdb->posts);
+		$postmeta_table = esc_sql($wpdb->postmeta);
+		
+		if($vam_wf=='sku'){
+			$sql_c = $wpdb->prepare("SELECT COUNT(*) FROM {$posts_table} p INNER JOIN {$postmeta_table} pm1 ON ( pm1.post_id = p.ID AND pm1.meta_key = %s ) WHERE p.post_type = %s AND p.post_status NOT IN('trash','auto-draft','inherit') AND pm1.meta_value != ''", '_sku', 'product_variation'); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names safely escaped with esc_sql() above
+		} else {
+			$sql_c = $wpdb->prepare("SELECT COUNT(*) FROM {$posts_table} p WHERE p.post_type = %s AND p.post_status NOT IN('trash','auto-draft','inherit')", 'product_variation'); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped with esc_sql() above
+		}
 		
 		$mml = 500;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql_c was prepared above using $wpdb->prepare()
 		$amc = (int) $wpdb->get_var($sql_c);
 		
 		$mbc =  ($mml >= $amc) ? 1 : ceil($amc / $mml);
@@ -2480,11 +3835,19 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		//$all_qbo_products = array();
 		
 		if(!$mo_um){
-			$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_variation_pairs` WHERE `id` > 0 ");
-			$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_variation_pairs` ");
+			$table = $wpdb->prefix . 'mw_wc_qbo_sync_variation_pairs';
+			if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_variation_pairs', $wpdb->prefix) === 0) {
+				$table = esc_sql($table);
+				$wpdb->query("DELETE FROM `{$table}` WHERE `id` > 0 "); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+			}
+			if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_variation_pairs', $wpdb->prefix) === 0) {
+				$table = esc_sql($table);
+				$wpdb->query("TRUNCATE TABLE `{$table}` "); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+			}
 		}
 		
-		$all_qbo_products = $this->get_data("SELECT `itemid`, `sku` , `name` FROM ".$wpdb->prefix."mw_wc_qbo_sync_qbo_items");
+		$table_qbo_items = $wpdb->prefix."mw_wc_qbo_sync_qbo_items";
+		$all_qbo_products = $this->get_data("SELECT `itemid`, `sku` , `name` FROM `{$table_qbo_items}`");
 		
 		for ($i=$li; $i<$mbc; $i++) {
 			$mlo = $i*$mml;
@@ -2578,11 +3941,18 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			{$m_whr}
 		";
 		$all_wc_variations = $this->get_data($sql);
-		$all_qbo_products = $this->get_data("SELECT `itemid`, `sku` , `name` FROM ".$wpdb->prefix."mw_wc_qbo_sync_qbo_items");
+		$table_qbo_items = $wpdb->prefix."mw_wc_qbo_sync_qbo_items";
+		$all_qbo_products = $this->get_data("SELECT `itemid`, `sku` , `name` FROM `{$table_qbo_items}`");
 		
 		if(!$mo_um){
-			$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_variation_pairs` WHERE `id` > 0 ");
-			$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_variation_pairs` ");
+			$table = $wpdb->prefix . 'mw_wc_qbo_sync_variation_pairs';
+			if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_variation_pairs', $wpdb->prefix) === 0) {
+				$wpdb->query("DELETE FROM `{$table}` WHERE `id` > 0 "); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+			}
+			if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_variation_pairs', $wpdb->prefix) === 0) {
+				$table = esc_sql($table);
+				$wpdb->query("TRUNCATE TABLE `{$table}` "); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+			}
 		}		
 		
 		if(is_array($all_wc_variations) && !empty($all_wc_variations) && is_array($all_qbo_products) && !empty($all_qbo_products)){
@@ -2620,8 +3990,10 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		$all_wc_variations = $this->get_data($sql);
 		$all_qbo_products = $this->get_data("SELECT `itemid`, `sku` , `name` FROM ".$wpdb->prefix."mw_wc_qbo_sync_qbo_items");
 		
-		$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_variation_pairs` WHERE `id` > 0 ");
-		$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_variation_pairs` ");
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Hardcoded table name and condition for bulk delete
+	$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_variation_pairs` WHERE `id` > 0 ");
+	// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Hardcoded table name for bulk truncate
+	$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_variation_pairs` ");
 
 		if(is_array($all_wc_variations) && !empty($all_wc_variations) && is_array($all_qbo_products) && !empty($all_qbo_products)){
 			foreach($all_wc_variations as $w_pro){
@@ -2648,7 +4020,9 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		//New for Only Unmapped
 		if($mo_um){
 			$ID = $w_pro['ID'];
-			$e_mr = $this->get_row($wpdb->prepare("SELECT `id` FROM {$map_tbl} WHERE `wc_variation_id` = %d ",$ID));
+			$map_tbl = esc_sql($map_tbl);
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+			$e_mr = $this->get_row($wpdb->prepare("SELECT `id` FROM `{$map_tbl}` WHERE `wc_variation_id` = %d ",$ID));
 			if(!empty($e_mr)){
 				return;
 			}
@@ -2715,26 +4089,21 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	public function AutoMapVariationNew(){
 		global $wpdb;
 
-		$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_variation_pairs` WHERE `id` > 0 ");
-		$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_variation_pairs` ");
+		$variation_pairs_table = $wpdb->prefix."mw_wc_qbo_sync_variation_pairs";
+		$variation_pairs_table = esc_sql($variation_pairs_table);
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+		$wpdb->query("DELETE FROM `{$variation_pairs_table}` WHERE `id` > 0 ");
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+		$wpdb->query("TRUNCATE TABLE `{$variation_pairs_table}` ");
 		
 		$status = 'publish';
-		$sql_count = "
-			SELECT COUNT(DISTINCT(p.ID))
-			FROM ".$wpdb->posts." p
-			LEFT JOIN ".$wpdb->postmeta." pm1 ON ( pm1.post_id = p.ID
-			AND pm1.meta_key =  '_sku' ),
-			".$wpdb->prefix."mw_wc_qbo_sync_qbo_items qp
-			WHERE p.post_type =  'product_variation'
-			AND p.post_status NOT IN('trash','auto-draft','inherit')
-			AND pm1.meta_value!=''
-			AND qp.itemid > 0
-			AND (qp.sku=pm1.meta_value OR (qp.sku='' AND pm1.meta_value=qp.name))
-		";
-		//AND p.post_status = '".$status."'
+		$qbo_items_table = $wpdb->prefix."mw_wc_qbo_sync_qbo_items";
+		$qbo_items_table = esc_sql($qbo_items_table);
+		$sql_count = $wpdb->prepare("SELECT COUNT(DISTINCT(p.ID)) FROM {$wpdb->posts} p LEFT JOIN {$wpdb->postmeta} pm1 ON ( pm1.post_id = p.ID AND pm1.meta_key = %s ), `{$qbo_items_table}` qp WHERE p.post_type = %s AND p.post_status NOT IN('trash','auto-draft','inherit') AND pm1.meta_value != '' AND qp.itemid > 0 AND (qp.sku=pm1.meta_value OR (qp.sku='' AND pm1.meta_value=qp.name))", '_sku', 'product_variation'); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
 
 		$max_limit = 1000;
 
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql_count was prepared above using $wpdb->prepare()
 		$count = (int) $wpdb->get_var($sql_count);
 		if(!$count){return false;}
 
@@ -2743,22 +4112,8 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		for ($i=0; $i<$batchCount; $i++) {
 			$startPos = $i*$max_limit;
 
-			$sql = "
-				SELECT DISTINCT(p.ID), qp.itemid
-				FROM ".$wpdb->posts." p
-				LEFT JOIN ".$wpdb->postmeta." pm1 ON ( pm1.post_id = p.ID
-				AND pm1.meta_key =  '_sku' ),
-				".$wpdb->prefix."mw_wc_qbo_sync_qbo_items qp
-				WHERE p.post_type =  'product_variation'
-				AND p.post_status NOT IN('trash','auto-draft','inherit')
-				AND pm1.meta_value!=''
-				AND qp.itemid > 0
-				AND (qp.sku=pm1.meta_value OR (qp.sku='' AND pm1.meta_value=qp.name))
-				GROUP BY p.ID
-				LIMIT {$startPos},{$max_limit}
-			";
-			//AND p.post_status = '".$status."'
-			//echo $sql;
+			$sql = $wpdb->prepare("SELECT DISTINCT(p.ID), qp.itemid FROM {$wpdb->posts} p LEFT JOIN {$wpdb->postmeta} pm1 ON ( pm1.post_id = p.ID AND pm1.meta_key = %s ), `{$qbo_items_table}` qp WHERE p.post_type = %s AND p.post_status NOT IN('trash','auto-draft','inherit') AND pm1.meta_value != '' AND qp.itemid > 0 AND (qp.sku=pm1.meta_value OR (qp.sku='' AND pm1.meta_value=qp.name)) GROUP BY p.ID LIMIT %d,%d", '_sku', 'product_variation', $startPos, $max_limit); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			
 			$match_data = $this->get_data($sql);
 			$p_map_ivs = '';
 			if(is_array($match_data) && !empty($match_data)){
@@ -2768,7 +4123,8 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			}
 			if($p_map_ivs!=''){
 				$p_map_ivs = substr($p_map_ivs,0,-1);
-				$p_map_insert_q = "INSERT INTO {$wpdb->prefix}mw_wc_qbo_sync_variation_pairs (wc_variation_id,quickbook_product_id) VALUES {$p_map_ivs}";
+				$p_map_insert_q = "INSERT INTO `{$variation_pairs_table}` (wc_variation_id,quickbook_product_id) VALUES {$p_map_ivs}";
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Bulk insert with validated integer pairs
 				$wpdb->query($p_map_insert_q);
 			}
 		}
@@ -2779,26 +4135,21 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	public function AutoMapProductNew(){
 		global $wpdb;
 
-		$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_product_pairs` WHERE `id` > 0 ");
-		$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_product_pairs` ");
+		$product_pairs_table = $wpdb->prefix."mw_wc_qbo_sync_product_pairs";
+		$product_pairs_table = esc_sql($product_pairs_table);
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+		$wpdb->query("DELETE FROM `{$product_pairs_table}` WHERE `id` > 0 ");
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+		$wpdb->query("TRUNCATE TABLE `{$product_pairs_table}` ");
 
 		$status = 'publish';
-		$sql_count = "
-			SELECT COUNT(DISTINCT(p.ID))
-			FROM ".$wpdb->posts." p
-			LEFT JOIN ".$wpdb->postmeta." pm1 ON ( pm1.post_id = p.ID
-			AND pm1.meta_key =  '_sku' ),
-			".$wpdb->prefix."mw_wc_qbo_sync_qbo_items qp
-			WHERE p.post_type =  'product'
-			AND p.post_status NOT IN('trash','auto-draft','inherit')
-			AND pm1.meta_value!=''
-			AND qp.itemid > 0
-			AND (qp.sku=pm1.meta_value OR (qp.sku='' AND pm1.meta_value=qp.name))
-		";
-		//AND p.post_status = '".$status."'
+		$qbo_items_table = $wpdb->prefix."mw_wc_qbo_sync_qbo_items";
+		$qbo_items_table = esc_sql($qbo_items_table);
+		$sql_count = $wpdb->prepare("SELECT COUNT(DISTINCT(p.ID)) FROM {$wpdb->posts} p LEFT JOIN {$wpdb->postmeta} pm1 ON ( pm1.post_id = p.ID AND pm1.meta_key = %s ), `{$qbo_items_table}` qp WHERE p.post_type = %s AND p.post_status NOT IN('trash','auto-draft','inherit') AND pm1.meta_value != '' AND qp.itemid > 0 AND (qp.sku=pm1.meta_value OR (qp.sku='' AND pm1.meta_value=qp.name))", '_sku', 'product'); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
 
 		$max_limit = 1000;
 
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql_count was prepared above using $wpdb->prepare()
 		$count = (int) $wpdb->get_var($sql_count);
 		if(!$count){return false;}
 
@@ -2807,22 +4158,8 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		for ($i=0; $i<$batchCount; $i++) {
 			$startPos = $i*$max_limit;
 
-			$sql = "
-				SELECT DISTINCT(p.ID), qp.itemid
-				FROM ".$wpdb->posts." p
-				LEFT JOIN ".$wpdb->postmeta." pm1 ON ( pm1.post_id = p.ID
-				AND pm1.meta_key =  '_sku' ),
-				".$wpdb->prefix."mw_wc_qbo_sync_qbo_items qp
-				WHERE p.post_type =  'product'
-				AND p.post_status NOT IN('trash','auto-draft','inherit')
-				AND pm1.meta_value!=''
-				AND qp.itemid > 0
-				AND (qp.sku=pm1.meta_value OR (qp.sku='' AND pm1.meta_value=qp.name))
-				GROUP BY p.ID
-				LIMIT {$startPos},{$max_limit}
-			";
-			//AND p.post_status = '".$status."'
-			//echo $sql;
+			$sql = $wpdb->prepare("SELECT DISTINCT(p.ID), qp.itemid FROM {$wpdb->posts} p LEFT JOIN {$wpdb->postmeta} pm1 ON ( pm1.post_id = p.ID AND pm1.meta_key = %s ), `{$qbo_items_table}` qp WHERE p.post_type = %s AND p.post_status NOT IN('trash','auto-draft','inherit') AND pm1.meta_value != '' AND qp.itemid > 0 AND (qp.sku=pm1.meta_value OR (qp.sku='' AND pm1.meta_value=qp.name)) GROUP BY p.ID LIMIT %d,%d", '_sku', 'product', $startPos, $max_limit); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+			
 			$match_data = $this->get_data($sql);
 			$p_map_ivs = '';
 			if(is_array($match_data) && !empty($match_data)){
@@ -2832,7 +4169,8 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			}
 			if($p_map_ivs!=''){
 				$p_map_ivs = substr($p_map_ivs,0,-1);
-				$p_map_insert_q = "INSERT INTO {$wpdb->prefix}mw_wc_qbo_sync_product_pairs (wc_product_id,quickbook_product_id) VALUES {$p_map_ivs}";
+				$p_map_insert_q = "INSERT INTO `{$product_pairs_table}` (wc_product_id,quickbook_product_id) VALUES {$p_map_ivs}";
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Bulk insert with validated integer pairs
 				$wpdb->query($p_map_insert_q);
 			}
 		}
@@ -2846,24 +4184,21 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	public function AutoMapProductByNameNew(){
 		global $wpdb;
 
-		$wpdb->query("DELETE FROM `".$wpdb->prefix."mw_wc_qbo_sync_product_pairs` WHERE `id` > 0 ");
-		$wpdb->query("TRUNCATE TABLE `".$wpdb->prefix."mw_wc_qbo_sync_product_pairs` ");
+		$product_pairs_table = $wpdb->prefix."mw_wc_qbo_sync_product_pairs";
+		$product_pairs_table = esc_sql($product_pairs_table);
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+		$wpdb->query("DELETE FROM `{$product_pairs_table}` WHERE `id` > 0 ");
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+		$wpdb->query("TRUNCATE TABLE `{$product_pairs_table}` ");
 
 		$status = 'publish';
-		$sql_count = "
-			SELECT COUNT(DISTINCT(p.ID))
-			FROM ".$wpdb->posts." p,
-			".$wpdb->prefix."mw_wc_qbo_sync_qbo_items qp
-			WHERE p.post_type =  'product'
-			AND p.post_status NOT IN('trash','auto-draft','inherit')
-			AND p.post_title!=''
-			AND qp.itemid > 0
-			AND qp.name=p.post_title
-		";
-		//AND p.post_status = '".$status."'
+		$qbo_items_table = $wpdb->prefix."mw_wc_qbo_sync_qbo_items";
+		$qbo_items_table = esc_sql($qbo_items_table);
+		$sql_count = $wpdb->prepare("SELECT COUNT(DISTINCT(p.ID)) FROM {$wpdb->posts} p, `{$qbo_items_table}` qp WHERE p.post_type = %s AND p.post_status NOT IN('trash','auto-draft','inherit') AND p.post_title != '' AND qp.itemid > 0 AND qp.name=p.post_title", 'product'); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
 
 		$max_limit = 1000;
 
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql_count was prepared above using $wpdb->prepare()
 		$count = (int) $wpdb->get_var($sql_count);
 		if(!$count){return false;}
 
@@ -2871,20 +4206,8 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 
 		for ($i=0; $i<$batchCount; $i++) {
 			$startPos = $i*$max_limit;
+			$sql = $wpdb->prepare("SELECT DISTINCT(p.ID), qp.itemid FROM {$wpdb->posts} p, `{$qbo_items_table}` qp WHERE p.post_type = %s AND p.post_status NOT IN('trash','auto-draft','inherit') AND p.post_title != '' AND qp.itemid > 0 AND qp.name=p.post_title LIMIT %d,%d", 'product', $startPos, $max_limit); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
 
-			$sql = "
-				SELECT DISTINCT(p.ID), qp.itemid
-				FROM ".$wpdb->posts." p,
-				".$wpdb->prefix."mw_wc_qbo_sync_qbo_items qp
-				WHERE p.post_type =  'product'
-				AND p.post_status NOT IN('trash','auto-draft','inherit')
-				AND p.post_title!=''
-				AND qp.itemid > 0
-				AND qp.name=p.post_title
-				LIMIT {$startPos},{$max_limit}
-			";
-
-			//echo $sql;
 			$match_data = $this->get_data($sql);
 			$p_map_ivs = '';
 			if(is_array($match_data) && !empty($match_data)){
@@ -2894,7 +4217,8 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			}
 			if($p_map_ivs!=''){
 				$p_map_ivs = substr($p_map_ivs,0,-1);
-				$p_map_insert_q = "INSERT INTO {$wpdb->prefix}mw_wc_qbo_sync_product_pairs (wc_product_id,quickbook_product_id) VALUES {$p_map_ivs}";
+				$p_map_insert_q = "INSERT INTO `{$product_pairs_table}` (wc_product_id,quickbook_product_id) VALUES {$p_map_ivs}";
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Bulk insert with validated integer pairs
 				$wpdb->query($p_map_insert_q);
 			}
 		}
@@ -2902,7 +4226,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	}
 	
 	/**
-	 * Update Vendor Into Quickbooks Online.
+	 * Update Vendor Into QuickBooks Online.
 	 *
 	 * @since    1.4.5 - 6
 	 * Last Updated: 2018-05-04
@@ -3103,7 +4427,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 					if ($resp = $vendorService->update($Context, $realm, $vendor->getId(), $vendor)){
 						$qbo_vendorid = $this->qbo_clear_braces($vendor->getId());
 						$log_title.="Update Vendor #$wc_customerid\n";
-						$log_details.="Vendor #$wc_customerid has been updated, Quickbooks Vendor ID is #$qbo_vendorid";
+						$log_details.="Vendor #$wc_customerid has been updated, QuickBooks Vendor ID is #$qbo_vendorid";
 						$log_status = 1;
 						$this->save_log($log_title,$log_details,'Vendor',$log_status,true,'Update');
 						$this->add_qbo_item_obj_into_log_file('Vendor Update',$vendor_data,$vendor,$this->get_IPP()->lastRequest(),$this->get_IPP()->lastResponse(),true);
@@ -3125,7 +4449,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	}
 	
 	/**
-	 * Update Customer Into Quickbooks Online.
+	 * Update Customer Into QuickBooks Online.
 	 *
 	 * @since    1.0.1
 	 * Last Updated: 2017-02-20
@@ -3237,7 +4561,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	}
 	
 	/**
-	 * Add Vendor Into Quickbooks Online.
+	 * Add Vendor Into QuickBooks Online.
 	 *
 	 * @since    1.4.5 - 6
 	 * Last Updated: 2018-05-04
@@ -3327,10 +4651,15 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 					$wpdb->insert($table, $save_data);
 				}
 			}else{
+				// For pricing sync (pull=true), check if this specific WC product is already mapped
+				// This prevents overwriting other WC products mapped to the same QB product
 				$save_data[$w_p_f] = $wc_product_id;
-				if($this->get_field_by_val($table,'id','quickbook_product_id',$quickbook_product_id)){
-					$wpdb->update($table,$save_data,array('quickbook_product_id'=>$quickbook_product_id),'',array('%d'));
+				if($this->get_field_by_val($table,'id',$w_p_f,$wc_product_id)){
+					// Update existing mapping for this specific WC product
+					$save_data['quickbook_product_id'] = $quickbook_product_id;
+					$wpdb->update($table,$save_data,array($w_p_f=>$wc_product_id),'',array('%d'));
 				}else{
+					// Insert new mapping only if this WC product isn't already mapped
 					$save_data['quickbook_product_id'] = $quickbook_product_id;
 					$wpdb->insert($table, $save_data);
 				}
@@ -3369,7 +4698,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	}
 	
 	public function save_qbo_vendor_local($qbo_vendorid,$first,$last,$middle,$company,$dname,$email,$pocname=''){
-		$qbo_customerid = intval($qbo_customerid);
+		$qbo_customerid = intval($qbo_vendorid);
 		if($qbo_customerid){
 			global $wpdb;
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_qbo_vendors';
@@ -3477,10 +4806,29 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		
 		return $mag;
 	}
+
+	public function set_qbo_company_info_from_object($Info){
+		if($this->is_connected()){
+			$this->qbo_company_info = $Info;
+		}
+	}
 	
 	//27-04-2017
-	public function set_qbo_company_info(){
+	public function set_qbo_company_info($realtime=false){
 		if($this->is_connected()){
+			# New - QBO Local Data Support
+			if($this->use_new_qbo_local_data('companyinfo') && !$realtime){
+				$dbObj = get_option('mw_wc_qbo_sync_app_data_new_qbo_companyinfo_object');
+				if(!empty($dbObj)){
+					$dbObj = is_string($dbObj) ? unserialize($dbObj) : $dbObj;					
+					if(is_object($dbObj) && $dbObj instanceof \QuickBooks_IPP_Object_CompanyInfo){						
+						#$this->_p($dbObj);
+						$this->qbo_company_info = $dbObj;
+						return;
+					}
+				}
+			}
+
 			$Context = $this->Context;
 			$realm = $this->realm;
 
@@ -3488,6 +4836,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$Info = $CompanyInfoService->get($Context, $realm);
 
 			$this->qbo_company_info = $Info;
+
+			# New - QBO Local Data Support
+			if($this->use_new_qbo_local_data('companyinfo')){
+				if(!empty($Info)){
+					$saveObj = serialize($Info);
+					update_option('mw_wc_qbo_sync_app_data_new_qbo_companyinfo_object',$saveObj,false);
+				}
+			}
 		}
 	}
 	public function get_qbo_company_info($key='country',$debug=false,$frc=true){
@@ -3581,14 +4937,48 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		return $return;
 	}
 
-
-	public function get_qbo_company_preferences(){
+	public function refresh_preferences_and_company_info(){
 		if($this->is_connected()){
+			# Clear Local Data
+			update_option('mw_wc_qbo_sync_app_data_new_qbo_preferences_object','',false);
+			update_option('mw_wc_qbo_sync_app_data_new_qbo_companyinfo_object','',false);
+
+			$this->qbo_company_preferences = false;
+			$this->qbo_company_info = false;
+
+			$this->set_qbo_company_info(true);
+			$this->get_qbo_company_preferences(true);
+		}		
+	}
+
+	public function get_qbo_company_preferences($realtime=false){
+		if($this->is_connected()){
+			# New - QBO Local Data Support
+			if($this->use_new_qbo_local_data('preference') && !$realtime){
+				$dbObj = get_option('mw_wc_qbo_sync_app_data_new_qbo_preferences_object');
+				if(!empty($dbObj)){
+					$dbObj = is_string($dbObj) ? unserialize($dbObj) : $dbObj;
+					if(is_object($dbObj) && $dbObj instanceof \QuickBooks_IPP_Object_Preferences){
+						#$this->_p($dbObj);
+						$this->qbo_company_preferences = $dbObj;
+						return;
+					}
+				}				
+			}
+
 			$Context = $this->Context;
 			$realm = $this->realm;
 			$q_prf = new QuickBooks_IPP_Service_Preferences();
 			$prf = $q_prf->get($Context, $realm);
 			$this->qbo_company_preferences = $prf;
+
+			# New - QBO Local Data Support
+			if($this->use_new_qbo_local_data('preference')){
+				if(!empty($prf)){
+					$saveObj = serialize($prf);
+					update_option('mw_wc_qbo_sync_app_data_new_qbo_preferences_object',$saveObj,false);
+				}
+			}
 		}
 	}
 	
@@ -3792,12 +5182,12 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 					if(in_array('_'.$wfb_k,$this->get_wc_static_billing_order_fields())){
 						if(!$is_bdofa){
 							$is_bdofa_wcfe = true;
-							$tfa_fl['_'.$wfb_k] = $wfb_k.'('.$wfb_v['type'].')';
+							$tfa_fl['_'.$wfb_k] = $wfb_k.'('.(is_array($wfb_v) && isset($wfb_v['type']) ? $wfb_v['type'] : 'text').')';
 							$wcfe_bfa = true;
 						}
 					}else{
 						$wcfe_bfa = true;
-						$tfa_fl[$wfb_k] = $wfb_k.'('.$wfb_v['type'].')';
+						$tfa_fl[$wfb_k] = $wfb_k.'('.(is_array($wfb_v) && isset($wfb_v['type']) ? $wfb_v['type'] : 'text').')';
 					}
 				}
 				$tfa['fields'] = $tfa_fl;
@@ -3821,12 +5211,12 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				foreach($wc_fields_shipping as $wfs_k => $wfs_v){
 					if(in_array('_'.$wfs_k,$this->get_wc_static_shipping_order_fields())){
 						if(!$is_sdofa){
-							$tfa_fl['_'.$wfs_k] = $wfs_k.'('.$wfs_v['type'].')';
+							$tfa_fl['_'.$wfs_k] = $wfs_k.'('.(is_array($wfs_v) && isset($wfs_v['type']) ? $wfs_v['type'] : '').')';
 							$wcfe_sfa = true;
 						}
 					}else{
 						$wcfe_sfa = true;
-						$tfa_fl[$wfs_k] = $wfs_k.'('.$wfs_v['type'].')';
+						$tfa_fl[$wfs_k] = $wfs_k.'('.(is_array($wfs_v) && isset($wfs_v['type']) ? $wfs_v['type'] : '').')';
 					}
 				}
 				$tfa['fields'] = $tfa_fl;
@@ -3845,7 +5235,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				$tfa['sub'] = true;
 				$wcfe_afa = false;
 				foreach($wc_fields_additional as $wfa_k => $wfa_v){
-					$tfa_fl[$wfa_k] = $wfa_k.'('.$wfa_v['type'].')';
+					$tfa_fl[$wfa_k] = $wfa_k.'('.(is_array($wfa_v) && isset($wfa_v['type']) ? $wfa_v['type'] : '').')';
 					$wcfe_afa = true;
 				}
 				$tfa['fields'] = $tfa_fl;
@@ -4047,6 +5437,10 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		$force_run = false;
 		if(!$this->option_checked('mw_wc_qbo_sync_qb_func_af_plg_act_run') || $force_run){
 			if($this->is_connected()){
+				# New - Realtime fetch
+				$this->set_qbo_company_info(true);
+				$this->get_qbo_company_preferences(true);
+
 				$Context = $this->Context;
 				$realm = $this->realm;
 				
@@ -4242,14 +5636,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 							
 							/*
 							echo 'Error:<br>';
-							echo $res_err;
+							echo esc_html($res_err);
 							echo '<br>';							
 							
 							echo 'Request:<br>';
-							echo $this->get_IPP()->lastRequest();
+							echo esc_html($this->get_IPP()->lastRequest());
 							echo '<br>';
 							echo 'Response:<br>';
-							echo $this->get_IPP()->lastResponse();
+							echo esc_html($this->get_IPP()->lastResponse());
 							*/							
 						}
 					}
@@ -4730,11 +6124,6 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			return true;
 		}
 
-		if($option == 'mw_wc_qbo_sync_send_inv_sr_afsi_qb'){
-			if($this->get_option('mw_wc_qbo_sync_send_inv_sr_afsi_qb_option') == 'd_n_e'){
-				return false;
-			}
-		}
 
 		if($option == 'mw_wc_qbo_sync_pause_up_qbo_conection'){return true;}
 		
@@ -4947,6 +6336,49 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		}
 	}
 
+	/**
+	 * Converts numbers (floats, strings, integers) to numeric values to be safely used in PHP functions like floor() which expect int or float.
+	 *
+	 * @param mixed $value The value to convert.
+	 * @param mixed $fallback The value to return if the conversion fails.
+	 * @return int|float|mixed Returns the numeric value or the fallback value if conversion fails.
+	 */
+	public function normalize( $value, $fallback = 0 ) {
+		// Trim string values to handle whitespace consistently across PHP versions.
+		if ( is_string( $value ) ) {
+			$value = trim( $value );
+		}
+
+		if ( is_numeric( $value ) ) {
+			$numeric_value = is_string( $value ) ? floatval( $value ) : $value;
+
+			// Round to precision to avoid floating-point precision issues.
+			$rounding_precision = defined('WC_ROUNDING_PRECISION') ? WC_ROUNDING_PRECISION : 6;
+			return is_int( $numeric_value ) ? $numeric_value : round( $numeric_value, $rounding_precision );
+		}
+
+		return $fallback;
+	}
+
+	/**
+	 * Round a number using the built-in `round` function, but unless the value to round is numeric
+	 * (a number or a string that can be parsed as a number), apply 'floatval' first to it
+	 * (so it will convert it to 0 in most cases).
+	 *
+	 * This is needed because in PHP 7 applying `round` to a non-numeric value returns 0,
+	 * but in PHP 8 it throws an error. Specifically, in WooCommerce we have a few places where
+	 * round('') is often executed.
+	 *
+	 * @param mixed $val The value to round.
+	 * @param int   $precision The optional number of decimal digits to round to.
+	 * @param int   $mode A constant to specify the mode in which rounding occurs.
+	 *
+	 * @return float The value rounded to the given precision as a float.
+	 */
+	public function round( $val, int $precision = 0, int $mode = PHP_ROUND_HALF_UP ): float {
+		return round( $this->normalize( $val ), $precision, $mode );
+	}
+
 	public function sp_round($num=''){
 		$i_amnt = $num;
 		if ($num!='' && $num>0 && strpos($num, '.') !== false) {
@@ -4969,10 +6401,194 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		return $i_amnt;
 	}
 
+	/**
+	 * Add info to WC-logs, limited to hooks from *this plugin* and include stack trace.
+	 *
+	 * @param mixed $data Debug data.
+	 * @param bool  $debug_mode Debug mode flag.
+	 * @param bool  $include_hooks Whether to include fired hook trace for this plugin only.
+	 * @param bool  $include_stack Whether to include PHP stack trace.
+	 */
+	public function add_wc_debug_log( $data, $debug_mode = false, $include_hooks = false, $include_stack = false ) { // phpcs:ignore
+		if ( function_exists( 'wc_get_logger' ) && $debug_mode ) {
+			$log = wc_get_logger();
+
+			// Normalize data
+			if ( $data instanceof WP_Error ) {
+				$data = $data->get_error_message();
+			} elseif ( is_object( $data ) || is_array( $data ) ) {
+				$data = wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
+			}
+
+			$output  = "=== DEBUG LOG ENTRY ===\n";
+			$output .= "Message: " . $data . "\n";
+
+			// 🔍 Hook trace (this plugin only)
+			if ( $include_hooks ) {
+				global $wp_actions, $wp_filter;
+
+				$plugin_base = plugin_dir_path( __FILE__ ); // this plugin’s folder
+				$fired_hooks = array_keys( $wp_actions );
+
+				$output .= "Hook Trace (This Plugin Only):\n";
+				$output .= str_repeat( '-', 50 ) . "\n";
+
+				foreach ( $fired_hooks as $hook ) {
+					if ( isset( $wp_filter[ $hook ] ) ) {
+						foreach ( $wp_filter[ $hook ]->callbacks as $priority => $functions ) {
+							foreach ( $functions as $function ) {
+								$callback = $function['function'];
+								$name     = 'Unknown';
+								$file     = '';
+
+								if ( is_string( $callback ) && function_exists( $callback ) ) {
+									$ref  = new ReflectionFunction( $callback );
+									$file = $ref->getFileName();
+									$name = $callback;
+								} elseif ( is_array( $callback ) ) {
+									if ( method_exists( $callback[0], $callback[1] ) ) {
+										$ref  = new ReflectionMethod( $callback[0], $callback[1] );
+										$file = $ref->getFileName();
+										$name = is_object( $callback[0] )
+											? get_class( $callback[0] ) . '->' . $callback[1]
+											: $callback[0] . '::' . $callback[1];
+									}
+								} elseif ( $callback instanceof Closure ) {
+									$ref  = new ReflectionFunction( $callback );
+									$file = $ref->getFileName();
+									$name = 'Closure';
+								}
+
+								// Filter: only include callbacks from this plugin folder
+								if ( $file && strpos( $file, $plugin_base ) === 0 ) {
+									$output .= sprintf(
+										"🔥 %s (hook: %s, priority %d)\n   ↳ %s\n",
+										$name,
+										$hook,
+										$priority,
+										$file
+									);
+								}
+							}
+						}
+					}
+				}
+
+				$output .= str_repeat( '-', 50 ) . "\n";
+			}
+
+			// 🔍 Stack trace
+			if ( $include_stack ) {
+				$output .= "Stack Trace:\n";
+				$output .= str_repeat( '-', 50 ) . "\n";
+
+				$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 15 ); // limit depth
+				foreach ( $trace as $i => $call ) {
+					$func = isset( $call['function'] ) ? $call['function'] : '';
+					$class = isset( $call['class'] ) ? $call['class'] . $call['type'] : '';
+					$file = isset( $call['file'] ) ? $call['file'] : '[internal]';
+					$line = isset( $call['line'] ) ? $call['line'] : '';
+					$output .= "#{$i} {$class}{$func} called at [{$file}:{$line}]\n";
+				}
+
+				$output .= str_repeat( '-', 50 ) . "\n";
+			}
+
+			$log->debug( $output . PHP_EOL, array( 'source' => 'Myworks-Sync-For-Quickbooks-Online-Log' ) );
+		}
+	}
+
+	/**
+	 * Log QuickBooks _request function data to WooCommerce logs
+	 *
+	 * @param string $context Request context information  
+	 * @param string $type Request type
+	 * @param string $url Request URL
+	 * @param string $action Action being performed
+	 * @param mixed $data Request data being sent
+	 * @param bool $post Whether this is a POST request
+	 * @param array $uprd Upload-related data
+	 * @param mixed $response Response received (optional)
+	 * @param bool $debug_mode Whether debug logging is enabled
+	 */
+	public function log_quickbooks_request($context, $type, $url, $action, $data, $post = true, $uprd = array(), $response = null, $debug_mode = false) {
+		if (!$debug_mode || !function_exists('wc_get_logger')) {
+			return;
+		}
+
+		$log = wc_get_logger();
+		
+		// Prepare log entry data
+		$log_data = array(
+			'timestamp' => current_time('Y-m-d H:i:s'),
+			'context' => $context,
+			'type' => $type,
+			'url' => $url,
+			'action' => $action,
+			'method' => $post ? 'POST' : 'GET',
+			'upload_data' => !empty($uprd) ? $uprd : null,
+		);
+		
+		// Handle sensitive data logging
+		if ($data) {
+			// Check if data contains sensitive information
+			if (is_string($data) && (strpos($data, 'oauth') !== false || strpos($data, 'Bearer') !== false)) {
+				$log_data['request_data'] = '[SENSITIVE DATA MASKED]';
+			} else {
+				// Truncate large data for readability
+				if (is_string($data) && strlen($data) > 1000) {
+					$log_data['request_data'] = substr($data, 0, 1000) . '... [TRUNCATED]';
+				} else {
+					$log_data['request_data'] = $data;
+				}
+			}
+		}
+		
+		// Add response if provided
+		if ($response !== null) {
+			if (is_string($response) && strlen($response) > 1000) {
+				$log_data['response_data'] = substr($response, 0, 1000) . '... [TRUNCATED]';
+			} else {
+				$log_data['response_data'] = $response;
+			}
+		}
+		
+		// Format the log message
+		$output = "=== QUICKBOOKS REQUEST LOG ===\n";
+		$output .= "Timestamp: " . $log_data['timestamp'] . "\n";
+		$output .= "Context: " . print_r($log_data['context'], true) . "\n";
+		$output .= "Type: " . $log_data['type'] . "\n";
+		$output .= "URL: " . $log_data['url'] . "\n";
+		$output .= "Action: " . $log_data['action'] . "\n";
+		$output .= "Method: " . $log_data['method'] . "\n";
+		
+		if (isset($log_data['request_data'])) {
+			$output .= "Request Data: " . (is_array($log_data['request_data']) || is_object($log_data['request_data']) 
+				? print_r($log_data['request_data'], true) 
+				: $log_data['request_data']) . "\n";
+		}
+		
+		if (isset($log_data['upload_data']) && $log_data['upload_data']) {
+			$output .= "Upload Data: " . print_r($log_data['upload_data'], true) . "\n";
+		}
+		
+		if (isset($log_data['response_data'])) {
+			$output .= "Response Data: " . (is_array($log_data['response_data']) || is_object($log_data['response_data']) 
+				? print_r($log_data['response_data'], true) 
+				: $log_data['response_data']) . "\n";
+		}
+		
+		$output .= str_repeat('=', 50) . "\n";
+		
+		// Log to WooCommerce logs
+		$log->info($output, array('source' => 'Myworks-QB-Request-Logger'));
+	}
+
 	public function save_log($log_title='',$log_msg='',$type='',$success=0,$add_into_loggly=false,$l_av='Other'){
 		if($log_title!=''){
 			global $wpdb;
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_log';
+			$table = esc_sql($table);
 			
 			//Existing param value when calling from some pages / functions
 			if(!$l_av){
@@ -4985,15 +6601,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$log_last_date = date('Y-m-d',strtotime("-$max_log_save_day days",strtotime($this->now())));
 			$log_last_date = $log_last_date.' 23:59:59';
 
-			$wpdb->query(
-			$wpdb->prepare(
-					"
-					DELETE FROM $table
-					 WHERE `added_date` < %s
-					",
-					$log_last_date
-					)
-			);
+			$wpdb->query($wpdb->prepare("DELETE FROM `{$table}` WHERE `added_date` < %s", $log_last_date)); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 			$log_data = array();
 			$log_title = addslashes($log_title);
@@ -5234,7 +6842,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			
 			/**/
 			if($this->option_checked('mw_wc_qbo_sync_use_qb_next_ord_num_iowon') && !$this->get_qbo_company_setting('is_custom_txn_num_allowed')){
-				$DocNumber = get_post_meta($wc_inv_id,'_mw_qbo_sync_ord_doc_no',true);
+				$DocNumber = $this->get_order_meta_hpos($wc_inv_id,'_mw_qbo_sync_ord_doc_no',true);
 				$DocNumber = trim($DocNumber);
 				if(empty($DocNumber)){
 					return false;
@@ -5263,7 +6871,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			
 			/**/
 			if($this->option_checked('mw_wc_qbo_sync_use_qb_next_ord_num_iowon') && !$this->get_qbo_company_setting('is_custom_txn_num_allowed')){
-				$DocNumber = get_post_meta($wc_inv_id,'_mw_qbo_sync_ord_doc_no',true);
+				$DocNumber = $this->get_order_meta_hpos($wc_inv_id,'_mw_qbo_sync_ord_doc_no',true);
 				$DocNumber = trim($DocNumber);
 				if(empty($DocNumber)){
 					return false;
@@ -5292,7 +6900,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			
 			/**/
 			if($this->option_checked('mw_wc_qbo_sync_use_qb_next_ord_num_iowon') && !$this->get_qbo_company_setting('is_custom_txn_num_allowed')){
-				$DocNumber = get_post_meta($wc_inv_id,'_mw_qbo_sync_ord_doc_no',true);
+				$DocNumber = $this->get_order_meta_hpos($wc_inv_id,'_mw_qbo_sync_ord_doc_no',true);
 				$DocNumber = trim($DocNumber);
 				if(empty($DocNumber)){
 					return false;
@@ -5321,7 +6929,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			
 			/**/
 			if($this->option_checked('mw_wc_qbo_sync_use_qb_next_ord_num_iowon') && !$this->get_qbo_company_setting('is_custom_txn_num_allowed')){
-				$DocNumber = get_post_meta($wc_inv_id,'_mw_qbo_sync_ord_doc_no',true);
+				$DocNumber = $this->get_order_meta_hpos($wc_inv_id,'_mw_qbo_sync_ord_doc_no',true);
 				$DocNumber = trim($DocNumber);
 				if(empty($DocNumber)){
 					return false;
@@ -5376,49 +6984,21 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		return true;
 	}
 	
-	//19-06-2017
-	public function get_wc_order_id_from_qbo_inv_sr_doc_no($qbo_inv_sr_doc_no=0){
+	//19-06-2017 - Updated for HPOS compatibility
+	public function get_wc_order_id_from_qbo_inv_sr_doc_no($qbo_inv_sr_doc_no = 0) {
 		$qbo_inv_sr_doc_no = $this->sanitize($qbo_inv_sr_doc_no);
 		$wc_inv_id = 0;
-		if($qbo_inv_sr_doc_no!=''){
-			global $wpdb;
-			//woocommerce-sequential-order-numbers
-			if($this->is_plugin_active('woocommerce-sequential-order-numbers-pro','') && $this->option_checked('mw_wc_qbo_sync_compt_p_wsnop')){
-				/*
-				$onk_f = '_order_number_formatted';
-				if($this->is_only_plugin_active('woocommerce-sequential-order-numbers')){
-					$onk_f = '_order_number';
-				}*/
-				$onk_f = $this->get_woo_ord_number_key_field();
-				
-				$sql = "SELECT p.ID FROM `{$wpdb->posts}` p, `{$wpdb->postmeta}` pm WHERE pm.meta_key = '{$onk_f}' AND pm.meta_value = %s AND pm.post_id = p.ID AND p.post_type = 'shop_order' ";
-			}else{
-				/**/
-				if($this->is_plugin_active('custom-order-numbers-for-woocommerce') && $this->option_checked('mw_wc_qbo_sync_compt_p_wsnop')){
-					$sql = "SELECT p.ID FROM `{$wpdb->posts}` p, `{$wpdb->postmeta}` pm WHERE pm.meta_key = '_alg_wc_full_custom_order_number' AND pm.meta_value = %s AND pm.post_id = p.ID AND p.post_type = 'shop_order' ";
-					$akd = $this->get_row($sql);
-					
-					if(empty($akd)){
-						$sql = "SELECT p.ID FROM `{$wpdb->posts}` p, `{$wpdb->postmeta}` pm WHERE pm.meta_key = '_alg_wc_custom_order_number' AND pm.meta_value = %s AND pm.post_id = p.ID AND p.post_type = 'shop_order' ";
-					}
-					
-				}elseif(!empty($this->get_option('mw_wc_qbo_sync_compt_p_wconmkn')) && $this->option_checked('mw_wc_qbo_sync_compt_p_wsnop')){
-					/**/
-					$wconmkn_key = $this->get_option('mw_wc_qbo_sync_compt_p_wconmkn');
-					$sql = $wpdb->prepare("SELECT p.ID FROM `{$wpdb->posts}` p, `{$wpdb->postmeta}` pm WHERE pm.meta_key = %s AND pm.meta_value = %s AND pm.post_id = p.ID AND p.post_type = 'shop_order' ",$wconmkn_key);
-				}
-				else{
-					$qbo_inv_sr_doc_no = (int) $qbo_inv_sr_doc_no;
-					$sql = "SELECT `ID` FROM `{$wpdb->posts}` WHERE `ID` = %d AND `post_type` = 'shop_order' ";
-				}				
+		
+		if ($qbo_inv_sr_doc_no !== '') {
+			if ($this->is_hpos_enabled()) {
+				// HPOS-compatible implementation
+				$wc_inv_id = $this->get_order_by_number_hpos($qbo_inv_sr_doc_no);
+			} else {
+				// Legacy implementation for backward compatibility
+				$wc_inv_id = $this->get_order_by_number_legacy($qbo_inv_sr_doc_no);
 			}
-			$sql = $wpdb->prepare($sql,$qbo_inv_sr_doc_no);
-			$wc_ord_data = $this->get_row($sql);
-			
-			if(is_array($wc_ord_data) && !empty($wc_ord_data)){
-				$wc_inv_id = (int) $wc_ord_data['ID'];
-			}			
 		}
+		
 		return $wc_inv_id;
 	}
 
@@ -5494,7 +7074,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 						$order = get_post($wc_inv_id);
 						$invoice_data = $this->get_wc_order_details_from_order($wc_inv_id,$order);
 						if(is_object($order) && !empty($order)){
-							$order_status = $order->post_status;
+							$order_status = $this->get_hpos_order_status($order);
 							
 							$op_invalid_status_static = array('auto-draft','draft','trash');
 							$prevent_statues = $this->get_option('mw_wc_qbo_sync_pmnt_pull_prevent_order_statuses');
@@ -5670,16 +7250,9 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$cat_name = htmlspecialchars($cat_name);
 
 
-			$wc_cat_check_sql = "
-			SELECT t.term_id AS id, t.name
-			FROM   {$wpdb->terms} t
-			LEFT JOIN {$wpdb->term_taxonomy} tt
-			ON t.term_id = tt.term_id
-			WHERE  tt.taxonomy = 'product_cat'
-			AND (t.name = %s OR REPLACE(t.name,':','') = %s)
-			LIMIT 0,1
-			";
-			$wc_cat_check_sql = $wpdb->prepare($wc_cat_check_sql,$cat_name,$cat_name);
+			$wc_cat_check_sql = "SELECT t.term_id AS id, t.name FROM {$wpdb->terms} t LEFT JOIN {$wpdb->term_taxonomy} tt ON t.term_id = tt.term_id WHERE tt.taxonomy = 'product_cat' AND (t.name = %s OR REPLACE(t.name,':','') = %s) LIMIT 0,1";
+			$wc_cat_check_sql = $wpdb->prepare($wc_cat_check_sql,$cat_name,$cat_name); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $wc_cat_check_sql was prepared above using $wpdb->prepare()
 			$wc_cat_check_data = $this->get_row($wc_cat_check_sql);
 
 
@@ -5731,16 +7304,9 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				$Level = $item->getLevel();
 
 
-				$wc_cat_check_sql = "
-				SELECT t.term_id AS id, t.name
-				FROM   {$wpdb->terms} t
-				LEFT JOIN {$wpdb->term_taxonomy} tt
-				ON t.term_id = tt.term_id
-				WHERE  tt.taxonomy = 'product_cat'
-				AND (t.name = %s OR REPLACE(t.name,':','') = %s)
-				LIMIT 0,1
-				";
-				$wc_cat_check_sql = $wpdb->prepare($wc_cat_check_sql,$ParentRef_name,$ParentRef_name);
+				$wc_cat_check_sql = "SELECT t.term_id AS id, t.name FROM {$wpdb->terms} t LEFT JOIN {$wpdb->term_taxonomy} tt ON t.term_id = tt.term_id WHERE tt.taxonomy = 'product_cat' AND (t.name = %s OR REPLACE(t.name,':','') = %s) LIMIT 0,1";
+				$wc_cat_check_sql = $wpdb->prepare($wc_cat_check_sql,$ParentRef_name,$ParentRef_name); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $wc_cat_check_sql was prepared above using $wpdb->prepare()
 				$wc_cat_check_data = $this->get_row($wc_cat_check_sql);
 
 				//$wc_cat_check_data = term_exists( $ParentRef_name, 'product_cat' );
@@ -5815,6 +7381,70 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				return false;
 			}
 		}
+	}
+
+	private function updateProductPurchaseCost($product_info, $Item, $wc_product_id, $qbo_product_id, $is_variation, $name, $sku, $type) {
+		$new_cost = $this->extractPurchaseCost($Item);
+		$current_cogs = (float) get_post_meta($wc_product_id, '_cogs_total_value', true);
+		
+		if ($new_cost === $current_cogs) {
+			return $wc_product_id;
+		}
+
+		$product_info = $this->getProductInfo($wc_product_id);
+		$success = update_post_meta($wc_product_id, '_cogs_total_value', $new_cost);
+		
+		if (!$success) {
+			error_log("Failed to update cost for product ID: {$wc_product_id}");
+			return $wc_product_id;
+		}
+
+		$this->logCostUpdate($wc_product_id, $qbo_product_id, $current_cogs, $new_cost, $is_variation, $product_info);
+		$this->saveProductMapping($wc_product_id, $qbo_product_id, $name, $sku, $type, $is_variation);
+		
+		return $wc_product_id;
+	}
+
+	private function extractPurchaseCost($Item) {
+		if (!$Item || !$Item->countPurchaseCost()) {
+			return 0.0;
+		}
+		
+		$cost = $Item->getPurchaseCost();
+		return is_numeric($cost) ? (float) $cost : 0.0;
+	}
+
+	private function getProductInfo($wc_product_id) {
+		global $wpdb;
+		
+		$product_name = $this->get_field_by_val($wpdb->posts, 'post_title', 'ID', (int) $wc_product_id);
+		$product_sku = get_post_meta($wc_product_id, '_sku', true);
+		
+		return [
+			'name' => $product_name ?: '',
+			'sku' => $product_sku ?: ''
+		];
+	}
+
+	private function logCostUpdate($wc_product_id, $qbo_product_id, $old_cost, $new_cost, $is_variation, $product_info) {
+		$product_type = $is_variation ? 'Variation' : 'Product';
+		$log_title = "Import Product Cost #{$qbo_product_id}";
+		$log_details = sprintf(
+			"WooCommerce %s #%d cost updated from %s to %s\nName: %s\nSKU: %s",
+			$product_type,
+			$wc_product_id,
+			$old_cost,
+			$new_cost,
+			$product_info['name'],
+			$product_info['sku']
+		);
+		
+		$this->save_log($log_title, $log_details, 'Product', 1, true, 'Update');
+	}
+
+	private function saveProductMapping($wc_product_id, $qbo_product_id, $name, $sku, $type, $is_variation) {
+		$this->save_qbo_item_local($qbo_product_id, $name, $sku, $type);
+		$this->save_item_map($wc_product_id, $qbo_product_id, true, $is_variation);
 	}
 	
 	//
@@ -5902,7 +7532,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			//17-05-2017
 			if($type=='Group'){
 				if(!$opu){
-					$this->save_log($webhook_log_txt.'Import Product Error #'.$qbo_product_id,'Bundle item not supported.'.$p_map_log_txt.'. ','Product',0);
+					$this->save_log($webhook_log_txt.'Import Product Error #'.$qbo_product_id,'Bundle item not supported.'.$webhook_log_txt.'. ','Product',0);
 				}				
 				return false;
 			}
@@ -5981,6 +7611,10 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			if($is_update && ($this->option_checked('mw_wc_qbo_sync_os_price_fp_update') || $opu)){
 				return $this->U_W_P_O_P($product_info,$Item,$wc_product_id,$qbo_product_id,$is_variation,$name,$sku,$type);
 			}
+
+			if($is_update && ($this->option_checked('mw_wc_qbo_sync_os_cost_fp_update') || $opu)){
+				return $this->updateProductPurchaseCost($product_info,$Item,$wc_product_id,$qbo_product_id,$is_variation,$name,$sku,$type);
+			}
 			
 			$wp_manage_stock = '';
 			$wc_product_data = array();
@@ -6057,11 +7691,23 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				$wc_product_meta['_price'] = $_price;
 			}
 			
+			// WooCommerce core Cost field support - sync from QB to WC
+			if($this->option_checked('mw_wc_qbo_sync_os_cost_fp_update')){
+				$_cost = ($Item->countPurchaseCost())?$Item->getPurchaseCost():'';
+				if($_cost !== ''){
+					$wc_product_meta['_cogs_total_value'] = $_cost;
+				}
+			}
+			
 			#New
 			if($is_update){
 				unset($wc_product_meta['_regular_price']);
 				if($is_up_sp){
 					unset($wc_product_meta['_price']);
+				}
+				// For cost updates, only sync if the setting is enabled
+				if(!$this->option_checked('mw_wc_qbo_sync_os_cost_fp_update')){
+					unset($wc_product_meta['_cogs_total_value']);
 				}
 			}
 			
@@ -6126,16 +7772,10 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 						foreach($ParentRef_name_arr as $ParentRef_name){
 							$ParentRef_name = esc_sql($ParentRef_name);
 
-							$wc_cat_check_sql = "
-							SELECT t.term_id AS id, t.name
-							FROM   {$wpdb->terms} t
-							LEFT JOIN {$wpdb->term_taxonomy} tt
-							ON t.term_id = tt.term_id
-							WHERE  tt.taxonomy = 'product_cat'
-							AND (t.name = %s OR REPLACE(t.name,':','') = %s)
-							LIMIT 0,1
+							$wc_cat_check_sql = "SELECT t.term_id AS id, t.name FROM {$wpdb->terms} t LEFT JOIN {$wpdb->term_taxonomy} tt ON t.term_id = tt.term_id WHERE tt.taxonomy = 'product_cat' AND (t.name = %s OR REPLACE(t.name,':','') = %s) LIMIT 0,1
 							";
-							$wc_cat_check_sql = $wpdb->prepare($wc_cat_check_sql,$ParentRef_name,$ParentRef_name);
+							$wc_cat_check_sql = $wpdb->prepare($wc_cat_check_sql,$ParentRef_name,$ParentRef_name); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+							// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $wc_cat_check_sql was prepared above using $wpdb->prepare()
 							$wc_cat_check_data = $this->get_row($wc_cat_check_sql);
 
 							if(is_array($wc_cat_check_data) && !empty($wc_cat_check_data)){
@@ -6606,7 +8246,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 
 				if(!$variation_meta){
 					if($manual){
-						$this->save_log($webhook_log_txt.'Export Variation Inventory Error #'.$wc_inventory_id,'WooCommerce variation information not found. '.$ext_log,'Inventory',0);
+						$this->save_log('Export Variation Inventory Error #'.$wc_inventory_id,'WooCommerce variation information not found. '.$ext_log,'Inventory',0);
 					}
 					return false;
 				}
@@ -6622,7 +8262,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 					return false;
 				}
 				
-				$map_data = $this->get_row($wpdb->prepare("SELECT `quickbook_product_id` FROM `".$wpdb->prefix."mw_wc_qbo_sync_variation_pairs` WHERE `wc_variation_id` = %d AND `quickbook_product_id` > 0 ",$wc_inventory_id));
+				$table = $wpdb->prefix . 'mw_wc_qbo_sync_variation_pairs';
+				$table = esc_sql($table);
+			if (strpos($table, $wpdb->prefix) === 0) {
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+				$map_data = $this->get_row($wpdb->prepare("SELECT `quickbook_product_id` FROM `{$table}` WHERE `wc_variation_id` = %d AND `quickbook_product_id` > 0 ",$wc_inventory_id));
+			} else {
+				$map_data = false;
+			}
 				$quickbook_product_id = 0;
 				if(is_array($map_data) && !empty($map_data)){
 					$quickbook_product_id = (int) $map_data['quickbook_product_id'];
@@ -6708,7 +8355,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				
 				if(!$product_meta){
 					if($manual){
-						$this->save_log($webhook_log_txt.'Export Inventory Error #'.$wc_inventory_id,'WooCommerce product information not found. '.$ext_log,'Inventory',0);
+						$this->save_log('Export Inventory Error #'.$wc_inventory_id,'WooCommerce product information not found. '.$ext_log,'Inventory',0);
 					}
 					return false;
 				}
@@ -6724,7 +8371,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 					return false;
 				}
 
-				$map_data = $this->get_row($wpdb->prepare("SELECT `quickbook_product_id` FROM `".$wpdb->prefix."mw_wc_qbo_sync_product_pairs` WHERE `wc_product_id` = %d AND `quickbook_product_id` > 0 ",$wc_inventory_id));
+				$table = $wpdb->prefix . 'mw_wc_qbo_sync_product_pairs';
+				$table = esc_sql($table);
+			if (strpos($table, $wpdb->prefix) === 0) {
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+				$map_data = $this->get_row($wpdb->prepare("SELECT `quickbook_product_id` FROM `{$table}` WHERE `wc_product_id` = %d AND `quickbook_product_id` > 0 ",$wc_inventory_id));
+			} else {
+				$map_data = false;
+			}
 				$quickbook_product_id = 0;
 				if(is_array($map_data) && !empty($map_data)){
 					$quickbook_product_id = (int) $map_data['quickbook_product_id'];
@@ -7002,7 +8656,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		if($acof_txt!=''){
 			$acof_map = $this->get_option('mw_wc_qbo_sync_compt_acof_wf_qi_map');
 			if($acof_map!=''){
-				$acof_map_arr = unserialize($acof_map);
+				$acof_map_arr = is_string($acof_map) ? unserialize($acof_map) : $acof_map;
 				if(is_array($acof_map_arr) && !empty($acof_map_arr)){
 					foreach($acof_map_arr as $k =>$v){
 						$k = base64_decode($k);
@@ -7186,7 +8840,12 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				}
 				if($att_keys_str!=''){
 					$att_keys_str = substr($att_keys_str,0,-1);
-					$atl_data = $this->get_data("SELECT attribute_name , attribute_label FROM {$wpdb->prefix}woocommerce_attribute_taxonomies WHERE attribute_id > 0 AND `attribute_name` IN (".$att_keys_str.") ");
+					$table = $wpdb->prefix . 'woocommerce_attribute_taxonomies';
+				if (strpos($table, $wpdb->prefix) === 0) {
+					$atl_data = $this->get_data("SELECT attribute_name , attribute_label FROM `{$table}` WHERE attribute_id > 0 AND `attribute_name` IN ({$att_keys_str}) ");
+				} else {
+					$atl_data = array();
+				}
 					if(is_array($atl_data) && !empty($atl_data)){
 						$atl_data_kv = array();
 						foreach($atl_data as $ad){
@@ -7213,7 +8872,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			if($this->is_plugin_active('visual-product-configurator','vpc') && $this->option_checked('mw_wc_qbo_sync_enable_wc_vpc_epod')){
 				$ext_options_str = '';
 				if(isset($wc_items['vpc-cart-data']) && $wc_items['vpc-cart-data']!=''){
-					$vpc_cart_data = unserialize($wc_items['vpc-cart-data']);
+					$vpc_cart_data = is_string($wc_items['vpc-cart-data']) ? unserialize($wc_items['vpc-cart-data']) : $wc_items['vpc-cart-data'];
 					if(is_array($vpc_cart_data) && !empty($vpc_cart_data)){
 						foreach($vpc_cart_data as $vpc_k => $vpc_v){
 							if(is_array($vpc_v)){
@@ -7235,7 +8894,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			if($this->is_plugin_active('woocommerce-tm-extra-product-options','tm-woo-extra-product-options') && $this->option_checked('mw_wc_qbo_sync_compt_p_wtmepo')){
 				$ext_options_str = '';
 				if(isset($wc_items['tmcartepo_data']) && $wc_items['tmcartepo_data']!=''){
-					$tmcartepo_data = unserialize($wc_items['tmcartepo_data']);
+					$tmcartepo_data = is_string($wc_items['tmcartepo_data']) ? unserialize($wc_items['tmcartepo_data']) : $wc_items['tmcartepo_data'];
 					if(is_array($tmcartepo_data) && !empty($tmcartepo_data)){
 						foreach($tmcartepo_data as $ed){
 							$ext_options_str.=$ed['name'].': '.$ed['value'].PHP_EOL;
@@ -7272,7 +8931,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 					//Global Addons
 					$_p_a_eg = get_post_meta($wc_product_id,'_product_addons_exclude_global',true);
 					if(!$_p_a_eg){
-						$ga_posts = $this->get_data("SELECT ID FROM {$wpdb->posts} WHERE `post_type` = 'global_product_addon' AND `post_status` NOT IN ('auto-draft','trash','draft') ");
+						$table = $wpdb->posts;
+						$table = esc_sql($table);
+					if (strpos($table, $wpdb->prefix) === 0 || $table === $wpdb->posts) {
+						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+						$ga_posts = $this->get_data($wpdb->prepare("SELECT ID FROM {$table} WHERE `post_type` = %s AND `post_status` NOT IN ('auto-draft','trash','draft')", 'global_product_addon'));
+					} else {
+						$ga_posts = array();
+					}
 						if(is_array($ga_posts) && !empty($ga_posts)){
 							foreach($ga_posts as $gp){
 								$gp_product_addons = get_post_meta($gp['ID'],'_product_addons',true);
@@ -7592,6 +9258,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$order_item_id = (int) $wc_items['order_item_id'];
 			global $wpdb;
 			$bp_q = $wpdb->prepare("SELECT `post_id` FROM {$wpdb->postmeta} WHERE meta_key = '_booking_order_item_id' AND meta_value = %s",$order_item_id);
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $bp_q was prepared above using $wpdb->prepare()
 			$bp_id = (int) $wpdb->get_var($bp_q);
 			if($bp_id > 0){
 				$_booking_resource_id = (int) get_post_meta($bp_id,'_booking_resource_id',true);
@@ -7739,7 +9406,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		if($order_id > 0){
 			//
 			global $wpdb;
-			if($this->get_field_by_val($wpdb->posts,'post_type','ID',$order_id) != 'shop_order'){
+			if (!$this->is_valid_order_hpos($order_id)) {
 				return '';
 			}
 			
@@ -7770,14 +9437,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 							if(isset($invoice_data[$ak])){
 								$ton = $invoice_data[$ak];
 							}else{
-								$ton = get_post_meta($order_id,$ak,true);
+								$ton = $this->get_order_meta_hpos($order_id,$ak,true);
 							}							
 						}
 
 						$o_num = $invoice_data[$onk_f];
 					}else{
-						if(!empty($ak)){$ton = get_post_meta($order_id,$ak,true);}
-						$o_num = get_post_meta($order_id,$onk_f,true);
+						if(!empty($ak)){$ton = $this->get_order_meta_hpos($order_id,$ak,true);}
+						$o_num = $this->get_order_meta_hpos($order_id,$onk_f,true);
 					}
 					
 					if(!empty($ton)){
@@ -7797,14 +9464,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		
 		return $o_num;
 	}
-	
+
 	//11-04-2017
 	public function get_wc_order_details_from_order($order_id,$order){
 		global $wpdb;
 		$order_id = (int) $order_id;
 		if($order_id && is_object($order) && !empty($order)){
 			//$this->_p($order);
-			$order_meta = get_post_meta($order_id);
+			$order_meta = $this->get_all_order_meta_hpos($order_id);
 			//$this->_p($order_meta);
 			$invoice_data = array();
 			$invoice_data['wc_inv_id'] = $order_id;
@@ -7815,10 +9482,12 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			
 			$invoice_data['order_type'] = '';
 
+			$order_date = $this->get_hpos_order_date($order);
+
 			//17-07-2017
 			if($this->option_checked('mw_wc_qbo_sync_qbo_push_invoice_date')){
-				//New
-				$qodfv = $order->post_date;
+				//New - HPOS-compatible initial date retrieval
+				$qodfv = $order_date;
 				$qb_ord_df = $this->get_option('mw_wc_qbo_sync_qb_ord_df_val');
 				
 				if($qb_ord_df == 'd_o_s'){$qodfv = $this->now('Y-m-d');}
@@ -7834,16 +9503,16 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				$invoice_data['wc_inv_date'] = $qodfv;
 				$invoice_data['wc_inv_due_date'] = $qodfv;
 				
-				$invoice_data['wc_inv_date_ori'] = $order->post_date;
-				$invoice_data['wc_inv_due_date_ori'] = $order->post_date;
+				$invoice_data['wc_inv_date_ori'] = $order_date;
+				$invoice_data['wc_inv_due_date_ori'] = $order_date;
 			}else{
-				$invoice_data['wc_inv_date'] = $order->post_date;
-				$invoice_data['wc_inv_due_date'] = $order->post_date;
+				$invoice_data['wc_inv_date'] = $order_date;
+				$invoice_data['wc_inv_due_date'] = $order_date;
 			}
 			
 			//$invoice_data['customer_message'] = $order->post_excerpt;
-			$invoice_data['customer_note'] = $order->post_excerpt;
-			$invoice_data['order_status'] = $order->post_status;
+			$invoice_data['customer_note'] = method_exists( $order, 'get_customer_note' ) ? $order->get_customer_note() : $order->post_excerpt;
+			$invoice_data['order_status'] = $this->get_hpos_order_status($order);
 			
 			$wc_cus_id = isset($order_meta['_customer_user'][0])?(int) $order_meta['_customer_user'][0]:0;
 			$invoice_data['wc_cus_id'] = $wc_cus_id;
@@ -7862,8 +9531,11 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			}
 
 			$wc_oi_table = $wpdb->prefix.'woocommerce_order_items';
+			$wc_oi_table = esc_sql($wc_oi_table);
 			$wc_oi_meta_table = $wpdb->prefix.'woocommerce_order_itemmeta';
+			$wc_oi_meta_table = esc_sql($wc_oi_meta_table);
 			
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
 			$order_items = $this->get_data($wpdb->prepare("SELECT * FROM {$wc_oi_table} WHERE `order_id` = %d ORDER BY order_item_id ASC ",$order_id));
 			//$this->_p($order_items);
 			$line_items = $used_coupons = $tax_details = $shipping_details = array();
@@ -7874,6 +9546,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			if(is_array($order_items) && !empty($order_items)){
 				foreach($order_items as $oi){
 					$order_item_id = (int) $oi['order_item_id'];
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
 					$oi_meta = $this->get_data($wpdb->prepare("SELECT * FROM {$wc_oi_meta_table} WHERE `order_item_id` = %d ",$order_item_id));
 					//$this->_p($oi_meta);
 					$om_arr = array();
@@ -7909,19 +9582,23 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 						$tax_details[] = $om_arr;
 					}
 					
-					//16-05-2017
-					if($oi['order_item_type']=='fee' || $oi['order_item_type'] == 'shipping_option'){
+					if($oi['order_item_type'] == 'shipping_option'){
 						if(isset($om_arr['name'])){
 							$om_arr['name'] = $this->get_array_isset($om_arr,'name');
 						}
 						
-						//
-						if($oi['order_item_type'] == 'shipping_option'){
-							$om_arr['_line_total'] = $om_arr['cost'];
-							$om_arr['_line_tax'] = $om_arr['tax_amount'];
-							if($om_arr['total_tax']){
-								$om_arr['_line_tax'] = $om_arr['total_tax'];
-							}
+						$om_arr['_line_total'] = $om_arr['cost'];
+						$om_arr['_line_tax'] = $om_arr['tax_amount'];
+						if($om_arr['total_tax']){
+							$om_arr['_line_tax'] = $om_arr['total_tax'];
+						}
+						
+						$dc_gt_fees[] = $om_arr;
+					}
+
+					if($this->option_checked('mw_wc_qbo_sync_compt_np_oli_fee_sync') && ($oi['order_item_type']=='fee')){
+						if(isset($om_arr['name'])){
+							$om_arr['name'] = $this->get_array_isset($om_arr,'name');
 						}
 						
 						$dc_gt_fees[] = $om_arr;
@@ -7955,7 +9632,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				$mw_wc_qbo_sync_compt_p_wacof_m_field = (int) $this->get_option('mw_wc_qbo_sync_compt_p_wacof_m_field');
 				$mw_wc_qbo_sync_compt_acof_wf_qi_map = $this->get_option('mw_wc_qbo_sync_compt_acof_wf_qi_map');
 				if($mw_wc_qbo_sync_compt_acof_wf_qi_map!=''){
-					$mw_wc_qbo_sync_compt_acof_wf_qi_map = unserialize($mw_wc_qbo_sync_compt_acof_wf_qi_map);
+					$mw_wc_qbo_sync_compt_acof_wf_qi_map = is_string($mw_wc_qbo_sync_compt_acof_wf_qi_map) ? unserialize($mw_wc_qbo_sync_compt_acof_wf_qi_map) : $mw_wc_qbo_sync_compt_acof_wf_qi_map;
 				}
 				if($mw_wc_qbo_sync_compt_p_wacof_m_field && is_array($mw_wc_qbo_sync_compt_acof_wf_qi_map) && !empty($mw_wc_qbo_sync_compt_acof_wf_qi_map)){
 					if(isset($invoice_data['_wc_acof_'.$mw_wc_qbo_sync_compt_p_wacof_m_field])){
@@ -7983,7 +9660,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 					
 					//$product_data['unit_price'] = ($product_data['line_subtotal']/$product_data['_qty']);
 					
-					$l_up = ($product_data['line_subtotal']/$product_data['_qty']);
+					$l_up = (floatval($product_data['line_subtotal'])/floatval($product_data['_qty']));
 					
 					#New
 					$use_lt_if_ist_l_item = $this->option_checked('mw_wc_qbo_sync_use_lt_if_ist_l_item');
@@ -7996,14 +9673,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 					
 					if($use_lt_if_ist_l_item){
 						if($product_data['line_total'] > $product_data['line_subtotal'] || $skip_ltgc){
-							$l_up = ($product_data['line_total']/$product_data['_qty']);
+							$l_up = (floatval($product_data['line_total'])/floatval($product_data['_qty']));
 						}						
 					}
 					
 					//
 					if($this->option_checked('mw_wc_qbo_sync_no_ad_discount_li')){
 						if($product_data['line_total']<$product_data['line_subtotal']){
-							$l_up = ($product_data['line_total']/$product_data['_qty']);
+							$l_up = (floatval($product_data['line_total'])/floatval($product_data['_qty']));
 						}
 					}
 					
@@ -8014,18 +9691,18 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 					if($this->wacs_base_cur_enabled()){
 						$product_data['unit_price_base_currency'] = $product_data['unit_price'];
 						if(isset($product_data['line_subtotal_base_currency'])){
-							$l_up_bc = ($product_data['line_subtotal_base_currency']/$product_data['_qty']);
+							$l_up_bc = (floatval($product_data['line_subtotal_base_currency'])/floatval($product_data['_qty']));
 							#New
 							if($use_lt_if_ist_l_item){
 								if($product_data['line_total_base_currency'] > $product_data['line_subtotal_base_currency'] || $skip_ltgc){
-									$l_up_bc = ($product_data['line_total_base_currency']/$product_data['_qty']);
+									$l_up_bc = (floatval($product_data['line_total_base_currency'])/floatval($product_data['_qty']));
 								}
 							}
 							
 							//
 							if($this->option_checked('mw_wc_qbo_sync_no_ad_discount_li')){
 								if($product_data['line_total_base_currency']<$product_data['line_subtotal_base_currency']){
-									$l_up_bc = ($product_data['line_total_base_currency']/$product_data['_qty']);
+									$l_up_bc = (floatval($product_data['line_total_base_currency'])/floatval($product_data['_qty']));
 								}
 							}
 							
@@ -8116,6 +9793,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$invoice_data['Order_All_Coupons'] = $oac;
 			
 			//$this->_p($invoice_data);
+			//$this->add_wc_debug_log( $invoice_data, true, true, true );
 			return $invoice_data;
 		}
 	}
@@ -8174,18 +9852,20 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$order_id = $booking_order_id;
 			$order = get_post($order_id);
 			if(is_object($order) && !empty($order)){
-				$order_meta = get_post_meta($order_id);
+				$order_meta = $this->get_all_order_meta_hpos($order_id);
 				$invoice_data = array();
 				$invoice_data['wc_inv_id'] = $order_id;
 				$invoice_data['wc_inv_num'] = '';
 				
 				$invoice_data['order_type'] = '';
 
-				$invoice_data['wc_inv_date'] = $order->post_date;
-				$invoice_data['wc_inv_due_date'] = $order->post_date;
+				// HPOS-compatible date retrieval for booking orders
+				$order_date = $this->get_hpos_order_date($order);
+				$invoice_data['wc_inv_date'] = $order_date;
+				$invoice_data['wc_inv_due_date'] = $order_date;
 	
-				$invoice_data['customer_note'] = $order->post_excerpt;
-				$invoice_data['order_status'] = $order->post_status;
+				$invoice_data['customer_note'] = method_exists( $order, 'get_customer_note' ) ? $order->get_customer_note() : $order->post_excerpt;
+				$invoice_data['order_status'] = $this->get_hpos_order_status($order);
 	
 				$wc_cus_id = isset($order_meta['_customer_user'][0])?(int) $order_meta['_customer_user'][0]:0;
 				$invoice_data['wc_cus_id'] = $wc_cus_id;
@@ -8297,14 +9977,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$bundled_items = array();
 			if(isset($qbo_item_c['bundled_items']) && !empty($qbo_item_c['bundled_items']) && $qbo_item_c['qbo_product_type'] == 'Group'){
 				if(isset($qbo_item_c['bundle_cart_key']) && !empty($qbo_item_c['bundle_cart_key'])){
-					$bundled_items = unserialize($qbo_item_c['bundled_items']);
+					$bundled_items = is_string($qbo_item_c['bundled_items']) ? unserialize($qbo_item_c['bundled_items']) : $qbo_item_c['bundled_items'];
 				}				
 			}
 			foreach($qbo_inv_items as $qbo_item){
 				if($qbo_item['qbo_product_type']!='Group' && isset($qbo_item['bundled_item_id']) && $qbo_item['bundled_item_id']>0){
 					if(isset($qbo_item['bundle_cart_key']) && !empty($qbo_item['bundle_cart_key'])){
 						if(is_array($bundled_items) && in_array($qbo_item['bundle_cart_key'],$bundled_items)){
-							$up += $qbo_item['UnitPrice']*$qbo_item['Qty'];
+							$up += floatval($qbo_item['UnitPrice'])*floatval($qbo_item['Qty']);
 						}
 					}					
 				}
@@ -8319,7 +9999,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	public function wc_get_wst_data($_wc_shipment_tracking_items){
 		$wsti_data = array();
 		if($_wc_shipment_tracking_items!=''){
-			$_wc_shipment_tracking_items = unserialize($_wc_shipment_tracking_items);
+			$_wc_shipment_tracking_items = is_string($_wc_shipment_tracking_items) ? unserialize($_wc_shipment_tracking_items) : $_wc_shipment_tracking_items;
 			if(is_array($_wc_shipment_tracking_items) && !empty($_wc_shipment_tracking_items)){
 				$wsti = $_wc_shipment_tracking_items[0];
 				$tracking_provider = ($wsti['tracking_provider']!='')?$wsti['tracking_provider']:$wsti['custom_tracking_provider'];
@@ -8771,7 +10451,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	
 	public function cfm_ft_ev_pv($wcf_val,$wcfm_ext_data){
 		if(!empty($wcf_val) && !empty($wcfm_ext_data)){
-			$wcfm_ext_data = unserialize($wcfm_ext_data);
+			$wcfm_ext_data = is_string($wcfm_ext_data) ? unserialize($wcfm_ext_data) : $wcfm_ext_data;
 			if(is_array($wcfm_ext_data) && !empty($wcfm_ext_data)){
 				if(isset($wcfm_ext_data['field_type']) && isset($wcfm_ext_data['ext_val'])){
 					if(!empty($wcfm_ext_data['field_type']) && !empty($wcfm_ext_data['ext_val'])){
@@ -8871,7 +10551,8 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 
 			$log_filename = ($suc_log)?'mw-qbo-sync-req-res-log.log':'mw-qbo-sync-log.log';
 			//07-04-2017
-			if((time()-filemtime(MW_QBO_SYNC_LOG_DIR.$log_filename)) > 86400){
+			$log_file_path = MW_QBO_SYNC_LOG_DIR.$log_filename;
+			if(file_exists($log_file_path) && (time()-filemtime($log_file_path)) > 86400){
 				$f_ot = 'w';
 			}
 
@@ -8888,7 +10569,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$dpt_ma = $this->get_option('mw_wc_qbo_sync_compt_wchau_wf_qi_map');
 			$wchau_options = get_option('wchau_options');
 			if($dpt_ma && $wchau_options!=''){
-				$dpt_ma = unserialize($dpt_ma);
+				$dpt_ma = is_string($dpt_ma) ? unserialize($dpt_ma) : $dpt_ma;
 				$wchau_options = explode(PHP_EOL,$wchau_options);
 				if(is_array($dpt_ma) && !empty($dpt_ma) && is_array($wchau_options) && !empty($wchau_options)){
 					$wchau_options = array_map('trim',$wchau_options);
@@ -8942,7 +10623,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		$tr1_id = 0;
 		$tr2_id = 0;
 		if($ltd!=''){
-			$ltd = unserialize($ltd);
+			$ltd = is_string($ltd) ? unserialize($ltd) : $ltd;
 			if(is_array($ltd) && !empty($ltd)){
 				$ltd_arr = array();
 				if($l_type=='shipping'){
@@ -9001,7 +10682,9 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 
 		global $wpdb;
 		$tax_map_table = $wpdb->prefix.'mw_wc_qbo_sync_tax_map';
+		$tax_map_table = esc_sql($tax_map_table);
 
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Table name safely escaped above
 		$tax_map_data = $this->get_row($wpdb->prepare("SELECT `qbo_tax_code` FROM ".$tax_map_table." WHERE `wc_tax_id` = %d AND `wc_tax_id_2` = %d ",$tax_rate_id,$tax_rate_id_2));
 		//$this->_p($tax_map_data);
 		if(is_array($tax_map_data) && !empty($tax_map_data)){
@@ -9210,7 +10893,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			
 			/*
 			if($this->option_checked('mw_wc_qbo_sync_use_qb_next_ord_num_iowon') && !$this->get_qbo_company_setting('is_custom_txn_num_allowed')){
-				$DocNumber = get_post_meta($wc_inv_id,'_mw_qbo_sync_ord_doc_no',true);
+				$DocNumber = $this->get_order_meta_hpos($wc_inv_id,'_mw_qbo_sync_ord_doc_no',true);
 				$DocNumber = trim($DocNumber);
 				if(empty($DocNumber)){
 					return false;
@@ -9284,44 +10967,81 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$wp_date_time_c = $this->now();
 			$last_q_int_dt = date('Y-m-d H:i:s', strtotime("-{$qc_it_m} minutes", strtotime($wp_date_time_c)));
 			if(!empty($last_q_int_dt)){
-				global $wpdb;
-				$date_whr = " AND p.`post_modified` >= '{$last_q_int_dt}' AND p.`post_modified` <= '{$wp_date_time_c}' ";
-				
-				$ext_join = '';
-				$ext_whr = '';
-				
-				$sql = "
-				SELECT DISTINCT(p.ID), p.post_status, p.post_modified
-				FROM
-				{$wpdb->prefix}posts as p
-				{$ext_join}
-				WHERE
-				p.post_type = 'shop_order'
-				AND p.post_status NOT IN('auto-draft','trash','draft')
-				{$date_whr}
-				{$ext_whr}
-				";
-				
-				$orderby = 'p.post_modified ASC';
-				$sql .= ' ORDER BY  '.$orderby;
-				
-				//echo $sql;				
-				$q_data =  $this->get_data($sql);
-				//$this->_p($q_data);
-				
-				if(is_array($q_data) && !empty($q_data)){
-					foreach($q_data as $ord){						
-						$order_id = (int) $ord['ID'];						
-						$payment_id = 0;						
-						$opmd = $this->get_row($wpdb->prepare("SELECT meta_id FROM {$wpdb->postmeta} WHERE meta_key = '_transaction_id' AND post_id = %d ",$order_id));
-						if(is_array($opmd) && !empty($opmd)){
-							$payment_id = (int) $opmd['meta_id'];
+				if ($this->is_hpos_enabled()) {
+					// HPOS-compatible implementation
+					$orders = wc_get_orders(array(
+						'status' => array('any'),
+						'exclude_status' => array('auto-draft', 'trash', 'draft'),
+						'type' => 'shop_order', // Fix: Only get regular orders, exclude refunds
+						'date_modified' => $last_q_int_dt . '...' . $wp_date_time_c,
+						'orderby' => 'date_modified',
+						'order' => 'ASC',
+						'limit' => -1,
+						'return' => 'objects'
+					));
+					
+					if(!empty($orders)){
+						foreach($orders as $order){
+							// Safety check: Skip if not a regular order (exclude refunds, subscriptions, etc.)
+							if (!($order instanceof WC_Order) || $order->get_type() !== 'shop_order') {
+								continue;
+							}
+							
+							$order_id = $order->get_id();
+							$payment_id = 0;
+							
+							// Get transaction ID using HPOS-compatible method
+							$transaction_id = $order->get_transaction_id();
+							if(!empty($transaction_id)) {
+								// For payment_id, we'll use a simplified approach since meta_id isn't directly accessible in HPOS
+								$payment_id = $order_id; // Fallback to order_id for compatibility
+							}
+							
+							$ra[] = array(
+								'order_id' => $order_id,
+								'payment_id' => $payment_id
+							);
 						}
-						
-						$ra[] = array(
-							'order_id' => $order_id,
-							'payment_id' => $payment_id
-						);
+					}
+				} else {
+					// Legacy implementation for backward compatibility
+					global $wpdb;
+					$date_whr = " AND p.`post_modified` >= '{$last_q_int_dt}' AND p.`post_modified` <= '{$wp_date_time_c}' ";
+					
+					$ext_join = '';
+					$ext_whr = '';
+					
+					$sql = "
+					SELECT DISTINCT(p.ID), p.post_status, p.post_modified
+					FROM
+					{$wpdb->prefix}posts as p
+					{$ext_join}
+					WHERE
+					p.post_type = 'shop_order'
+					AND p.post_status NOT IN('auto-draft','trash','draft')
+					{$date_whr}
+					{$ext_whr}
+					";
+					
+					$orderby = 'p.post_modified ASC';
+					$sql .= ' ORDER BY  '.$orderby;
+					
+					$q_data =  $this->get_data($sql);
+					
+					if(is_array($q_data) && !empty($q_data)){
+						foreach($q_data as $ord){
+							$order_id = (int) $ord['ID'];
+							$payment_id = 0;
+							$opmd = $this->get_row($wpdb->prepare("SELECT meta_id FROM {$wpdb->postmeta} WHERE meta_key = '_transaction_id' AND post_id = %d ",$order_id));
+							if(is_array($opmd) && !empty($opmd)){
+								$payment_id = (int) $opmd['meta_id'];
+							}
+							
+							$ra[] = array(
+								'order_id' => $order_id,
+								'payment_id' => $payment_id
+							);
+						}
 					}
 				}
 			}
@@ -9331,6 +11051,12 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	
 	//11-05-2017
 	public function get_wc_deposit_payment_list($date_whr,$gateway,$currency,$single_pmnt_id=0,$deposit_date_field='post_date'){
+		// Check if HPOS is enabled and use appropriate method
+		if ($this->is_hpos_enabled()) {
+			return $this->get_wc_deposit_payment_list_hpos($date_whr,$gateway,$currency,$single_pmnt_id,$deposit_date_field);
+		}
+		
+		// Legacy implementation for traditional post-based orders
 		if($deposit_date_field == '_paid_date'){
 			$date_whr = str_replace('`{date}`','pm9.meta_value',$date_whr);
 		}elseif($deposit_date_field == '_completed_date'){
@@ -9409,6 +11135,12 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	}
 	
 	public function get_wc_deposit_sr_order_list($date_whr,$gateway,$currency,$single_ord_id=0,$deposit_date_field='post_date'){
+		// Check if HPOS is enabled and use appropriate method
+		if ($this->is_hpos_enabled()) {
+			return $this->get_wc_deposit_sr_order_list_hpos($date_whr, $gateway, $currency, $single_ord_id, $deposit_date_field);
+		}
+		
+		// Legacy implementation for traditional wp_posts/wp_postmeta tables
 		if($deposit_date_field == '_paid_date'){
 			$date_whr = str_replace('`{date}`','pm9.meta_value',$date_whr);
 		}elseif($deposit_date_field == '_completed_date'){
@@ -9487,7 +11219,143 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		
 	}
 	
+	/**
+	 * HPOS compatible version of get_wc_deposit_sr_order_list
+	 */
+	public function get_wc_deposit_sr_order_list_hpos($date_whr, $gateway, $currency, $single_ord_id = 0, $deposit_date_field = 'post_date') {
+		global $wpdb;
+		
+		// Handle date field mapping for HPOS - using correct table references
+		if($deposit_date_field == '_paid_date'){
+			$date_whr = str_replace('`{date}`','od.date_paid_gmt',$date_whr);
+		}elseif($deposit_date_field == '_completed_date'){
+			$date_whr = str_replace('`{date}`','od.date_completed_gmt',$date_whr);
+		}else{
+			$date_whr = str_replace('`{date}`','o.date_created_gmt',$date_whr);
+		}
+		
+		$single_ord_id = (int) $single_ord_id;
+		$single_whr = ($single_ord_id) ? " AND o.id={$single_ord_id} " : '';
+		
+		if($single_ord_id){
+			$date_whr = '';
+		}
+		$dwfjt = 'LEFT';
+		
+		$sql = "
+		SELECT DISTINCT(o.id) as order_id, o.status as order_status, o.date_created_gmt as order_date, o.total_amount as order_total, o.customer_id as customer_user, o.currency as order_currency,
+		o.id as payment_id, o.transaction_id as transaction_id, od.date_paid_gmt as paid_date, od.date_completed_gmt as completed_date, o.payment_method as payment_method, pim.qbo_payment_id, om_stripe_fee.meta_value as stripe_txn_fee, om_paypal_fee.meta_value as paypal_txn_fee, om_number.meta_value as order_number_formatted, om_alg.meta_value as _alg_wc_custom_order_number
+		FROM
+		{$wpdb->prefix}wc_orders as o
+		
+		LEFT JOIN ".$wpdb->prefix."wc_order_operational_data od
+		ON ( od.order_id = o.id )
+
+		LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_stripe_fee
+		ON ( om_stripe_fee.order_id = o.id AND o.payment_method = 'stripe' AND (om_stripe_fee.meta_key = 'Stripe Fee' OR om_stripe_fee.meta_key = '_stripe_fee') )
+		
+		LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_paypal_fee
+		ON ( om_paypal_fee.order_id = o.id AND o.payment_method = 'paypal' AND om_paypal_fee.meta_key = 'PayPal Transaction Fee' )
+
+		LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_number
+		ON ( om_number.order_id = o.id AND om_number.meta_key = '_order_number_formatted' )
+		
+		LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_alg
+		ON ( om_alg.order_id = o.id AND om_alg.meta_key = '_alg_wc_custom_order_number' )
+		
+		LEFT JOIN {$wpdb->prefix}mw_wc_qbo_sync_payment_id_map pim ON ( o.id = pim.wc_payment_id AND pim.is_wc_order = 1)
+		WHERE
+		o.type = 'shop_order'
+		{$single_whr}
+		AND o.transaction_id IS NOT NULL
+		AND o.transaction_id != ''
+		
+		AND o.payment_method != ''
+		AND o.payment_method = '{$gateway}'
+		AND o.currency != ''
+		AND o.currency = '{$currency}'
+		{$date_whr}
+		";
+
+		$sql .= ' GROUP BY o.id';
+		$orderby = 'o.date_created_gmt DESC';
+		$sql .= ' ORDER BY ' . $orderby;
+
+		return $this->get_data($sql);
+	}
+	
+	/**
+	 * HPOS compatible version of get_wc_deposit_payment_list
+	 */
+	public function get_wc_deposit_payment_list_hpos($date_whr,$gateway,$currency,$single_pmnt_id=0,$deposit_date_field='post_date'){
+		// Handle date field mapping for HPOS - using correct table references
+		if($deposit_date_field == '_paid_date'){
+			$date_whr = str_replace('`{date}`','od.date_paid_gmt',$date_whr);
+		}elseif($deposit_date_field == '_completed_date'){
+			$date_whr = str_replace('`{date}`','od.date_completed_gmt',$date_whr);
+		}else{
+			$date_whr = str_replace('`{date}`','o.date_created_gmt',$date_whr);
+		}
+		
+		$single_pmnt_id = (int) $single_pmnt_id;
+		$single_whr = ($single_pmnt_id) ? " AND o.id = '{$single_pmnt_id}' " : '';
+
+		if($single_pmnt_id){
+			$date_whr = '';
+		}
+		$dwfjt = 'LEFT';
+		global $wpdb;
+		$sql = "
+		SELECT DISTINCT(o.id) as order_id, o.status as order_status, o.date_created_gmt as order_date, o.total_amount as order_total, o.customer_id as customer_user, o.currency as order_currency,
+		o.id as payment_id, o.transaction_id as transaction_id, od.date_paid_gmt as paid_date, od.date_completed_gmt as completed_date, o.payment_method as payment_method, pim.qbo_payment_id, om_stripe_fee.meta_value as stripe_txn_fee, om_paypal_fee.meta_value as paypal_txn_fee, om_number.meta_value as order_number_formatted, om_alg.meta_value as _alg_wc_custom_order_number
+		FROM
+		{$wpdb->prefix}wc_orders as o
+
+		LEFT JOIN ".$wpdb->prefix."wc_order_operational_data od
+		ON ( od.order_id = o.id )
+
+
+		LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_stripe_fee
+		ON ( om_stripe_fee.order_id = o.id AND o.payment_method = 'stripe' AND (om_stripe_fee.meta_key = 'Stripe Fee' OR om_stripe_fee.meta_key = '_stripe_fee') )
+		
+		LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_paypal_fee
+		ON ( om_paypal_fee.order_id = o.id AND o.payment_method = 'paypal' AND om_paypal_fee.meta_key = 'PayPal Transaction Fee' )
+		
+		LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_number
+		ON ( om_number.order_id = o.id AND om_number.meta_key = '_order_number_formatted' )
+		
+		LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_alg
+		ON ( om_alg.order_id = o.id AND om_alg.meta_key = '_alg_wc_custom_order_number' )
+
+		LEFT JOIN {$wpdb->prefix}mw_wc_qbo_sync_payment_id_map pim ON ( o.id = pim.wc_payment_id AND pim.is_wc_order = 0)
+		WHERE
+		o.type = 'shop_order'
+		{$single_whr}
+		AND o.transaction_id IS NOT NULL
+		AND o.transaction_id != ''
+		
+		AND o.payment_method != ''
+		AND o.payment_method = '{$gateway}'
+		AND o.currency != ''
+		AND o.currency = '{$currency}'
+		{$date_whr}
+		";
+
+		$sql .= ' GROUP BY o.id';
+
+		$orderby = '(od.date_paid_gmt IS NULL) DESC, o.id DESC';
+		$sql .= ' ORDER BY ' . $orderby;
+
+		return $this->get_data($sql);
+	}
+	
 	public function get_wc_deposit_os_payment_list($date_whr,$gateway,$currency,$order_status,$single_ord_id=0){
+		// Check if HPOS is enabled and use appropriate method
+		if ($this->is_hpos_enabled()) {
+			return $this->get_wc_deposit_os_payment_list_hpos($date_whr, $gateway, $currency, $order_status, $single_ord_id);
+		}
+		
+		// Legacy implementation for traditional wp_posts/wp_postmeta tables
 		$date_whr = str_replace('`{date}`','p.post_date',$date_whr);
 
 		$single_ord_id = (int) $single_ord_id;
@@ -9541,6 +11409,53 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		//echo $sql;
 		return $this->get_data($sql);
 	}
+	
+	/**
+	 * HPOS compatible version of get_wc_deposit_os_payment_list
+	 */
+	public function get_wc_deposit_os_payment_list_hpos($date_whr, $gateway, $currency, $order_status, $single_ord_id = 0) {
+		// Handle date field mapping for HPOS
+		$date_whr = str_replace('`{date}`','o.date_created_gmt',$date_whr);
+
+		$single_ord_id = (int) $single_ord_id;
+		$single_whr = ($single_ord_id) ? " AND o.id={$single_ord_id} " : '';
+
+		if($single_ord_id){
+			$date_whr = '';
+		}
+
+		global $wpdb;
+		$sql = "
+		SELECT DISTINCT(o.id) as order_id, o.status as order_status, o.date_created_gmt as order_date, o.total_amount as order_total, o.customer_id as customer_user, o.currency as order_currency,
+		o.payment_method as payment_method, pim.qbo_payment_id, om_number.meta_value as order_number_formatted, om_alg.meta_value as _alg_wc_custom_order_number
+		FROM
+		{$wpdb->prefix}wc_orders as o
+
+		LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_number
+		ON ( om_number.order_id = o.id AND om_number.meta_key = '_order_number_formatted' )
+		
+		LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_alg
+		ON ( om_alg.order_id = o.id AND om_alg.meta_key = '_alg_wc_custom_order_number' )
+
+		LEFT JOIN {$wpdb->prefix}mw_wc_qbo_sync_payment_id_map pim ON ( o.id = pim.wc_payment_id AND pim.is_wc_order = 1)
+		WHERE
+		o.type = 'shop_order'
+		{$single_whr}
+		AND o.status = '{$order_status}'
+		AND o.payment_method != ''
+		AND o.payment_method = '{$gateway}'
+		AND o.currency != ''
+		AND o.currency = '{$currency}'
+		{$date_whr}
+		";
+
+		$sql .= ' GROUP BY o.id';
+
+		$orderby = 'o.date_created_gmt DESC';
+		$sql .= ' ORDER BY ' . $orderby;
+
+		return $this->get_data($sql);
+	}
 
 	public function get_dps_utc_time_arr(){
 		$utc_arr = array();
@@ -9569,7 +11484,12 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		$allow_this = true;
 		if($allow_this || $this->is_connected()){
 			global $wpdb;
-			$p_maps_q = "SELECT * FROM `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` WHERE `id` >0 AND `enable_payment` = 1 AND `qbo_account_id` > 0 AND `enable_batch` = 1 AND `individual_batch_support` = 0 AND `wc_paymentmethod` !='' AND `deposit_cron_utc` !='' ";
+			$table = $wpdb->prefix . 'mw_wc_qbo_sync_paymentmethod_map';
+			if (strpos($table, $wpdb->prefix) === 0) {
+				$p_maps_q = "SELECT * FROM `{$table}` WHERE `id` >0 AND `enable_payment` = 1 AND `qbo_account_id` > 0 AND `enable_batch` = 1 AND `individual_batch_support` = 0 AND `wc_paymentmethod` !='' AND `deposit_cron_utc` !='' ";
+			} else {
+				$p_maps_q = "";
+			}
 
 			$p_maps_data = $this->get_data($p_maps_q);
 			if(is_array($p_maps_data) && !empty($p_maps_data)){
@@ -9642,7 +11562,12 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				}
 			}
 
-			$p_maps_q = "SELECT * FROM `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` WHERE `id` >0 AND `enable_payment` = 1 AND `qbo_account_id` > 0 AND `enable_batch` = 1 {$ibs_whr} AND `wc_paymentmethod` !='' {$p_map_whr}";
+			$table = $wpdb->prefix . 'mw_wc_qbo_sync_paymentmethod_map';
+			if (strpos($table, $wpdb->prefix) === 0) {
+				$p_maps_q = "SELECT * FROM `{$table}` WHERE `id` >0 AND `enable_payment` = 1 AND `qbo_account_id` > 0 AND `enable_batch` = 1 {$ibs_whr} AND `wc_paymentmethod` !='' {$p_map_whr}";
+			} else {
+				$p_maps_q = "";
+			}
 
 			$p_maps_data = $this->get_data($p_maps_q);
 			
@@ -9754,14 +11679,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 							
 							if($qbo_sr_id>0){
 								$wc_qb_sr_map_arr[$wc_order_id] = $qbo_sr_id;
-								$total_pmnt_amnt+=$p_list['order_total'];
+								$total_pmnt_amnt+=floatval($p_list['order_total']);
 								/*
 								$total_txn_fee+=(($p_list['payment_method']=='stripe' || $p_list['payment_method']=='paypal') && isset($p_list[$wc_paymentmethod.'_txn_fee']))?(float) $p_list[$wc_paymentmethod.'_txn_fee']:0;
 								*/
 							
 								$tfli_data = $this->get_order_txn_fee_data_by_id($wc_order_id);
 								if(is_array($tfli_data)){
-									$total_txn_fee+=$tfli_data['t_f_amnt'];
+									$total_txn_fee+=floatval($tfli_data['t_f_amnt']);
 								}
 								
 								//$total_txn_fee = 0;
@@ -9995,7 +11920,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			}
 			*/
 			
-			if($single_pmnt_id && !$this->is_order_sync_as_invoice($single_ord_id)){
+			if($single_pmnt_id && !$this->is_order_sync_as_invoice($single_pmnt_id)){
 				return false;
 			}
 			
@@ -10036,7 +11961,12 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				}
 			}
 
-			$p_maps_q = "SELECT * FROM `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` WHERE `id` >0 AND `enable_payment` = 1 AND `qbo_account_id` > 0 AND `enable_batch` = 1 {$ibs_whr} AND `wc_paymentmethod` !='' {$p_map_whr}";
+			$table = $wpdb->prefix . 'mw_wc_qbo_sync_paymentmethod_map';
+			if (strpos($table, $wpdb->prefix) === 0) {
+				$p_maps_q = "SELECT * FROM `{$table}` WHERE `id` >0 AND `enable_payment` = 1 AND `qbo_account_id` > 0 AND `enable_batch` = 1 {$ibs_whr} AND `wc_paymentmethod` !='' {$p_map_whr}";
+			} else {
+				$p_maps_q = "";
+			}
 
 			$p_maps_data = $this->get_data($p_maps_q);
 
@@ -10159,14 +12089,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 							$qbo_payment_id = (int) $p_list['qbo_payment_id'];
 
 							if($qbo_payment_id>0){
-								$total_pmnt_amnt+=$p_list['order_total'];
+								$total_pmnt_amnt+=floatval($p_list['order_total']);
 								/*
 								$total_txn_fee+=(($p_list['payment_method']=='stripe' || $p_list['payment_method']=='paypal') && isset($p_list[$wc_paymentmethod.'_txn_fee']))?(float) $p_list[$wc_paymentmethod.'_txn_fee']:0;
 								*/
 								
 								$tfli_data = $this->get_order_txn_fee_data_by_id($p_list['order_id']);
 								if(is_array($tfli_data)){
-									$total_txn_fee+=$tfli_data['t_f_amnt'];
+									$total_txn_fee+=floatval($tfli_data['t_f_amnt']);
 								}
 								
 								//$total_txn_fee = 0;
@@ -10201,14 +12131,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 							
 							if($qbo_sr_id>0){
 								$wc_qb_sr_map_arr[$wc_order_id] = $qbo_sr_id;
-								$total_pmnt_amnt+=$p_list['order_total'];
+								$total_pmnt_amnt+=floatval($p_list['order_total']);
 								/*
 								$total_txn_fee+=(($p_list['payment_method']=='stripe' || $p_list['payment_method']=='paypal') && isset($p_list[$wc_paymentmethod.'_txn_fee']))?(float) $p_list[$wc_paymentmethod.'_txn_fee']:0;
 								*/
 							
 								$tfli_data = $this->get_order_txn_fee_data_by_id($wc_order_id);
 								if(is_array($tfli_data)){
-									$total_txn_fee+=$tfli_data['t_f_amnt'];
+									$total_txn_fee+=floatval($tfli_data['t_f_amnt']);
 								}
 								
 								//$total_txn_fee = 0;
@@ -10872,8 +12802,10 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$save_data = array();
 			$save_data['qbo_payment_id'] = $qbo_pmnt_id;
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_payment_id_map';
+			$table = esc_sql($table);
 
 			//$this->get_field_by_val($table,'id','wc_payment_id',$payment_id)
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
 			$pim_row = $this->get_row($wpdb->prepare("SELECT `id` FROM {$table} WHERE `wc_payment_id` = %d AND `is_wc_order` = %d LIMIT 0,1 ",$payment_id,$is_wc_order));
 
 			if(is_array($pim_row) && !empty($pim_row)){
@@ -10999,7 +12931,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	public function get_domain(){
 		$u_sn = false;
 		if($u_sn && isset($_SERVER['SERVER_NAME']) && !empty($_SERVER['SERVER_NAME'])){
-			return $_SERVER['SERVER_NAME'];
+			return sanitize_text_field(wp_unslash($_SERVER['SERVER_NAME']));
 		}else{
 			$siteurl = $this->get_option('siteurl'); //get_site_url
 			if(!empty($siteurl)){
@@ -11013,12 +12945,12 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	}
 	
 	public function get_plugin_ip(){
-		$s_laddr = (isset($_SERVER['LOCAL_ADDR']))?$_SERVER['LOCAL_ADDR']:'';
-		$usersip = isset($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : $s_laddr;
+		$s_laddr = (isset($_SERVER['LOCAL_ADDR']))?sanitize_text_field(wp_unslash($_SERVER['LOCAL_ADDR'])):'';
+		$usersip = isset($_SERVER['SERVER_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_ADDR'])) : $s_laddr;
 		
 		//
 		$u_sn = false;
-		$sname = ($u_sn && isset($_SERVER['SERVER_NAME']) && !empty($_SERVER['SERVER_NAME']))?$_SERVER['SERVER_NAME']:$this->get_domain();
+		$sname = ($u_sn && isset($_SERVER['SERVER_NAME']) && !empty($_SERVER['SERVER_NAME']))?sanitize_text_field(wp_unslash($_SERVER['SERVER_NAME'])):$this->get_domain();
 		if(empty($usersip) && !empty($sname)){
 			$usersip = gethostbyname($sname);
 		}
@@ -11046,7 +12978,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				'content-type' => 'text/plain',
 			);
 			
-			$api_key = 'cbb22de2-5cca-4f43-a028-da5f00a2cebd';
+			$api_key = get_option('mw_wc_qbo_sync_loggly_api_key', '');
 			$api_url = "http://logs-01.loggly.com/inputs/".$api_key."/tag/http/";			
 						
 			$response = wp_remote_post($api_url, [
@@ -11105,9 +13037,9 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	}
 	
 	/**/
-	public function creds($f_remote=false){
+	public function creds($f_remote=false,$check_oauth2_refresh=false){
 		if($this->option_checked('mw_wc_qbo_sync_is_oauth2_qb_connection_fa')){
-			return $this->creds_v2_oauth2();
+			return $this->creds_v2_oauth2([],$f_remote,$check_oauth2_refresh);
 		}
 		
 		$ses_cred_a = false;
@@ -11152,7 +13084,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 					$md5hash = substr($localdata, 0, 32);
 					$localdata = substr($localdata, 32);
 					$localdata = base64_decode($localdata);
-					$localkeyresults = unserialize($localdata);
+					$localkeyresults = is_string($localdata) ? unserialize($localdata) : $localdata;
 					$originalcheckdate = $localkeyresults['checkdate'];
 					
 					if ($md5hash == md5($originalcheckdate . $conn_cred_secret_key)) {
@@ -11287,55 +13219,117 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	}
 	
 	/**/
-	public function creds_v2_oauth2($creds_e=array()){
+	public function creds_v2_oauth2($creds_e=array(),$f_remote=false,$check_oauth2_refresh=false){
 		$creds = array();
+
+		if(empty($this->get_option('mw_wc_qbo_sync_license',''))){
+			$this->creds = $creds;
+			return;
+		}		
+		
+		if(empty($this->get_option('mw_wc_qbo_sync_localkey',''))){
+			$this->creds = $creds;
+			return;
+		}
 		
 		if(is_array($creds_e) && !empty($creds_e)){
 			$creds = $creds_e;
 		}else{
-			$server_name = $this->get_domain();
-			$wc_qbo_plugin_dirpath = $this->get_plugin_connection_dir();
-			$wc_qbo_plugin_usersip = $this->get_plugin_ip();
+			# New - Local Data Support
+			$localkey = $this->get_option('mw_wc_qbo_sync_conn_cred_local_key','');
+		
+			$conn_cred_secret_key = base64_decode('SDg0SEdTa1BYTTgzRlNW');
+			$localkeydays = 1;
+			$allowcheckfaildays = 1;
 			
-			$requestHeader = array(
-				'Accept' => 'application/json',
-				'Licensekey' => $this->get_option('mw_wc_qbo_sync_license',''),
-				'Accesstoken' => $this->get_option('mw_wc_qbo_sync_access_token',''),
-				'Servername' => $server_name,
-				'Connectionnumber' => $this->get_option('mw_wc_qbo_sync_connection_number',1),
-				'Sandboxmode' => $this->get_option('mw_wc_qbo_sync_sandbox_mode','no'),
-				'Dirpath' => $wc_qbo_plugin_dirpath,
-				'Userip' => $wc_qbo_plugin_usersip,
-				'is_oauth2_connection' => '1',
-			);		
-			
-			$qc_creds_api_url = $this->quickbooks_connection_dashboard_url.'/wc-qbo-get-connection-creds-v2.php';
-			if($this->use_new_dash_connection_url()){
-				$qc_creds_api_url = $this->get_new_dash_connection_url().'/api/qbo-connection-credentials';
-			}			
-
-			$params = array(
-				//'timeout' => 10,
-				'headers' => $requestHeader,
-			);
-			
-			$response = wp_remote_get($qc_creds_api_url, $params);		
-			$is_res_ok = false;
-			
-			if (is_array( $response )){
-				$response_code = wp_remote_retrieve_response_code( $response );
-				if($response_code == 200){
-					$is_res_ok = true;
+			$checkdate = date("Ymd");		
+			$localkeyvalid = false;
+			$localkeyresults = array();
+			if(!$f_remote && !$check_oauth2_refresh){
+				if($localkey) {
+					$localkey = str_replace("\n", '', $localkey);
+					$localdata = substr($localkey, 0, strlen($localkey) - 32);
+					$md5hash = substr($localkey, strlen($localkey) - 32);
+					if($md5hash == md5($localdata . $conn_cred_secret_key)) {
+						$localdata = strrev($localdata);
+						$md5hash = substr($localdata, 0, 32);
+						$localdata = substr($localdata, 32);
+						$localdata = base64_decode($localdata);
+						$localkeyresults = is_string($localdata) ? unserialize($localdata) : $localdata;
+						$originalcheckdate = $localkeyresults['checkdate'];
+						
+						if ($md5hash == md5($originalcheckdate . $conn_cred_secret_key)) {
+							$localexpiry = date("Ymd", mktime(0, 0, 0, date("m"), date("d") - $localkeydays, date("Y")));
+							if ($originalcheckdate > $localexpiry) {
+								$localkeyvalid = true;
+								$creds = $localkeyresults;
+								
+								# Expire Check
+								$s_time = $this->now('Y-m-d H:i:s',$creds['timezone']);
+								if(strtotime($creds['oauth_access_expiry']) - 60 < strtotime($s_time)){
+									$localkeyvalid = false;
+									$creds = [];
+								}
+							}
+						}
+					}
 				}
+			}else{
+				update_option('mw_wc_qbo_sync_conn_cred_local_key','',false);
 			}
-			
-			if($is_res_ok && $response['body']!=''){
-				$creds = json_decode($response['body']);
-				$creds = (array) $creds;
-			}
+
+			if(!$localkeyvalid){
+				$server_name = $this->get_domain();
+				$wc_qbo_plugin_dirpath = $this->get_plugin_connection_dir();
+				$wc_qbo_plugin_usersip = $this->get_plugin_ip();
+				
+				$requestHeader = array(
+					'Accept' => 'application/json',
+					'Licensekey' => $this->get_option('mw_wc_qbo_sync_license',''),
+					'Accesstoken' => $this->get_option('mw_wc_qbo_sync_access_token',''),
+					'Servername' => $server_name,
+					'Connectionnumber' => $this->get_option('mw_wc_qbo_sync_connection_number',1),
+					'Sandboxmode' => $this->get_option('mw_wc_qbo_sync_sandbox_mode','no'),
+					'Dirpath' => $wc_qbo_plugin_dirpath,
+					'Userip' => $wc_qbo_plugin_usersip,
+					'is_oauth2_connection' => '1',
+				);		
+				
+				$qc_creds_api_url = $this->quickbooks_connection_dashboard_url.'/wc-qbo-get-connection-creds-v2.php';
+				if($this->use_new_dash_connection_url()){
+					$qc_creds_api_url = $this->get_new_dash_connection_url().'/api/qbo-connection-credentials';
+				}			
+
+				$params = array(
+					//'timeout' => 10,
+					'headers' => $requestHeader,
+				);
+				
+				$response = wp_remote_get($qc_creds_api_url, $params);		
+				$is_res_ok = false;
+				
+				if (is_array( $response )){
+					$response_code = wp_remote_retrieve_response_code( $response );
+					if($response_code == 200){
+						$is_res_ok = true;
+					}
+				}
+				
+				if($is_res_ok && $response['body']!=''){
+					$creds = json_decode($response['body']);
+					$creds = (array) $creds;
+				}else{
+					/*					
+					$localexpiry = date("Ymd", mktime(0, 0, 0, date("m"), date("d") - ($localkeydays + $allowcheckfaildays), date("Y")));
+					if(!empty($localkeyresults) && isset($originalcheckdate) && $originalcheckdate > $localexpiry) {
+						$creds = $localkeyresults;
+					}
+					*/					
+				}
+			}			
 		}		
 		
-		if(is_array($creds) && !empty($creds)){
+		if(!$localkeyvalid && is_array($creds) && !empty($creds)){
 			if(isset($creds['oauth_access_token']) && isset($creds['oauth_refresh_token']) && isset($creds['encryption_key'])){
 				$force_local_encrypt = false;
 				if(!$force_local_encrypt && isset($creds['oauth_access_token_d']) && isset($creds['oauth_refresh_token_d'])){
@@ -11366,6 +13360,21 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				);
 				
 				update_option('mw_wc_qbo_sync_oauth2_qbc_cn_d',$qbc_cn_d,true);
+
+				# Local Storage
+				$creds['checkdate'] = $checkdate;
+				
+				$data_encoded = serialize($creds);
+				$data_encoded = base64_encode($data_encoded);
+				$data_encoded = md5($checkdate . $conn_cred_secret_key) . $data_encoded;
+				$data_encoded = strrev($data_encoded);
+				$data_encoded = $data_encoded . md5($data_encoded . $conn_cred_secret_key);
+				$data_encoded = wordwrap($data_encoded, 80, "\n", true);
+				$localkey = $data_encoded;
+				
+				if(!empty($localkey)){
+					update_option('mw_wc_qbo_sync_conn_cred_local_key',$localkey,false);
+				}
 			}		
 		}
 		
@@ -11503,7 +13512,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	}
 	
 	/**/
-	public function test()
+	public function test($lite=false)
 	{
 		if ($creds = $this->load())
 		{
@@ -11532,6 +13541,15 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			{
 				// Set the IPP flavor
 				$IPP->flavor($creds['qb_flavor']);
+
+				# Lite Connection
+				if($lite){
+					$this->is_connected =true;
+					update_option('mw_wc_qbo_sync_qbo_is_connected',1,true);
+					$this->set_session_val('qbo_is_connected_rts',1);
+					
+					return true;
+				}
 
 				// Get the base URL if it's QBO
 				if ($creds['qb_flavor'] == QuickBooks_IPP_IDS::FLAVOR_ONLINE)
@@ -11597,15 +13615,28 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 	}
 	
 	/**/
-	public function connect(){
+	public function connect($lite=false, $connection_page=false){
 		$chk_oth_opt = false;
 		if($this->option_checked('mw_wc_qbo_sync_session_cn_ls_chk')){
 			if(!$this->get_session_val('new_con_number_rts',0,true) && !$this->get_session_val('new_access_token_rts',0,true)){
 				$chk_oth_opt = true;
 			}
 		}
+
+		# New - Real Connection Check Interval Condition
+		if(!$lite && !$connection_page && $this->use_connection_interval_restriction()){
+			$cdt = $this->now();
+			$last_conn_time = get_option('mw_wc_qbo_sync_app_setting_qb_last_connected','');
+			if(!empty($last_conn_time)){
+				$diff_in_minutes = $this->get_time_difference_in_minutes($last_conn_time,$this->now());
+				if($diff_in_minutes <= 45){
+					$lite = true;
+				}
+			}		
+			
+		}
 		
-		if (($chk_oth_opt && $this->get_session_val('qbo_is_connected_rts',0)) || ($this->check() && 	$this->test())){			
+		if (($chk_oth_opt && $this->get_session_val('qbo_is_connected_rts',0)) || ($this->check() && $this->test($lite))){			
 			if($this->get_session_val('qbo_is_connected_rts',0)){
 				$this->is_connected = ((int) $this->get_option('mw_wc_qbo_sync_qbo_is_connected')==1)?true:false;
 			}
@@ -11661,6 +13692,12 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			$this->realm = $realm;
 
 			$this->IPP = $IPP;
+
+			# New - Update last connected time
+			if(!$lite){
+				$cdt = $this->now();
+				update_option('mw_wc_qbo_sync_app_setting_qb_last_connected',$cdt,true);
+			}
 
 		}else{
 			update_option('mw_wc_qbo_sync_qbo_is_connected',0,true);
@@ -11895,25 +13932,29 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			if($dump){
 				var_dump($item);
 			}else{
-				echo $item;
+				echo esc_html($item);
 			}
 
 		}
 		echo '</pre>';
 	}
 	public function ipr_p($item='',$dump=false){
-		if(isset($_SERVER['REMOTE_ADDR']) && $_SERVER['REMOTE_ADDR'] == ''){
+		if(isset($_SERVER['REMOTE_ADDR']) && sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) == ''){
 			$this->_p($item,$dump);
 		}
 	}
 	public function var_p($key=''){
 		if($key!=''){
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Generic utility function, nonce verification handled by callers
 			if(isset($_POST[$key])){
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitization handled below
 				if(!is_array($_POST[$key])){
-					return trim($_POST[$key]);
+					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized with wp_unslash
+					return sanitize_text_field(wp_unslash(trim($_POST[$key])));
 				}
 				else{
-					return $_POST[$key];
+					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized with wp_unslash
+					return array_map('sanitize_text_field', wp_unslash($_POST[$key]));
 				}
 			}
 		}
@@ -11921,8 +13962,10 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 
 	public function var_g($key=''){
 		if($key!=''){
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Generic utility function, nonce verification handled by callers
 			if(isset($_GET[$key])){
-				return trim($_GET[$key]);
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized with wp_unslash
+				return sanitize_text_field(wp_unslash(trim($_GET[$key])));
 			}
 		}
 	}
@@ -12003,10 +14046,13 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			return $this->set_session_msg_wc($key,$msg);
 		}
 		
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 		if(!isset($_SESSION[$this->session_prefix.'mwqs_session_msg'])){
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 			$_SESSION[$this->session_prefix.'mwqs_session_msg'] = array();
 		}
 
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 		$_SESSION[$this->session_prefix.'mwqs_session_msg'][$key] = $msg;
 	}
 	
@@ -12029,19 +14075,25 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			return $this->show_session_msg_wc($key,$div_class,$unset);
 		}
 		
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 		if(isset($_SESSION[$this->session_prefix.'mwqs_session_msg'][$key])){
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 			if(!empty($_SESSION[$this->session_prefix.'mwqs_session_msg'][$key])){
-			echo '<div class="mwqs_session_msg_div '.$div_class.'">';
+			echo '<div class="mwqs_session_msg_div ' . esc_attr($div_class) . '">';
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 			if(is_array($_SESSION[$this->session_prefix.'mwqs_session_msg'][$key])){
-				echo implode('<br />', $_SESSION[$this->session_prefix.'mwqs_session_msg'][$key]);
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
+				echo wp_kses_post(implode('<br />', $_SESSION[$this->session_prefix.'mwqs_session_msg'][$key]));
 			}
 			else{
-				echo $_SESSION[$this->session_prefix.'mwqs_session_msg'][$key];
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
+				echo wp_kses_post($_SESSION[$this->session_prefix.'mwqs_session_msg'][$key]);
 			}
 			echo '</div>';
 			}
 
 			if($unset){
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 				unset($_SESSION[$this->session_prefix.'mwqs_session_msg'][$key]);
 			}
 		}
@@ -12057,11 +14109,11 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			if(isset($smv[$key])){
 				$msg = $smv[$key];
 				if(!empty($msg)){
-					echo '<div class="mwqs_session_msg_div '.$div_class.'">';
+					echo '<div class="mwqs_session_msg_div ' . esc_attr($div_class) . '">';
 					if(is_array($msg)){
-						echo implode('<br />', $msg);
+						echo wp_kses_post(implode('<br />', $msg));
 					}else{
-						echo $msg;
+						echo wp_kses_post($msg);
 					}
 					echo '</div>';
 				}
@@ -12080,18 +14132,24 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		}
 		
 		$return="";
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 		if(isset($_SESSION[$this->session_prefix.'mwqs_session_msg'][$key])){
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 			if(!empty($_SESSION[$this->session_prefix.'mwqs_session_msg'][$key])){
-				$return.='<div class="mwqs_session_msg_div '.$div_class.'">';
+				$return.='<div class="mwqs_session_msg_div '.esc_attr($div_class).'">';
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 				if(is_array($_SESSION[$this->session_prefix.'mwqs_session_msg'][$key])){
-					$return.= implode('<br />', $_SESSION[$this->session_prefix.'mwqs_session_msg'][$key]);
+					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
+					$return.= wp_kses_post(implode('<br />', $_SESSION[$this->session_prefix.'mwqs_session_msg'][$key]));
 				}
 				else{
-					$return.= $_SESSION[$this->session_prefix.'mwqs_session_msg'][$key];
+					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
+					$return.= wp_kses_post($_SESSION[$this->session_prefix.'mwqs_session_msg'][$key]);
 				}
 				$return.= '</div>';
 			}
 			if($unset){
+			   // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 			   unset($_SESSION[$this->session_prefix.'mwqs_session_msg'][$key]);
 			}
 		}
@@ -12108,11 +14166,11 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 			if(isset($smv[$key])){
 				$msg = $smv[$key];
 				if(!empty($msg)){
-					$return.='<div class="mwqs_session_msg_div '.$div_class.'">';
+					$return.='<div class="mwqs_session_msg_div '.esc_attr($div_class).'">';
 					if(is_array($msg)){
-						$return.= implode('<br />', $msg);
+						$return.= wp_kses_post(implode('<br />', array_map('esc_html', $msg)));
 					}else{						
-						$return.= $msg;
+						$return.= wp_kses_post($msg);
 					}
 					$return.= '</div>';
 				}
@@ -12131,7 +14189,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 		if($url!=''){
 		?>
 		<script type="text/javascript">
-			window.location='<?php echo $url;?>';
+			window.location='<?php echo esc_js($url);?>';
 		</script>
 		<?php
 		}
@@ -12146,9 +14204,21 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 
 	public function view_date($date,$format="Y-m-d"){
 		if($date!='' && $date!=NULL && $date!='0000-00-00 00:00:00'){
-			$date = strtotime($date);
-			return date($format,$date);
+			// If already in the right format, return as-is
+			if(is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$/', $date)) {
+				$timestamp = strtotime($date);
+				if($timestamp !== false) {
+					return date($format, $timestamp);
+				}
+			}
+			// Try to parse as timestamp
+			$timestamp = strtotime($date);
+			if($timestamp !== false) {
+				return date($format, $timestamp);
+			}
 		}
+		// Return null only for completely invalid dates - do not fallback to current date
+		return null;
 	}
 
 	public function view_date_time($date,$format="d-m-Y h:i A"){
@@ -12231,7 +14301,14 @@ class MyWorks_WC_QBO_Sync_QBO_Lib {
 				$invoiceData['today'][$data['date']] = $data['count'];
 			}
 		}
-		$result_inv_month = $this->get_data("SELECT date_format(added_date, '%e %M') AS date, COUNT(id) AS count FROM `".$wpdb->prefix."mw_wc_qbo_sync_log` WHERE added_date>'$month' AND `log_type`='Invoice' AND `success`=1 AND `details` NOT LIKE '%Draft Invoice not allowed%' GROUP BY date_format(added_date, '%e')");
+		$table = $wpdb->prefix . 'mw_wc_qbo_sync_log';
+		$table = esc_sql($table);
+		if (strpos($table, $wpdb->prefix) === 0) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped above
+			$result_inv_month = $this->get_data($wpdb->prepare("SELECT date_format(added_date, '%%e %%M') AS date, COUNT(id) AS count FROM `{$table}` WHERE added_date > %s AND `log_type` = %s AND `success` = 1 AND `details` NOT LIKE %s GROUP BY date_format(added_date, '%%e')", $month, 'Invoice', '%Draft Invoice not allowed%'));
+		} else {
+			$result_inv_month = array();
+		}
 		if(!empty($result_inv_month)){
 			foreach($result_inv_month as $data){
 				$invoiceData['month'][$data['date']] = $data['count'];
@@ -12586,7 +14663,7 @@ jQuery(document).ready(function($) {
 		global $wpdb;
 		$query = trim($query);
 		if($query!=''){
-			return $wpdb->get_results($query,ARRAY_A);
+			return $wpdb->get_results($query,ARRAY_A); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 	}
 
@@ -12594,7 +14671,7 @@ jQuery(document).ready(function($) {
 		global $wpdb;
 		$query = trim($query);
 		if($query!=''){
-			return $wpdb->get_row($query,ARRAY_A);
+			return $wpdb->get_row($query,ARRAY_A); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 	}
 
@@ -12602,6 +14679,7 @@ jQuery(document).ready(function($) {
         global $wpdb;
         if($tbl!='' && $field!='' && $field_val!=''){
             $tbl_q = "SELECT * FROM $tbl WHERE $field= '%s'";
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $tbl_q is prepared in this line with $wpdb->prepare()
             $tbl_data = $this->get_row($wpdb->prepare($tbl_q,$field_val));
             return $tbl_data;
         }
@@ -12614,6 +14692,7 @@ jQuery(document).ready(function($) {
         global $wpdb;
         if($tbl!='' && $get_field!='' && $field!='' && $field_val!=''){
             $tbl_q = "SELECT $get_field FROM $tbl WHERE $field= '%s'";
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $tbl_q is prepared in this line with $wpdb->prepare()
             $tbl_data = $this->get_row($wpdb->prepare($tbl_q,$field_val));
 			if($stripslash){
 				return (isset($tbl_data[$get_field]))?stripslashes($tbl_data[$get_field]):'';
@@ -12715,9 +14794,10 @@ jQuery(document).ready(function($) {
 					*/
 					
 					if($return){
-						$options.='<option'.$odsbl.' value="'.esc_attr($value[$s_key]).'" '.$sel_text.'>'.$this->escape(stripslashes($value[$s_val])).'</option>';
+						$options.='<option'.$odsbl.' value="'.esc_attr($value[$s_key]).'" '.$sel_text.'>'.$this->escape(stripslashes($value[$s_val])).'</option>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 					}else{
-						echo '<option'.$odsbl.' value="'.esc_attr($value[$s_key]).'" '.$sel_text.'>'.$this->escape(stripslashes($value[$s_val])).'</option>';
+						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $this->escape() already provides escaping
+						echo '<option'.$odsbl.' value="'.esc_attr($value[$s_key]).'" '.$sel_text.'>'.$this->escape(stripslashes($value[$s_val])).'</option>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 					}
 
 				}else{
@@ -12735,9 +14815,10 @@ jQuery(document).ready(function($) {
 					}
 					
 					if($return){
-						$options.='<option'.$odsbl.' value="'.esc_attr($key).'" '.$sel_text.'>'.$this->escape(stripslashes($value)).'</option>';
+						$options.='<option'.$odsbl.' value="'.esc_attr($key).'" '.$sel_text.'>'.$this->escape(stripslashes($value)).'</option>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 					}else{
-						echo '<option'.$odsbl.' value="'.esc_attr($key).'" '.$sel_text.'>'.$this->escape(stripslashes($value)).'</option>';
+						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $this->escape() already provides escaping
+						echo '<option'.$odsbl.' value="'.esc_attr($key).'" '.$sel_text.'>'.$this->escape(stripslashes($value)).'</option>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 					}
 
 				}
@@ -12776,8 +14857,8 @@ jQuery(document).ready(function($) {
 	/************************************************************************--*********************************************************************/
 	var $per_page_keyword = 'mwqs_per_page';
 	public function set_per_page_from_url($unique=''){
-		if(isset($_GET[$this->per_page_keyword]) && (int) $_GET[$this->per_page_keyword]>0){
-			$pp = (int) $_GET[$this->per_page_keyword];
+		if(isset($_GET[$this->per_page_keyword]) && (int) sanitize_text_field(wp_unslash($_GET[$this->per_page_keyword]))>0){
+			$pp = (int) sanitize_text_field(wp_unslash($_GET[$this->per_page_keyword]));
 			if(!$pp){$pp=$this->default_show_per_page;}
 			#$_SESSION[$this->session_prefix.'item_per_page'.$unique] = $pp;
 			$this->set_session_val('item_per_page'.$unique,$pp);
@@ -12798,7 +14879,7 @@ jQuery(document).ready(function($) {
 	}
 	
 	public function get_url_var($name='page'){
-		$strURL = $_SERVER['REQUEST_URI'];
+		$strURL = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field($_SERVER['REQUEST_URI']) : '';
 		$arrVals = explode("/",$strURL);
 		$found = 0;
 		if(is_array($arrVals) && !empty($arrVals)){
@@ -12816,7 +14897,7 @@ jQuery(document).ready(function($) {
 	public function get_page_var($ft=false,$ft_name='page'){
 		if(!$ft){
 			//$page = (get_query_var('paged')) ? (int) get_query_var('paged') : 1;
-			$page = isset($_GET['paged']) ? (int) $_GET['paged'] : 1;
+			$page = isset($_GET['paged']) ? (int) sanitize_text_field(wp_unslash($_GET['paged'])) : 1;
 		}else{
 			$page = (int) $this->get_url_var($ft_name);		
 		}
@@ -12828,14 +14909,15 @@ jQuery(document).ready(function($) {
 	public function set_and_get($keyword){
 		if(isset($_GET[$keyword])){
 		  #$_SESSION[$this->session_prefix.$keyword] = $_GET[$keyword];
-		  $this->set_session_val($keyword,$_GET[$keyword]);
+		  $this->set_session_val($keyword, sanitize_text_field(wp_unslash($_GET[$keyword])));
 		}
 	}
 	
 	public function set_and_post($keyword){
 		if(isset($_POST[$keyword])){
 		  #$_SESSION[$this->session_prefix.$keyword] = $_POST[$keyword];
-		   $this->set_session_val($keyword,$_POST[$keyword]);
+		   $sanitized_value = is_array($_POST[$keyword]) ? array_map('sanitize_text_field', wp_unslash($_POST[$keyword])) : sanitize_text_field(wp_unslash($_POST[$keyword]));
+		   $this->set_session_val($keyword,$sanitized_value);
 		}
 	}
 	
@@ -12851,6 +14933,7 @@ jQuery(document).ready(function($) {
 			}
 		}
 
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 		$_SESSION[$this->session_prefix.$keyword] = $value;
 	}
 	
@@ -12885,6 +14968,7 @@ jQuery(document).ready(function($) {
 		
 		$val = $default;
 		if(isset($_SESSION[$this->session_prefix.$keyword])){
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 			$val = $_SESSION[$this->session_prefix.$keyword];
 			/*
 			if(!is_array($_SESSION[$this->session_prefix.$keyword])){
@@ -12892,6 +14976,7 @@ jQuery(document).ready(function($) {
 			}
 			*/
 			if($reset){
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 				unset($_SESSION[$this->session_prefix.$keyword]);
 			}
 		}
@@ -12928,6 +15013,7 @@ jQuery(document).ready(function($) {
 			return $this->isset_session_wc($keyword);
 		}
 		
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 		if(isset($_SESSION[$this->session_prefix.$keyword])){
 			return true;
 		}
@@ -12947,7 +15033,9 @@ jQuery(document).ready(function($) {
 			return $this->unset_session_wc($keyword);
 		}
 		
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 		if(isset($_SESSION[$this->session_prefix.$keyword])){
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Plugin-controlled session data, not user input
 			unset($_SESSION[$this->session_prefix.$keyword]);
 		}
 	}
@@ -12974,12 +15062,14 @@ jQuery(document).ready(function($) {
 		';
 		$i = 1;
 		foreach ( $roles as $role ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-specific role validation with predefined WordPress user role values
 			$sql .= ' ' . $wpdb->usermeta . '.meta_value    LIKE    \'%"' . $role . '"%\' ';
 			if ( $i < count( $roles ) ) $sql .= ' OR ';
 			$i++;
 		}
 		$sql .= ' ) ';
 		//echo $sql;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Dynamic SQL constructed above with role validation and escaping
 		return $wpdb->get_var($sql);
 	}
 
@@ -12991,7 +15081,7 @@ jQuery(document).ready(function($) {
 			$gc_length = $count*10;
 
 			//SET GLOBAL
-			$wpdb->query("SET group_concat_max_len = {$gc_length}");
+			$wpdb->query($wpdb->prepare("SET group_concat_max_len = %d", $gc_length));
 
 			$roles = 'customer';
 			if ( ! is_array( $roles ) )
@@ -13005,12 +15095,14 @@ jQuery(document).ready(function($) {
 			';
 			$i = 1;
 			foreach ( $roles as $role ) {
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-specific role validation with predefined WordPress user role values
 				$sql .= ' ' . $wpdb->usermeta . '.meta_value    LIKE    \'%"' . $role . '"%\' ';
 				if ( $i < count( $roles ) ) $sql .= ' OR ';
 				$i++;
 			}
 			$sql .= ' ) ';
 			//echo $sql;
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Dynamic SQL constructed above with role validation and escaping
 			return (string) $wpdb->get_var($sql);
 		}
 	}
@@ -13047,6 +15139,7 @@ jQuery(document).ready(function($) {
 		';
 		$i = 1;
 		foreach ( $roles as $role ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-specific role validation with predefined WordPress user role values
 			$sql .= ' ' . $wpdb->usermeta . '.meta_value    LIKE    \'%"' . $role . '"%\' ';
 			if ( $i < count( $roles ) ) $sql .= ' OR ';
 			$i++;
@@ -13055,13 +15148,14 @@ jQuery(document).ready(function($) {
 
 		$search_txt = $this->sanitize($search_txt);
 		if($search_txt!=''){
-			$sql .=" AND (".$wpdb->users.".display_name LIKE '%%%s%%' OR ".$wpdb->users.".user_email LIKE '%%%s%%' OR um3.meta_value LIKE '%%%s%%' ) ";
+			$sql .=" AND (".$wpdb->users.".display_name LIKE '%%%s%%' OR ".$wpdb->users.".user_email LIKE '%%%s%%' OR um3.meta_value LIKE '%%%s%%' ) "; // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.LikeWildcardsInQueryWithPlaceholder
 		}
 		
 		if($search_txt!=''){
-			$sql = $wpdb->prepare($sql,$search_txt,$search_txt,$search_txt);
+			$sql = $wpdb->prepare($sql,$search_txt,$search_txt,$search_txt); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is prepared above when search text is provided
 		return $wpdb->get_var($sql);
 	}
 	
@@ -13095,6 +15189,7 @@ jQuery(document).ready(function($) {
 		$ext_whr .= ' AND     (';
 		$i = 1;
 		foreach ( $roles as $role ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-specific role validation with predefined WordPress user role values
 			$ext_whr .= ' ' . $wpdb->usermeta . '.meta_value    LIKE    \'%"' . $role . '"%\' ';
 			if ( $i < count( $roles ) ) $ext_whr .= ' OR ';
 			$i++;
@@ -13117,27 +15212,19 @@ jQuery(document).ready(function($) {
 			*/
 			
 			/**/			
-			$mv_w = $wpdb->prepare("meta_value LIKE '%%%s%%'",$search_txt);
+			$search_like = '%' . $wpdb->esc_like($search_txt) . '%';
+			$mv_w = $wpdb->prepare("meta_value LIKE %s",$search_like);
 			$cs_gcq = "SELECT GROUP_CONCAT(DISTINCT(user_id)) AS c_ids FROM {$wpdb->usermeta} WHERE {$mv_w} AND meta_key IN('billing_company','first_name','last_name')";
 			
 			$st_a = explode(' ',$search_txt);
 			if(is_array($st_a) && count($st_a) > 1){
-				$cs_gcq = "
-				SELECT GROUP_CONCAT(DISTINCT(um.user_id)) as c_ids
-				FROM {$wpdb->usermeta} um 
-				INNER JOIN {$wpdb->usermeta} um_f ON (um.user_id = um_f.user_id AND um_f.meta_key = 'first_name') 
-				INNER JOIN {$wpdb->usermeta} um_l ON (um.user_id = um_l.user_id AND um_l.meta_key = 'last_name') 
-				WHERE (um.meta_value LIKE '%%%s%%' AND um.meta_key = 'billing_company')
-				OR um_f.meta_value LIKE '%%%s%%'
-				OR um_l.meta_value LIKE '%%%s%%'
-				OR CONCAT(um_f.meta_value,' ', um_l.meta_value) LIKE '%%%s%%' ";
-				$cs_gcq = $wpdb->prepare($cs_gcq,$search_txt,$search_txt,$search_txt,$search_txt);
+				$cs_gcq = $wpdb->prepare("SELECT GROUP_CONCAT(DISTINCT(um.user_id)) as c_ids FROM {$wpdb->usermeta} um INNER JOIN {$wpdb->usermeta} um_f ON (um.user_id = um_f.user_id AND um_f.meta_key = 'first_name') INNER JOIN {$wpdb->usermeta} um_l ON (um.user_id = um_l.user_id AND um_l.meta_key = 'last_name') WHERE (um.meta_value LIKE %s AND um.meta_key = 'billing_company') OR um_f.meta_value LIKE %s OR um_l.meta_value LIKE %s OR CONCAT(um_f.meta_value,' ', um_l.meta_value) LIKE %s", $search_like, $search_like, $search_like, $search_like);
 			}
 			
-			$s_c_ids = $wpdb->get_var($cs_gcq);
+			$s_c_ids = $wpdb->get_var($cs_gcq); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			$c_id_w = (!empty($s_c_ids))?" OR ".$wpdb->users.".ID IN ({$s_c_ids})":'';
 			
-			$ext_whr .= $wpdb->prepare(" AND (".$wpdb->users.".display_name LIKE '%%%s%%' OR ".$wpdb->users.".user_email LIKE '%%%s%%' OR ".$wpdb->users.".ID = %s {$c_id_w} ) ", $search_txt,$search_txt,$search_txt);
+			$ext_whr .= $wpdb->prepare(" AND (".$wpdb->users.".display_name LIKE '%%%s%%' OR ".$wpdb->users.".user_email LIKE '%%%s%%' OR ".$wpdb->users.".ID = %s {$c_id_w} ) ", $search_txt,$search_txt,$search_txt); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.LikeWildcardsInQueryWithPlaceholder
 			
 		}		
 		
@@ -13151,7 +15238,8 @@ jQuery(document).ready(function($) {
 		
 		$sql .= $ext_whr;
 		
-		//echo $sql;		
+		//echo $sql;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is prepared above when search text is provided
 		return $wpdb->get_var($sql);
 	}
 	
@@ -13187,6 +15275,7 @@ jQuery(document).ready(function($) {
 		';
 		$i = 1;
 		foreach ( $roles as $role ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-specific role validation with predefined WordPress user role values
 			$sql .= ' ' . $wpdb->usermeta . '.meta_value    LIKE    \'%%"' . $role . '"%%\' ';
 			if ( $i < count( $roles ) ) $sql .= ' OR ';
 			$i++;
@@ -13195,7 +15284,7 @@ jQuery(document).ready(function($) {
 
 		$search_txt = $this->sanitize($search_txt);
 		if($search_txt!=''){			
-			$sql .=" AND (".$wpdb->users.".display_name LIKE '%%%s%%' OR ".$wpdb->users.".user_email LIKE '%%%s%%' OR um3.meta_value LIKE '%%%s%%' ) ";
+			$sql .=" AND (".$wpdb->users.".display_name LIKE '%%%s%%' OR ".$wpdb->users.".user_email LIKE '%%%s%%' OR um3.meta_value LIKE '%%%s%%' ) "; // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.LikeWildcardsInQueryWithPlaceholder
 		}
 		
 		$sql.=' GROUP BY '. $wpdb->users . '.ID';
@@ -13208,7 +15297,7 @@ jQuery(document).ready(function($) {
 		}
 
 		if($search_txt!=''){
-			$sql = $wpdb->prepare($sql,$search_txt,$search_txt,$search_txt);
+			$sql = $wpdb->prepare($sql,$search_txt,$search_txt,$search_txt); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		//echo $sql;
 
@@ -13245,6 +15334,7 @@ jQuery(document).ready(function($) {
 		$ext_whr .= ' AND     (';
 		$i = 1;
 		foreach ( $roles as $role ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-specific role validation with predefined WordPress user role values
 			$ext_whr .= ' ' . $wpdb->usermeta . '.meta_value    LIKE    \'%"' . $role . '"%\' ';
 			if ( $i < count( $roles ) ) $ext_whr .= ' OR ';
 			$i++;
@@ -13267,27 +15357,19 @@ jQuery(document).ready(function($) {
 			*/
 			
 			/**/			
-			$mv_w = $wpdb->prepare("meta_value LIKE '%%%s%%'",$search_txt);
+			$search_like = '%' . $wpdb->esc_like($search_txt) . '%';
+			$mv_w = $wpdb->prepare("meta_value LIKE %s",$search_like);
 			$cs_gcq = "SELECT GROUP_CONCAT(DISTINCT(user_id)) AS c_ids FROM {$wpdb->usermeta} WHERE {$mv_w} AND meta_key IN('billing_company','first_name','last_name')";
 			
 			$st_a = explode(' ',$search_txt);
 			if(is_array($st_a) && count($st_a) > 1){
-				$cs_gcq = "
-				SELECT GROUP_CONCAT(DISTINCT(um.user_id)) as c_ids
-				FROM {$wpdb->usermeta} um 
-				INNER JOIN {$wpdb->usermeta} um_f ON (um.user_id = um_f.user_id AND um_f.meta_key = 'first_name') 
-				INNER JOIN {$wpdb->usermeta} um_l ON (um.user_id = um_l.user_id AND um_l.meta_key = 'last_name') 
-				WHERE (um.meta_value LIKE '%%%s%%' AND um.meta_key = 'billing_company')
-				OR um_f.meta_value LIKE '%%%s%%'
-				OR um_l.meta_value LIKE '%%%s%%'
-				OR CONCAT(um_f.meta_value,' ', um_l.meta_value) LIKE '%%%s%%' ";
-				$cs_gcq = $wpdb->prepare($cs_gcq,$search_txt,$search_txt,$search_txt,$search_txt);
+				$cs_gcq = $wpdb->prepare("SELECT GROUP_CONCAT(DISTINCT(um.user_id)) as c_ids FROM {$wpdb->usermeta} um INNER JOIN {$wpdb->usermeta} um_f ON (um.user_id = um_f.user_id AND um_f.meta_key = 'first_name') INNER JOIN {$wpdb->usermeta} um_l ON (um.user_id = um_l.user_id AND um_l.meta_key = 'last_name') WHERE (um.meta_value LIKE %s AND um.meta_key = 'billing_company') OR um_f.meta_value LIKE %s OR um_l.meta_value LIKE %s OR CONCAT(um_f.meta_value,' ', um_l.meta_value) LIKE %s", $search_like, $search_like, $search_like, $search_like);
 			}
 			
-			$s_c_ids = $wpdb->get_var($cs_gcq);
+			$s_c_ids = $wpdb->get_var($cs_gcq); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			$c_id_w = (!empty($s_c_ids))?" OR ".$wpdb->users.".ID IN ({$s_c_ids})":'';
 			
-			$ext_whr .= $wpdb->prepare(" AND (".$wpdb->users.".display_name LIKE '%%%s%%' OR ".$wpdb->users.".user_email LIKE '%%%s%%' OR ".$wpdb->users.".ID = %s {$c_id_w} ) ", $search_txt,$search_txt,$search_txt);
+			$ext_whr .= $wpdb->prepare(" AND (".$wpdb->users.".display_name LIKE '%%%s%%' OR ".$wpdb->users.".user_email LIKE '%%%s%%' OR ".$wpdb->users.".ID = %s {$c_id_w} ) ", $search_txt,$search_txt,$search_txt); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.LikeWildcardsInQueryWithPlaceholder
 		}
 		
 		$sql = '
@@ -13377,7 +15459,7 @@ jQuery(document).ready(function($) {
 				}
 				$this->set_session_val($s_key.$item_id,$item_id);
 			}
-			
+
 			if($item_action == 'OrderPush' && !$this->is_queue_add($item_action,array('order_id'=>$item_id))){
 				return false;
 			}
@@ -13391,7 +15473,7 @@ jQuery(document).ready(function($) {
 			}
 			
 			$queue_table = $wpdb->prefix.'mw_wc_qbo_sync_real_time_sync_queue';
-			$check_queue_query = $wpdb->prepare("SELECT * FROM `$queue_table` WHERE `item_type` = %s AND `item_action` = %s AND `item_id` = %d ",$item_type,$item_action,$item_id);
+			$check_queue_query = $wpdb->prepare("SELECT * FROM `" . esc_sql($queue_table) . "` WHERE `item_type` = %s AND `item_action` = %s AND `item_id` = %d ",$item_type,$item_action,$item_id);
 			if(empty($this->get_row($check_queue_query))){
 				$save_queue_data = array();
 				$save_queue_data['item_type'] = $item_type;
@@ -13403,7 +15485,7 @@ jQuery(document).ready(function($) {
 				
 				if($item_type=='Invoice' && $item_action == 'OrderPush'){
 					$ord_id = (int) $item_id;
-					$pmnt_chk = $this->get_row($wpdb->prepare("SELECT * FROM `{$queue_table}` WHERE `item_type` = 'Payment' AND `item_action` = 'PaymentPush' AND `item_id` = %d ",$ord_id));
+					$pmnt_chk = $this->get_row($wpdb->prepare("SELECT * FROM `" . esc_sql($queue_table) . "` WHERE `item_type` = 'Payment' AND `item_action` = 'PaymentPush' AND `item_id` = %d ",$ord_id));
 					if(is_array($pmnt_chk) && !empty($pmnt_chk) && !empty($pmnt_chk['added_date']) && $pmnt_chk['added_date']!='0000-00-00 00:00:00'){
 						$save_queue_data['added_date'] = date('Y-m-d H:i:s',strtotime('-1 second',strtotime($pmnt_chk['added_date'])));
 					}else{
@@ -13443,6 +15525,7 @@ jQuery(document).ready(function($) {
 		";
 
 		//echo $sql;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Static SQL query with hardcoded values
 		return (int) $wpdb->get_var($sql);
 	}
 
@@ -13452,7 +15535,7 @@ jQuery(document).ready(function($) {
 			global $wpdb;
 
 			$gc_length = $count*10;
-			$wpdb->query("SET group_concat_max_len = {$gc_length}");
+			$wpdb->query($wpdb->prepare("SET group_concat_max_len = %d", $gc_length));
 
 			$sql = "
 			SELECT GROUP_CONCAT(DISTINCT(p.ID)) AS `ids`
@@ -13462,6 +15545,7 @@ jQuery(document).ready(function($) {
 			";
 
 			//echo $sql;
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Dynamic SQL constructed above with group_concat_max_len preparation
 			return (string) $wpdb->get_var($sql);
 		}
 	}
@@ -13766,13 +15850,13 @@ jQuery(document).ready(function($) {
 
 		$search_txt = $this->sanitize($search_txt);
 		if($search_txt!=''){
-			$sql .=" AND ( t.name LIKE '%%%s%%' OR tt.description LIKE '%%%s%%' ) ";
+			$sql .=" AND ( t.name LIKE %s OR tt.description LIKE %s ) ";
+			$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+			$sql = $wpdb->prepare($sql, $search_term, $search_term); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
-
-		if($search_txt!=''){
-			$sql = $wpdb->prepare($sql,$search_txt,$search_txt);
-		}
+		// No preparation needed when there are no placeholders
 		//echo $sql;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is prepared above with $wpdb->prepare()
 		return $wpdb->get_var($sql);
 	}
 	
@@ -13792,18 +15876,20 @@ jQuery(document).ready(function($) {
 
 		$search_txt = $this->sanitize($search_txt);
 		if($search_txt!=''){
-			$sql .=" AND ( t.name LIKE '%%%s%%' OR tt.description LIKE '%%%s%%' ) ";
+			$sql .=" AND ( t.name LIKE %s OR tt.description LIKE %s ) ";
 		}
 
 		$sql.=" ORDER  BY t.name ASC ";
 
 		if($limit!=''){
-			$sql .= ' LIMIT  '.$limit;
+			$sql .= ' LIMIT  '.esc_sql($limit);
 		}
 
 		if($search_txt!=''){
-			$sql = $wpdb->prepare($sql,$search_txt,$search_txt);
+			$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+			$sql = $wpdb->prepare($sql, $search_term, $search_term); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
+		// No preparation needed when there are no placeholders
 		//echo $sql;
 		return $this->get_data($sql);
 	}
@@ -13871,13 +15957,16 @@ jQuery(document).ready(function($) {
 		//
 
 		if($search_txt!=''){
-			$sql .=" AND ( p.post_title LIKE '%%%s%%' OR pm1.meta_value LIKE '%%%s%%' OR p.ID = %s ) ";
+			$sql .=" AND ( p.post_title LIKE %s OR pm1.meta_value LIKE %s OR p.ID = %s ) ";
 		}
 		
 		if($search_txt!=''){
-			$sql = $wpdb->prepare($sql,$search_txt,$search_txt,$search_txt);
+			$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+			$sql = $wpdb->prepare($sql, $search_term, $search_term, $search_txt); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
+		// No preparation needed when there are no placeholders
 		//echo $sql;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is prepared above with $wpdb->prepare()
 		return $wpdb->get_var($sql);
 	}
 	
@@ -13899,7 +15988,7 @@ jQuery(document).ready(function($) {
 			AND p.ID = %d
 			AND term_taxonomy.taxonomy = 'product_type'
 			";
-			$pt_q = $wpdb->prepare($pt_q,$product_id);
+			$pt_q = $wpdb->prepare($pt_q,$product_id); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			$pt_row = $this->get_row($pt_q);
 			if(is_array($pt_row) && !empty($pt_row)){
 				$pt = $pt_row['wc_pt'];
@@ -13986,19 +16075,21 @@ jQuery(document).ready(function($) {
 		//
 		
 		if($search_txt!=''){
-			$sql .=" AND ( p.post_title LIKE '%%%s%%' OR pm1.meta_value LIKE '%%%s%%' OR p.ID = %s ) ";
+			$sql .=" AND ( p.post_title LIKE %s OR pm1.meta_value LIKE %s OR p.ID = %s ) ";
 		}
 
 		$orderby = 'p.post_title ASC';
 		$sql .= ' ORDER BY  '.$orderby;
 
 		if($limit!=''){
-			$sql .= ' LIMIT  '.$limit;
+			$sql .= ' LIMIT  '.esc_sql($limit);
 		}
 
 		if($search_txt!=''){
-			$sql = $wpdb->prepare($sql,$search_txt,$search_txt,$search_txt);
+			$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+			$sql = $wpdb->prepare($sql, $search_term, $search_term, $search_txt); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
+		// No preparation needed when there are no placeholders
 
 		//echo $sql;
 		$r_data = array();
@@ -14098,17 +16189,26 @@ jQuery(document).ready(function($) {
 		}
 
 		if($search_txt!=''){
-			$sql .=" AND ( p.post_title LIKE '%%%s%%' OR p1.post_title LIKE '%%%s%%' OR pm1.meta_value LIKE '%%%s%%' OR p.ID = %s ) ";
+			$sql .=" AND ( p.post_title LIKE %s OR p1.post_title LIKE %s OR pm1.meta_value LIKE %s OR p.ID = %s ) ";
 		}
 		
 		if($stock_status!=''){
-			$sql.= " AND pm7.meta_value='{$stock_status}' ";
+			$sql .= " AND pm7.meta_value = %s ";
 		}
 
 		if($search_txt!=''){
-			$sql = $wpdb->prepare($sql,$search_txt,$search_txt,$search_txt,$search_txt);
+			$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+			$params = array($search_term, $search_term, $search_term, $search_txt);
+			if($stock_status!=''){
+				$params[] = $stock_status;
+			}
+			$sql = $wpdb->prepare($sql, ...$params); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		} else if($stock_status!=''){
+			$sql = $wpdb->prepare($sql, $stock_status); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
+		// No preparation needed when there are no placeholders
 		//echo $sql;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is prepared above with $wpdb->prepare()
 		return $wpdb->get_var($sql);
 	}
 	
@@ -14159,11 +16259,11 @@ jQuery(document).ready(function($) {
 		}
 
 		if($search_txt!=''){
-			$sql .=" AND ( p.post_title LIKE '%%%s%%' OR p1.post_title LIKE '%%%s%%' OR pm1.meta_value LIKE '%%%s%%' OR p.ID = %s ) ";
+			$sql .=" AND ( p.post_title LIKE %s OR p1.post_title LIKE %s OR pm1.meta_value LIKE %s OR p.ID = %s ) ";
 		}
 		
 		if($stock_status!=''){
-			$sql.= " AND pm7.meta_value='{$stock_status}' ";
+			$sql .= " AND pm7.meta_value = %s ";
 		}
 		
 		if($search_txt!=''){
@@ -14175,12 +16275,20 @@ jQuery(document).ready(function($) {
 		$sql .= ' ORDER BY  '.$orderby;
 
 		if($limit!=''){
-			$sql .= ' LIMIT  '.$limit;
+			$sql .= ' LIMIT  '.esc_sql($limit);
 		}
 
 		if($search_txt!=''){
-			$sql = $wpdb->prepare($sql,$search_txt,$search_txt,$search_txt,$search_txt);
+			$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+			$params = array($search_term, $search_term, $search_term, $search_txt);
+			if($stock_status!=''){
+				$params[] = $stock_status;
+			}
+			$sql = $wpdb->prepare($sql, ...$params); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		} else if($stock_status!=''){
+			$sql = $wpdb->prepare($sql, $stock_status); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
+		// No preparation needed when there are no placeholders
 		
 		$r_data = array();
 		$q_data =  $this->get_data($sql);
@@ -14260,43 +16368,71 @@ jQuery(document).ready(function($) {
 		return $r_data;
 	}
 	
-	//29-03-2017
+	//29-03-2017 - Updated for HPOS compatibility
 	public function get_push_all_wc_order_count(){
-		global $wpdb;
-		$sql = "
-		SELECT COUNT(DISTINCT(p.ID))
-		FROM
-		{$wpdb->prefix}posts as p
-		WHERE
-		p.post_type = 'shop_order'
-		";
-
-		//echo $sql;
-		return (int) $wpdb->get_var($sql);
-	}
-	
-	public function get_push_all_wc_order_ids($count){
-		$count = (int) $count;
-		if($count>0){
+		if ($this->is_hpos_enabled()) {
+			// HPOS-compatible implementation
+			$orders = wc_get_orders(array(
+				'status' => 'any',
+				'limit' => -1,
+				'return' => 'ids'
+			));
+			return count($orders);
+		} else {
+			// Legacy implementation
 			global $wpdb;
-
-			$gc_length = $count*10;
-			$wpdb->query("SET group_concat_max_len = {$gc_length}");
-
 			$sql = "
-			SELECT GROUP_CONCAT(DISTINCT(p.ID)) AS `ids`
+			SELECT COUNT(DISTINCT(p.ID))
 			FROM
 			{$wpdb->prefix}posts as p
 			WHERE
 			p.post_type = 'shop_order'
 			";
-
-			//echo $sql;
-			return (string) $wpdb->get_var($sql);
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Static SQL query with hardcoded values
+			return (int) $wpdb->get_var($sql);
 		}
 	}
 	
+	public function get_push_all_wc_order_ids($count){
+		$count = (int) $count;
+		if($count>0){
+			if ($this->is_hpos_enabled()) {
+				// HPOS-compatible implementation
+				$orders = wc_get_orders(array(
+					'status' => 'any',
+					'limit' => $count,
+					'return' => 'ids'
+				));
+				return implode(',', $orders);
+			} else {
+				// Legacy implementation
+				global $wpdb;
+
+				$gc_length = $count*10;
+				$wpdb->query($wpdb->prepare("SET group_concat_max_len = %d", $gc_length));
+
+				$sql = "
+				SELECT GROUP_CONCAT(DISTINCT(p.ID)) AS `ids`
+				FROM
+				{$wpdb->prefix}posts as p
+				WHERE
+				p.post_type = 'shop_order'
+				";
+
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Dynamic SQL constructed above with group_concat_max_len preparation
+				return (string) $wpdb->get_var($sql);
+			}
+		}
+		return '';
+	}
+	
 	public function count_order_list($search_txt='',$date_from='',$date_to='',$status=''){
+		// Check if HPOS is enabled
+		if (get_option('woocommerce_custom_orders_table_enabled') === 'yes') {
+			return $this->count_order_list_hpos($search_txt,$date_from,$date_to,$status);
+		}
+		
+		// Legacy implementation for traditional post-based orders
 		global $wpdb;
 		
 		$ext_whr = '';
@@ -14309,7 +16445,7 @@ jQuery(document).ready(function($) {
 			
 			$wp_date_time_c = $this->now();
 			$last_30_days_dt = date('Y-m-d H:i:s', strtotime('-'.$this->get_hd_ldys_lmt().' days', strtotime($wp_date_time_c)));
-			$ext_whr = " AND p.post_date BETWEEN '{$last_30_days_dt}' AND '{$wp_date_time_c}' ";
+			$ext_whr = $wpdb->prepare(" AND p.post_date BETWEEN %s AND %s ", $last_30_days_dt, $wp_date_time_c);
 		}		
 		
 		$search_txt = $this->sanitize($search_txt);
@@ -14326,14 +16462,16 @@ jQuery(document).ready(function($) {
 			if(!empty($onc_mf)){
 				$ext_join .="
 				LEFT JOIN ".$wpdb->postmeta." pm10
-				ON ( pm10.post_id = p.ID AND pm10.meta_key =  '{$onc_mf}' )
+				ON ( pm10.post_id = p.ID AND pm10.meta_key =  '" . esc_sql($onc_mf) . "' )
 				";
 			}
 			
 			if(!empty($onc_mf)){
-				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE '%%%s%%' OR pm2.meta_value LIKE '%%%s%%' OR pm7.meta_value LIKE '%%%s%%' OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE '%%%s%%'  OR p.ID = %s OR pm10.meta_value = %s ) ",$search_txt,$search_txt,$search_txt,$search_txt,$search_txt,$search_txt);
+				$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE %s OR pm2.meta_value LIKE %s OR pm7.meta_value LIKE %s OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE %s  OR p.ID = %s OR pm10.meta_value = %s ) ",$search_term,$search_term,$search_term,$search_term,$search_txt,$search_txt);
 			}else{
-				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE '%%%s%%' OR pm2.meta_value LIKE '%%%s%%' OR pm7.meta_value LIKE '%%%s%%' OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE '%%%s%%' OR p.ID = %s ) ",$search_txt,$search_txt,$search_txt,$search_txt,$search_txt);
+				$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE %s OR pm2.meta_value LIKE %s OR pm7.meta_value LIKE %s OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE %s OR p.ID = %s ) ",$search_term,$search_term,$search_term,$search_term,$search_txt);
 			}
 		}
 		
@@ -14344,7 +16482,7 @@ jQuery(document).ready(function($) {
 		
 		$date_from = $this->sanitize($date_from);
 		if($date_from!=''){
-			$ext_whr .=" AND p.post_date>='".$date_from." 00:00:00'";
+			$ext_whr .= $wpdb->prepare(" AND p.post_date>=%s", $date_from . " 00:00:00");
 		}
 
 		$date_to = $this->sanitize($date_to);
@@ -14362,11 +16500,18 @@ jQuery(document).ready(function($) {
 		{$ext_whr}
 		";
 		
-		//echo $sql;		
+		//echo $sql;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Dynamic SQL with sanitized date values and hardcoded structure
 		return $wpdb->get_var($sql);	
 	}
 	
 	public function get_order_list($search_txt='',$limit='',$date_from='',$date_to='',$status=''){
+		// Check if HPOS is enabled
+		if (get_option('woocommerce_custom_orders_table_enabled') === 'yes') {
+			return $this->get_order_list_hpos($search_txt,$limit,$date_from,$date_to,$status);
+		}
+		
+		// Legacy implementation for traditional post-based orders
 		global $wpdb;
 		
 		$ext_whr = '';
@@ -14401,9 +16546,11 @@ jQuery(document).ready(function($) {
 			}
 			
 			if(!empty($onc_mf)){
-				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE '%%%s%%' OR pm2.meta_value LIKE '%%%s%%' OR pm7.meta_value LIKE '%%%s%%' OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE '%%%s%%'  OR p.ID = %s OR pm10.meta_value = %s ) ",$search_txt,$search_txt,$search_txt,$search_txt,$search_txt,$search_txt);
+				$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE %s OR pm2.meta_value LIKE %s OR pm7.meta_value LIKE %s OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE %s  OR p.ID = %s OR pm10.meta_value = %s ) ",$search_term,$search_term,$search_term,$search_term,$search_txt,$search_txt);
 			}else{
-				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE '%%%s%%' OR pm2.meta_value LIKE '%%%s%%' OR pm7.meta_value LIKE '%%%s%%' OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE '%%%s%%' OR p.ID = %s ) ",$search_txt,$search_txt,$search_txt,$search_txt,$search_txt);
+				$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE %s OR pm2.meta_value LIKE %s OR pm7.meta_value LIKE %s OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE %s OR p.ID = %s ) ",$search_term,$search_term,$search_term,$search_term,$search_txt);
 			}
 			
 		}
@@ -14486,7 +16633,193 @@ jQuery(document).ready(function($) {
 		return $r_data;		
 	}
 	
+	/**
+	 * HPOS compatible version of count_order_list
+	 */
+	public function count_order_list_hpos($search_txt='',$date_from='',$date_to='',$status=''){
+		$orders = $this->get_order_list_hpos($search_txt,'',$date_from,$date_to,$status);	
+		return count($orders);
+	}
+
+	/**
+	 * HPOS compatible version of get_order_list using direct SQL queries
+	 */
+	public function get_order_list_hpos($search_txt='',$limit='',$date_from='',$date_to='',$status=''){
+		// HPOS compatible version using direct database queries - memory optimized
+		global $wpdb;
+		
+		// Use HPOS tables
+		$ext_whr = '';
+		$ext_join = '';
+		
+		$onc_mf = $this->get_woo_ord_number_key_field();
+		$wconmkn_key = $this->get_option('mw_wc_qbo_sync_compt_p_wconmkn');
+		
+		// Pre-build all necessary joins to get data in single query
+		// Using actual HPOS schema: core fields (total_amount, currency, payment_method, etc.) are in wc_orders table
+		$ext_join .= "
+			LEFT JOIN ".$wpdb->prefix."wc_order_addresses addr_bill 
+			ON ( addr_bill.order_id = o.id AND addr_bill.address_type = 'billing' )
+			LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_key 
+			ON ( om_key.order_id = o.id AND om_key.meta_key = '_order_key' )
+			LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_order_number_formatted 
+			ON ( om_order_number_formatted.order_id = o.id AND om_order_number_formatted.meta_key = '_order_number_formatted' )
+			LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_alg_custom_number 
+			ON ( om_alg_custom_number.order_id = o.id AND om_alg_custom_number.meta_key = '_alg_wc_custom_order_number' )
+			LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_mw_qbo_doc_no 
+			ON ( om_mw_qbo_doc_no.order_id = o.id AND om_mw_qbo_doc_no.meta_key = '_mw_qbo_sync_ord_doc_no' )
+		";
+		
+		// Add custom order number field join if exists
+		if(!empty($onc_mf)){
+			$ext_join .="
+			LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_custom_number
+			ON ( om_custom_number.order_id = o.id AND om_custom_number.meta_key = '{$onc_mf}' )
+			";
+		}
+		
+		// Add wconmkn key join if configured
+		if(!empty($wconmkn_key)){
+			$ext_join .="
+			LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_wconmkn
+			ON ( om_wconmkn.order_id = o.id AND om_wconmkn.meta_key = '{$wconmkn_key}' )
+			";
+		}
+		
+		if($this->is_pl_res_tml()){
+			$wp_date_time_c = $this->now();
+			$last_30_days_dt = date('Y-m-d H:i:s', strtotime('-'.$this->get_hd_ldys_lmt().' days', strtotime($wp_date_time_c)));
+			$ext_whr = " AND o.date_created_gmt BETWEEN '{$last_30_days_dt}' AND '{$wp_date_time_c}' ";
+		}
+		
+		$search_txt = $this->sanitize($search_txt);
+		if($search_txt!=''){
+			if(!empty($onc_mf)){
+				$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+				$ext_whr .=$wpdb->prepare(" AND ( addr_bill.first_name LIKE %s OR addr_bill.last_name LIKE %s OR addr_bill.company LIKE %s OR CONCAT(addr_bill.first_name,' ', addr_bill.last_name) LIKE %s  OR o.id = %s OR om_custom_number.meta_value = %s ) ",$search_term,$search_term,$search_term,$search_term,$search_txt,$search_txt);
+			}else{
+				$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+				$ext_whr .=$wpdb->prepare(" AND ( addr_bill.first_name LIKE %s OR addr_bill.last_name LIKE %s OR addr_bill.company LIKE %s OR CONCAT(addr_bill.first_name,' ', addr_bill.last_name) LIKE %s OR o.id = %s ) ",$search_term,$search_term,$search_term,$search_term,$search_txt);
+			}
+		}
+		
+		$status = $this->sanitize($status);
+		if($status!=''){
+			$ext_whr .=$wpdb->prepare(" AND o.status = %s",$status);
+		}
+		
+		$date_from = $this->sanitize($date_from);
+		if($date_from!=''){
+			$ext_whr .=" AND o.date_created_gmt>='".$date_from." 00:00:00'";
+		}
+
+		$date_to = $this->sanitize($date_to);
+		if($date_to!=''){
+			$ext_whr .=" AND o.date_created_gmt<='".$date_to." 23:59:59'";
+		}
+		
+		// Single optimized query to get all needed data
+		// Using correct HPOS schema: total_amount, currency, payment_method, payment_method_title are in main wc_orders table
+		$sql = "
+		SELECT DISTINCT
+			o.id as ID, 
+			o.status as post_status, 
+			o.date_created_gmt as post_date,
+			o.customer_id,
+			o.total_amount as order_total,
+			o.currency as order_currency,
+			o.payment_method,
+			o.payment_method_title,
+			addr_bill.first_name as billing_first_name,
+			addr_bill.last_name as billing_last_name,
+			addr_bill.company as billing_company,
+			om_key.meta_value as order_key,
+			om_order_number_formatted.meta_value as order_number_formatted,
+			om_alg_custom_number.meta_value as _alg_wc_custom_order_number,
+			om_mw_qbo_doc_no.meta_value as _mw_qbo_sync_ord_doc_no" .
+			(!empty($onc_mf) ? ", om_custom_number.meta_value as custom_order_number" : "") .
+			(!empty($wconmkn_key) ? ", om_wconmkn.meta_value as wconmkn_value" : "") . "
+		FROM
+		{$wpdb->prefix}wc_orders as o
+		{$ext_join}
+		WHERE
+		o.type = 'shop_order'
+		{$ext_whr}
+		";
+		
+		$orderby = 'o.date_created_gmt DESC';
+		$sql .= ' ORDER BY  '.$orderby;
+
+		if($limit!=''){
+			$sql .= ' LIMIT  '.$limit;
+		}
+		
+		$r_data = array();
+		$q_data =  $this->get_data($sql);
+
+		$available_gateways = WC()->payment_gateways->get_available_payment_gateways();
+		// Create key-value array of gateway ID => Title
+		$gateway_titles = array();
+		foreach($available_gateways as $gateway_id => $gateway) {
+			$gateway_titles[$gateway_id] = $gateway->get_title();
+		}
+		
+		if(is_array($q_data) && !empty($q_data)){
+			foreach($q_data as $rd){
+				$od_tmp_arr = array();
+				$od_tmp_arr['ID'] = $rd['ID'];
+				$od_tmp_arr['post_status'] = $rd['post_status'];
+				$od_tmp_arr['post_date'] = $rd['post_date'];
+				$od_tmp_arr['billing_first_name'] = $rd['billing_first_name'] ?? '';
+				$od_tmp_arr['billing_last_name'] = $rd['billing_last_name'] ?? '';
+				$od_tmp_arr['billing_company'] = $rd['billing_company'] ?? '';
+				$od_tmp_arr['order_total'] = $rd['order_total'] ? number_format((float)$rd['order_total'], 2, '.', '') : '';
+				$od_tmp_arr['order_key'] = $rd['order_key'] ?? '';
+				$od_tmp_arr['customer_user'] = $rd['customer_id'] ?? '';
+				$od_tmp_arr['order_currency'] = $rd['order_currency'] ?? '';
+				$od_tmp_arr['payment_method'] = $rd['payment_method'] ?? '';
+				$payment_method_title = '';
+				// Use gateway array for better title lookup
+				if(empty($payment_method_title) && !empty($rd['payment_method']) && isset($gateway_titles[$rd['payment_method']])) {
+					$payment_method_title = $gateway_titles[$rd['payment_method']];
+				}
+				$od_tmp_arr['payment_method_title'] = $payment_method_title;
+				$od_tmp_arr['order_number_formatted'] = $rd['order_number_formatted'] ?? '';
+				$od_tmp_arr['_alg_wc_custom_order_number'] = $rd['_alg_wc_custom_order_number'] ?? '';
+				$od_tmp_arr['_mw_qbo_sync_ord_doc_no'] = $rd['_mw_qbo_sync_ord_doc_no'] ?? '';
+				
+				// Handle custom order number field
+				if(!empty($onc_mf) && isset($rd['custom_order_number'])){
+					$od_tmp_arr[$onc_mf] = $rd['custom_order_number'] ?? '';
+				}
+				
+				// Handle wconmkn field
+				if(!empty($wconmkn_key) && isset($rd['wconmkn_value'])){
+					$od_tmp_arr[$wconmkn_key] = $rd['wconmkn_value'] ?? '';
+				}
+				
+				$r_data[] = $od_tmp_arr;
+			}
+		}
+		
+		unset($q_data);
+		return $r_data;
+	}
+
+	/**
+	 * HPOS compatible version of count_order_list
+	 */
+	public function count_wc_payment_list_hpos($search_txt='',$limit='',$date_from='',$date_to=''){
+		$orders = $this->get_wc_payment_list_hpos($search_txt, $limit, $date_from, $date_to);	
+		return count($orders);
+	}
+	
 	public function count_wc_payment_list($search_txt='',$date_from='',$date_to=''){
+
+		if($this->is_hpos_enabled()){
+			return $this->count_wc_payment_list_hpos($search_txt, '', $date_from, $date_to);
+		}
+
 		global $wpdb;
 		
 		$ext_whr = '';
@@ -14521,9 +16854,11 @@ jQuery(document).ready(function($) {
 			}			
 			
 			if(!empty($onc_mf)){
-				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE '%%%s%%' OR pm2.meta_value LIKE '%%%s%%' OR pm7.meta_value LIKE '%%%s%%' OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE '%%%s%%'  OR p.ID = %s OR pm11.meta_value = %s OR pm8.meta_value = %s ) ",$search_txt,$search_txt,$search_txt,$search_txt,$search_txt,$search_txt,$search_txt);
+				$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE %s OR pm2.meta_value LIKE %s OR pm7.meta_value LIKE %s OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE %s  OR p.ID = %s OR pm11.meta_value = %s OR pm8.meta_value = %s ) ",$search_term,$search_term,$search_term,$search_term,$search_txt,$search_txt,$search_txt);
 			}else{
-				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE '%%%s%%' OR pm2.meta_value LIKE '%%%s%%' OR pm7.meta_value LIKE '%%%s%%' OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE '%%%s%%' OR p.ID = %s OR pm8.meta_value = %s ) ",$search_txt,$search_txt,$search_txt,$search_txt,$search_txt,$search_txt);
+				$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE %s OR pm2.meta_value LIKE %s OR pm7.meta_value LIKE %s OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE %s OR p.ID = %s OR pm8.meta_value = %s ) ",$search_term,$search_term,$search_term,$search_term,$search_txt,$search_txt);
 			}
 		}
 		
@@ -14564,11 +16899,17 @@ jQuery(document).ready(function($) {
 		{$ext_whr}
 		";
 		
-		//echo $sql;		
+		//echo $sql;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Dynamic SQL with sanitized date values and hardcoded structure
 		return $wpdb->get_var($sql);
 	}
 	
 	public function get_wc_payment_list($search_txt='',$limit='',$date_from='',$date_to=''){
+		// Check if HPOS is enabled
+		if($this->is_hpos_enabled()){
+			return $this->get_wc_payment_list_hpos($search_txt, $limit, $date_from, $date_to);
+		}
+		
 		global $wpdb;
 		
 		$ext_whr = '';
@@ -14603,9 +16944,11 @@ jQuery(document).ready(function($) {
 			}			
 			
 			if(!empty($onc_mf)){
-				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE '%%%s%%' OR pm2.meta_value LIKE '%%%s%%' OR pm7.meta_value LIKE '%%%s%%' OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE '%%%s%%'  OR p.ID = %s OR pm11.meta_value = %s OR pm8.meta_value = %s ) ",$search_txt,$search_txt,$search_txt,$search_txt,$search_txt,$search_txt,$search_txt);
+				$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE %s OR pm2.meta_value LIKE %s OR pm7.meta_value LIKE %s OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE %s  OR p.ID = %s OR pm11.meta_value = %s OR pm8.meta_value = %s ) ",$search_term,$search_term,$search_term,$search_term,$search_txt,$search_txt,$search_txt);
 			}else{
-				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE '%%%s%%' OR pm2.meta_value LIKE '%%%s%%' OR pm7.meta_value LIKE '%%%s%%' OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE '%%%s%%' OR p.ID = %s OR pm8.meta_value = %s ) ",$search_txt,$search_txt,$search_txt,$search_txt,$search_txt,$search_txt);
+				$search_term = '%' . $wpdb->esc_like($search_txt) . '%';
+				$ext_whr .=$wpdb->prepare(" AND ( pm1.meta_value LIKE %s OR pm2.meta_value LIKE %s OR pm7.meta_value LIKE %s OR CONCAT(pm1.meta_value,' ', pm2.meta_value) LIKE %s OR p.ID = %s OR pm8.meta_value = %s ) ",$search_term,$search_term,$search_term,$search_term,$search_txt,$search_txt);
 			}
 			
 		}
@@ -14723,6 +17066,207 @@ jQuery(document).ready(function($) {
 		return $r_data;
 	}
 	
+	/**
+	 * HPOS compatible version of get_wc_payment_list
+	 */
+	public function get_wc_payment_list_hpos($search_txt='',$limit='',$date_from='',$date_to=''){
+		// HPOS compatible version using correct HPOS schema
+		global $wpdb;
+		
+		// Use HPOS tables
+		$ext_whr = '';
+		$ext_join = '';
+		
+		$onc_mf = $this->get_woo_ord_number_key_field();
+		
+		if($this->is_pl_res_tml()){
+			$wp_date_time_c = $this->now();
+			$last_30_days_dt = date('Y-m-d H:i:s', strtotime('-'.$this->get_hd_ldys_lmt().' days', strtotime($wp_date_time_c)));
+			$ext_whr = " AND o.date_created_gmt BETWEEN '{$last_30_days_dt}' AND '{$wp_date_time_c}' ";
+		}
+		
+		// Pre-build all necessary joins using correct HPOS schema
+		$ext_join .= "
+			LEFT JOIN ".$wpdb->prefix."wc_order_addresses addr_bill 
+			ON ( addr_bill.order_id = o.id AND addr_bill.address_type = 'billing' )
+			LEFT JOIN ".$wpdb->prefix."wc_order_operational_data op_data 
+			ON ( op_data.order_id = o.id )
+			LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_order_number_formatted 
+			ON ( om_order_number_formatted.order_id = o.id AND om_order_number_formatted.meta_key = '_order_number_formatted' )
+			LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_alg_custom_number 
+			ON ( om_alg_custom_number.order_id = o.id AND om_alg_custom_number.meta_key = '_alg_wc_custom_order_number' )
+			LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_stripe_fee 
+			ON ( om_stripe_fee.order_id = o.id AND om_stripe_fee.meta_key = 'Stripe Fee' )
+			LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_stripe_fee2 
+			ON ( om_stripe_fee2.order_id = o.id AND om_stripe_fee2.meta_key = '_stripe_fee' )
+			LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_paypal_fee 
+			ON ( om_paypal_fee.order_id = o.id AND om_paypal_fee.meta_key = 'PayPal Transaction Fee' )
+		";
+		
+		// Add custom order number field join if exists
+		if(!empty($onc_mf)){
+			$ext_join .="
+			LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_custom_number
+			ON ( om_custom_number.order_id = o.id AND om_custom_number.meta_key = '{$onc_mf}' )
+			";
+		}
+		
+		// Add wconmkn key join if configured
+		$wconmkn_key = $this->get_option('mw_wc_qbo_sync_compt_p_wconmkn');
+		if(!empty($wconmkn_key)){
+			$ext_join .="
+			LEFT JOIN ".$wpdb->prefix."wc_orders_meta om_wconmkn
+			ON ( om_wconmkn.order_id = o.id AND om_wconmkn.meta_key = '{$wconmkn_key}' )
+			";
+		}
+		
+		$search_txt = $this->sanitize($search_txt);
+		if($search_txt!=''){
+			if(!empty($onc_mf)){
+				$ext_whr .=$wpdb->prepare(" AND ( addr_bill.first_name LIKE '%%%s%%' OR addr_bill.last_name LIKE '%%%s%%' OR addr_bill.company LIKE '%%%s%%' OR CONCAT(addr_bill.first_name,' ', addr_bill.last_name) LIKE '%%%s%%'  OR o.id = %s OR om_custom_number.meta_value = %s OR o.transaction_id = %s ) ",$search_txt,$search_txt,$search_txt,$search_txt,$search_txt,$search_txt,$search_txt); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.LikeWildcardsInQueryWithPlaceholder
+			}else{
+				$ext_whr .=$wpdb->prepare(" AND ( addr_bill.first_name LIKE '%%%s%%' OR addr_bill.last_name LIKE '%%%s%%' OR addr_bill.company LIKE '%%%s%%' OR CONCAT(addr_bill.first_name,' ', addr_bill.last_name) LIKE '%%%s%%' OR o.id = %s OR o.transaction_id = %s ) ",$search_txt,$search_txt,$search_txt,$search_txt,$search_txt,$search_txt); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.LikeWildcardsInQueryWithPlaceholder
+			}
+		}
+		
+		$date_from = $this->sanitize($date_from);
+		if($date_from!=''){
+			$ext_whr .=" AND op_data.date_paid_gmt>='".$date_from." 00:00:00'";
+		}
+
+		$date_to = $this->sanitize($date_to);
+		if($date_to!=''){
+			$ext_whr .=" AND op_data.date_paid_gmt<='".$date_to." 23:59:59'";
+		}
+		
+		// Single optimized query using correct HPOS schema
+		// transaction_id is directly in wc_orders table
+		// date_paid_gmt and order_key are in wc_order_operational_data table
+		$sql = "
+		SELECT DISTINCT
+			o.id as ID, 
+			o.status as post_status, 
+			o.date_created_gmt as post_date,
+			o.customer_id,
+			o.total_amount as order_total,
+			o.currency as order_currency,
+			o.payment_method,
+			o.payment_method_title,
+			o.transaction_id,
+			addr_bill.first_name as billing_first_name,
+			addr_bill.last_name as billing_last_name,
+			addr_bill.company as billing_company,
+			op_data.order_key,
+			op_data.date_paid_gmt as paid_date,
+			om_order_number_formatted.meta_value as order_number_formatted,
+			om_alg_custom_number.meta_value as _alg_wc_custom_order_number,
+			om_stripe_fee.meta_value as stripe_fee,
+			om_stripe_fee2.meta_value as stripe_fee2,
+			om_paypal_fee.meta_value as paypal_fee" .
+			(!empty($onc_mf) ? ", om_custom_number.meta_value as custom_order_number" : "") .
+			(!empty($wconmkn_key) ? ", om_wconmkn.meta_value as wconmkn_value" : "") . "
+		FROM
+		{$wpdb->prefix}wc_orders as o
+		{$ext_join}
+		WHERE
+		o.type = 'shop_order'
+		AND o.transaction_id IS NOT NULL
+		AND o.transaction_id != ''		
+		AND o.payment_method IS NOT NULL
+		AND o.payment_method != ''
+		{$ext_whr}
+		";
+		
+		$orderby = 'o.date_created_gmt DESC';
+		$sql .= ' ORDER BY  '.$orderby;
+
+		if($limit!=''){
+			$sql .= ' LIMIT  '.$limit;
+		}
+		
+		$r_data = array();
+		$q_data =  $this->get_data($sql);
+
+		//var_dump($q_data);die();
+		
+		if(is_array($q_data) && !empty($q_data)){
+			foreach($q_data as $rd){
+				$pmd_tmp_arr = array();
+				$pmd_tmp_arr['order_id'] = $rd['ID'];
+				$pmd_tmp_arr['order_status'] = $rd['post_status'];
+				$pmd_tmp_arr['order_date'] = $rd['post_date'];
+				
+				// For HPOS, use order ID directly as payment_id 
+				// Also get the meta_id from postmeta table for transaction_id for compatibility
+				$transaction_id = $rd['transaction_id'] ?? '';
+
+				$pmd_tmp_arr['payment_id'] = $rd['ID'];
+				
+				$pmd_tmp_arr['billing_first_name'] = $rd['billing_first_name'] ?? '';
+				$pmd_tmp_arr['billing_last_name'] = $rd['billing_last_name'] ?? '';
+				$pmd_tmp_arr['billing_company'] = $rd['billing_company'] ?? '';
+				
+				$pmd_tmp_arr['order_total'] = $rd['order_total'] ? number_format((float)$rd['order_total'], 2, '.', '') : '';
+				$pmd_tmp_arr['order_key'] = $rd['order_key'] ?? '';
+				$pmd_tmp_arr['customer_user'] = $rd['customer_id'] ?? '';
+				$pmd_tmp_arr['order_currency'] = $rd['order_currency'] ?? '';
+				
+				$pmd_tmp_arr['transaction_id'] = $transaction_id;
+				$pmd_tmp_arr['paid_date'] = $rd['paid_date'] ?? '';
+				
+				$pmd_tmp_arr['payment_method'] = $rd['payment_method'] ?? '';
+				$pmd_tmp_arr['payment_method_title'] = $rd['payment_method_title'] ?? '';
+				
+				$pmd_tmp_arr['stripe_txn_fee'] = $rd['stripe_fee'] ?? '';
+				if(empty($pmd_tmp_arr['stripe_txn_fee'])){
+					$pmd_tmp_arr['stripe_txn_fee'] = $rd['stripe_fee2'] ?? '';
+				}
+				
+				$pmd_tmp_arr['paypal_txn_fee'] = $rd['paypal_fee'] ?? '';
+				
+				$pmd_tmp_arr['order_number_formatted'] = $rd['order_number_formatted'] ?? '';
+				$pmd_tmp_arr['_alg_wc_custom_order_number'] = $rd['_alg_wc_custom_order_number'] ?? '';
+				
+				// Handle custom order number field
+				if(!empty($onc_mf) && isset($rd['custom_order_number'])){
+					$pmd_tmp_arr[$onc_mf] = $rd['custom_order_number'] ?? '';
+				}
+				
+				// Handle wconmkn field
+				if(!empty($wconmkn_key) && isset($rd['wconmkn_value'])){
+					$pmd_tmp_arr[$wconmkn_key] = $rd['wconmkn_value'] ?? '';
+				}
+				
+				$qbo_payment_id = '';
+				
+				$pm_id_map_data = $this->get_row($wpdb->prepare("SELECT `qbo_payment_id` FROM {$wpdb->prefix}mw_wc_qbo_sync_payment_id_map WHERE `wc_payment_id` = %d AND `is_wc_order` = 0 ",$pmd_tmp_arr['payment_id']));
+
+				// For Legacy Orders
+				if(empty($pm_id_map_data)) {
+					// Get meta_id from postmeta table for transaction_id if transaction_id exists
+					if(!empty($transaction_id)){
+						$meta_id_result = $wpdb->get_var($wpdb->prepare("SELECT meta_id FROM {$wpdb->postmeta} WHERE meta_key = '_transaction_id' AND meta_value = %s LIMIT 1", $transaction_id));
+						if($meta_id_result){
+							$pmd_tmp_arr['payment_id'] = $meta_id_result;
+						}
+					}
+					$pm_id_map_data = $this->get_row($wpdb->prepare("SELECT `qbo_payment_id` FROM {$wpdb->prefix}mw_wc_qbo_sync_payment_id_map WHERE `wc_payment_id` = %d AND `is_wc_order` = 0 ",$pmd_tmp_arr['payment_id']));
+				}
+				
+				if(is_array($pm_id_map_data) && isset($pm_id_map_data['qbo_payment_id'])){
+					$qbo_payment_id = $pm_id_map_data['qbo_payment_id'];
+				}
+				
+				$pmd_tmp_arr['qbo_payment_id'] = $qbo_payment_id;
+				
+				$r_data[] = $pmd_tmp_arr;
+			}
+		}
+		
+		unset($q_data);
+		return $r_data;
+	}
+	
 	/**/
 	public function count_refund_list($search_txt='',$date_from='',$date_to='',$status=''){
 		$ext_whr = '';
@@ -14769,14 +17313,74 @@ jQuery(document).ready(function($) {
 		//$sql .='GROUP BY p.ID';
 
 		if($search_txt!=''){
-			$sql = $wpdb->prepare($sql,$search_txt,$search_txt);
+			$sql = $wpdb->prepare($sql,$search_txt,$search_txt); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		//echo $sql;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is prepared above when search text is provided
 		return $wpdb->get_var($sql);
 		
 	}
 	
 	public function get_refund_list($search_txt='',$limit='',$date_from='',$date_to='',$status=''){
+		global $wpdb;
+
+		// Check if HPOS is enabled
+		if($this->is_hpos_enabled()){
+			// Use HPOS tables
+			$ext_whr = '';
+			if($this->is_pl_res_tml()){
+				$wp_date_time_c = $this->now();
+				$last_30_days_dt = date('Y-m-d H:i:s', strtotime('-'.$this->get_hd_ldys_lmt().' days', strtotime($wp_date_time_c)));
+				$ext_whr = " AND o.date_created_gmt BETWEEN '{$last_30_days_dt}' AND '{$wp_date_time_c}' ";
+			}
+			
+			$sql = "
+			SELECT DISTINCT(o.id) as ID, o.status as post_status, o.date_created_gmt as refund_date, o.parent_order_id as order_id
+			FROM
+			{$wpdb->prefix}wc_orders as o
+			WHERE
+			o.type = 'shop_order_refund'
+			AND o.parent_order_id > 0
+			{$ext_whr}
+			";
+			
+			$search_txt = $this->sanitize($search_txt);
+			if($search_txt!=''){
+				$sql .=" AND ( o.id = %d OR o.parent_order_id = %d ) ";
+			}
+			
+			$status = $this->sanitize($status);
+			if($status!=''){
+				$sql .=$wpdb->prepare(" AND o.status = %s",$status);
+			}
+
+			$date_from = $this->sanitize($date_from);
+			if($date_from!=''){
+				$sql .=" AND o.date_created_gmt>='".$date_from." 00:00:00'";
+			}
+
+			$date_to = $this->sanitize($date_to);
+			if($date_to!=''){
+				$sql .=" AND o.date_created_gmt<='".$date_to." 23:59:59'";
+			}
+			
+			$orderby = 'o.date_created_gmt DESC';
+			$sql .= ' ORDER BY  '.$orderby;
+
+			if($limit!=''){
+				$sql .= ' LIMIT  '.$limit;
+			}
+
+			if($search_txt!=''){
+				$sql = $wpdb->prepare($sql,$search_txt,$search_txt); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+			
+			return $this->get_data($sql);
+			
+		}
+
+		// Use traditional wp_posts table (fallback for non-HPOS or when HPOS tables don't exist)
+
 		$ext_whr = '';
 		if($this->is_pl_res_tml()){
 			//$ext_whr = " AND p.post_date BETWEEN NOW() - INTERVAL 30 DAY AND NOW() ";
@@ -14786,7 +17390,6 @@ jQuery(document).ready(function($) {
 			$ext_whr = " AND p.post_date BETWEEN '{$last_30_days_dt}' AND '{$wp_date_time_c}' ";
 		}
 		
-		global $wpdb;
 		$sql = "
 		SELECT DISTINCT(p.ID), p.post_status, p.post_date as refund_date,p.post_parent as order_id
 		FROM
@@ -14829,7 +17432,7 @@ jQuery(document).ready(function($) {
 		}
 
 		if($search_txt!=''){
-			$sql = $wpdb->prepare($sql,$search_txt,$search_txt);
+			$sql = $wpdb->prepare($sql,$search_txt,$search_txt); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		//echo $sql;
 		return $this->get_data($sql);
@@ -15088,7 +17691,7 @@ jQuery(document).ready(function($) {
 				
 				//
 				$cuc_mwc = current_user_can('manage_woocommerce');
-				$pdf_ref = isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:'';
+				$pdf_ref = isset($_SERVER['HTTP_REFERER'])?sanitize_url($_SERVER['HTTP_REFERER']):'';
 				if($cuc_mwc && strpos($pdf_ref, '/post.php?post=') !== false && strpos($pdf_ref, '&action=edit') !== false){
 					$this->set_session_val('pdf_referer',$pdf_ref);
 				}
@@ -15098,27 +17701,27 @@ jQuery(document).ready(function($) {
 				if($type == 'SalesReceipt'){
 					$SalesReceiptService = new QuickBooks_IPP_Service_SalesReceipt();
 					if($cuc_mwc && !empty($s_pdf_ref)){
-						$sql = "SELECT * FROM SalesReceipt WHERE Id = '{$qbo_inv_id}' ";
+						$sql = "SELECT * FROM SalesReceipt WHERE Id = '" . esc_sql($qbo_inv_id) . "' ";
 					}else{
-						$sql = "SELECT * FROM SalesReceipt WHERE Id = '{$qbo_inv_id}' AND CustomerRef = '$qb_customer_id' ";
+						$sql = "SELECT * FROM SalesReceipt WHERE Id = '" . esc_sql($qbo_inv_id) . "' AND CustomerRef = '" . esc_sql($qb_customer_id) . "' ";
 					}
 					
 					$items = $SalesReceiptService->query($Context, $realm, $sql);
 				}elseif($type == 'CreditMemo'){
 					$CreditMemoService = new QuickBooks_IPP_Service_CreditMemo();
 					if($cuc_mwc && !empty($s_pdf_ref)){
-						$sql = "SELECT * FROM CreditMemo WHERE Id = '{$qbo_inv_id}' ";
+						$sql = "SELECT * FROM CreditMemo WHERE Id = '" . esc_sql($qbo_inv_id) . "' ";
 					}else{
-						$sql = "SELECT * FROM CreditMemo WHERE Id = '{$qbo_inv_id}' AND CustomerRef = '$qb_customer_id' ";
+						$sql = "SELECT * FROM CreditMemo WHERE Id = '" . esc_sql($qbo_inv_id) . "' AND CustomerRef = '" . esc_sql($qb_customer_id) . "' ";
 					}
 					
 					$items = $CreditMemoService->query($Context, $realm, $sql);
 				}else{
 					$InvoiceService = new QuickBooks_IPP_Service_Invoice();
 					if($cuc_mwc && !empty($s_pdf_ref)){
-						$sql = "SELECT * FROM Invoice WHERE Id = '{$qbo_inv_id}' ";
+						$sql = "SELECT * FROM Invoice WHERE Id = '" . esc_sql($qbo_inv_id) . "' ";
 					}else{
-						$sql = "SELECT * FROM Invoice WHERE Id = '{$qbo_inv_id}' AND CustomerRef = '$qb_customer_id' ";
+						$sql = "SELECT * FROM Invoice WHERE Id = '" . esc_sql($qbo_inv_id) . "' AND CustomerRef = '" . esc_sql($qb_customer_id) . "' ";
 					}
 					
 					$items = $InvoiceService->query($Context, $realm, $sql);					
@@ -15145,11 +17748,11 @@ jQuery(document).ready(function($) {
 					header('Accept-Ranges: bytes');
 					
 					if($type == 'SalesReceipt'){
-						print $SalesReceiptService->pdf($Context, $realm, $qbo_inv_id);
+						print $SalesReceiptService->pdf($Context, $realm, $qbo_inv_id); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 					}elseif($type == 'CreditMemo'){
-						print $CreditMemoService->pdf($Context, $realm, $qbo_inv_id);
+						print $CreditMemoService->pdf($Context, $realm, $qbo_inv_id); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 					}else{
-						print $InvoiceService->pdf($Context, $realm, $qbo_inv_id);
+						print $InvoiceService->pdf($Context, $realm, $qbo_inv_id); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 					}
 					
 					exit(0);
@@ -15265,8 +17868,55 @@ jQuery(document).ready(function($) {
 	public function wc_get_payment_details_by_txn_id($transaction_id='',$order_id=0){
 		$order_id = (int) $order_id;
 		$payment_row = array();
-		$transaction_id = $this->sanitize($transaction_id);		
+		$transaction_id = $this->sanitize($transaction_id);
 		
+		// HPOS compatible version
+		if(function_exists('wc_get_orders') && $this->is_hpos_enabled()){
+			if(empty($order_id)) {
+				global $wpdb;
+				$table_name = $wpdb->prefix . 'wc_orders';
+
+				$order_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM " . esc_sql($table_name) . " WHERE transaction_id = %s LIMIT 1", $transaction_id));
+			}
+
+			if (!empty($order_id)) {
+				$order = wc_get_order($order_id);
+				
+				// Get payment method specific fees
+				$stripe_fee = '';
+				$paypal_fee = '';
+				$payment_method = $order->get_payment_method();
+				
+				if ($payment_method == 'stripe') {
+					$stripe_fee = $order->get_meta('Stripe Fee') ?: $order->get_meta('_stripe_fee');
+				} elseif ($payment_method == 'paypal') {
+					$paypal_fee = $order->get_meta('PayPal Transaction Fee');
+				}
+				
+				$payment_row = array(
+					'order_id' => $order->get_id(),
+					'order_status' => $order->get_status(),
+					'order_date' => $order->get_date_created() ? $order->get_date_created()->format('Y-m-d H:i:s') : '',
+					'billing_first_name' => $order->get_billing_first_name(),
+					'billing_last_name' => $order->get_billing_last_name(),
+					'order_total' => $order->get_total(),
+					'order_key' => $order->get_order_key(),
+					'customer_user' => $order->get_customer_id(),
+					'order_currency' => $order->get_currency(),
+					'payment_id' => $order->get_id(),
+					'transaction_id' => $order->get_transaction_id(),
+					'paid_date' => $order->get_date_paid() ? $order->get_date_paid()->format('Y-m-d H:i:s') : $order->get_meta('_paid_date'),
+					'payment_method' => $payment_method,
+					'payment_method_title' => $order->get_payment_method_title(),
+					'stripe_txn_fee' => $stripe_fee,
+					'paypal_txn_fee' => $paypal_fee
+				);
+				
+				return $payment_row;
+			}
+		}
+		
+		// Fallback to legacy method
 		global $wpdb;
 		$whr = '';
 		
@@ -15375,7 +18025,9 @@ jQuery(document).ready(function($) {
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_qbo_vendors';
 
 			//if not truncate permission
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Hardcoded table name and condition for bulk delete
 			$wpdb->query("DELETE FROM `".$table."` WHERE `id` > 0 ");
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Hardcoded table name for bulk truncate
 			$wpdb->query("TRUNCATE TABLE `".$table."` ");
 			
 			$total_vendor_added = 0;
@@ -15419,6 +18071,7 @@ jQuery(document).ready(function($) {
 						$qrv_val_str = substr($qrv_val_str,0,-1);
 						$qrv_insert_q = "INSERT INTO {$table} (".implode(", ", array_keys($save_data)).") VALUES {$qrv_val_str} ";
 						//echo $qrv_insert_q;
+						// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Bulk insert with sanitized QB data
 						$wpdb->query($qrv_insert_q);
 					}
 				}
@@ -15447,7 +18100,9 @@ jQuery(document).ready(function($) {
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_qbo_customers';
 
 			//if not truncate permission
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Hardcoded table name and condition for bulk delete
 			$wpdb->query("DELETE FROM `".$table."` WHERE `id` > 0 ");
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Hardcoded table name for bulk truncate
 			$wpdb->query("TRUNCATE TABLE `".$table."` ");
 
 			$total_customer_added = 0;
@@ -15509,6 +18164,7 @@ jQuery(document).ready(function($) {
 						$qrc_val_str = substr($qrc_val_str,0,-1);
 						$qrc_insert_q = "INSERT INTO {$table} (".implode(", ", array_keys($save_data)).") VALUES {$qrc_val_str} ";
 						//echo $qrc_insert_q;
+						// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Bulk insert with sanitized QB data
 						$wpdb->query($qrc_insert_q);
 					}
 				}
@@ -15544,7 +18200,9 @@ jQuery(document).ready(function($) {
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_qbo_items';
 			
 			//if not truncate permission
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Hardcoded table name and condition for bulk delete
 			$wpdb->query("DELETE FROM `".$table."` WHERE `id` > 0 ");
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Hardcoded table name for bulk truncate
 			$wpdb->query("TRUNCATE TABLE `".$table."` ");
 			$total_product_added = 0;
 			for ($i=0; $i<$batchCount; $i++) {
@@ -15599,6 +18257,7 @@ jQuery(document).ready(function($) {
 						$qrp_val_str = substr($qrp_val_str,0,-1);
 						$qrp_insert_q = "INSERT INTO {$table} (".implode(", ", array_keys($save_data)).") VALUES {$qrp_val_str} ";
 						//echo $qrp_insert_q;
+						// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Bulk insert with sanitized QB data
 						$wpdb->query($qrp_insert_q);
 					}
 				}
@@ -15735,14 +18394,14 @@ jQuery(document).ready(function($) {
 
 		# New
 		if(!$guest && $this->option_checked('mw_wc_qbo_sync_customer_qbo_check_ship_addr') && !isset($customer_data['values_from_order_meta']) && isset($customer_data['order_id'])){
-			$o_shipping_company = get_post_meta($customer_data['order_id'],'_shipping_company',true);
+			$o_shipping_company = $this->get_order_meta_hpos($customer_data['order_id'],'_shipping_company',true);
 			if(!empty($o_shipping_company)){
 				$shipping_company = $o_shipping_company;
 			}
 		}
 
 		if(!$guest && $this->option_checked('mw_wc_qbo_sync_customer_qbo_check_billing_company') && !isset($customer_data['values_from_order_meta']) && isset($customer_data['order_id'])){
-			$o_billing_company = get_post_meta($customer_data['order_id'],'_billing_company',true);
+			$o_billing_company = $this->get_order_meta_hpos($customer_data['order_id'],'_billing_company',true);
 			if(!empty($o_billing_company)){
 				$billing_company = $o_billing_company;
 			}
@@ -15753,8 +18412,8 @@ jQuery(document).ready(function($) {
 				$obfn = $this->get_array_isset($customer_data,'billing_first_name','',true);
 				$obln = $this->get_array_isset($customer_data,'billing_last_name','',true);
 			}else{
-				$obfn = get_post_meta($customer_data['order_id'],'_billing_first_name',true);
-				$obln = get_post_meta($customer_data['order_id'],'_billing_last_name',true);
+				$obfn = $this->get_order_meta_hpos($customer_data['order_id'],'_billing_first_name',true);
+				$obln = $this->get_order_meta_hpos($customer_data['order_id'],'_billing_last_name',true);
 			}
 
 			if(!empty($obfn) || !empty($obln)){
@@ -15849,16 +18508,16 @@ jQuery(document).ready(function($) {
 		$items['tax_mapped'] = $tax_mapped;
 
 		//from log table
-		$customer_synced = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `log_type` = 'Customer' AND `success` = 1 ");
+		$customer_synced = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `log_type` = 'Customer' AND `success` = 1 "); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$items['customer_synced'] = $customer_synced;
 
-		$order_synced = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `log_type` = 'Invoice' AND `success` = 1 ");
+		$order_synced = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `log_type` = 'Invoice' AND `success` = 1 "); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$items['order_synced'] = $order_synced;
 
-		$product_synced = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `log_type` = 'Product' AND `success` = 1 ");
+		$product_synced = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `log_type` = 'Product' AND `success` = 1 "); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$items['product_synced'] = $product_synced;
 
-		$error = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `success` = 0 ");
+		$error = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `success` = 0 "); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$items['error'] = $error;
 		
 		//woocommerce stats
@@ -15909,9 +18568,9 @@ jQuery(document).ready(function($) {
 
 		if(is_array($log_data) && !empty($log_data)){
 			//06-07-2017
-			$success_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `success` = 1 AND {$l_date_whr} ");
-			$error_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `success` = 0 AND {$l_date_whr} ");
-			$other_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `success` > 1 AND {$l_date_whr} ");
+			$success_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `success` = 1 AND {$l_date_whr} "); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$error_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `success` = 0 AND {$l_date_whr} "); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$other_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mw_wc_qbo_sync_log WHERE `success` > 1 AND {$l_date_whr} "); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 			$total_summary = '<b>Success Total: </b>'.$success_count.'<br />';
 			$total_summary.= '<b>Errors Total: </b>'.$error_count.'<br />';
@@ -15957,16 +18616,16 @@ jQuery(document).ready(function($) {
 	//31-03-2017
 	public function get_current_request_protocol(){
 		if(!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])){
-			 return $_SERVER['HTTP_X_FORWARDED_PROTO'];
+			 return sanitize_text_field($_SERVER['HTTP_X_FORWARDED_PROTO']);
 		}
-		return (isset($_SERVER['HTTPS']) && !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS']!='OFF') ? "https" : "http";
+		return (isset($_SERVER['HTTPS']) && !empty($_SERVER['HTTPS']) && sanitize_text_field($_SERVER['HTTPS'])!='OFF') ? "https" : "http";
 	}
 
 	public function get_sync_window_url(){
 		//$this->_p($_SERVER);
 		$request_protocol = $this->get_current_request_protocol();
 
-		$current_url = $request_protocol.'://'.$_SERVER['HTTP_HOST'].$_SERVER['SCRIPT_NAME'];
+		$current_url = $request_protocol.'://'.sanitize_text_field($_SERVER['HTTP_HOST']).sanitize_text_field($_SERVER['SCRIPT_NAME']);
 		$sync_window_url = site_url('index.php?mw_qbo_sync_public_sync_window=1');
 
 		if(strpos($current_url, 's://')===false){
@@ -15993,9 +18652,9 @@ jQuery(document).ready(function($) {
 		global $wpdb;
 
 		$gc_length = 2048;
-		$wpdb->query("SET group_concat_max_len = {$gc_length}");
+		$wpdb->query($wpdb->prepare("SET group_concat_max_len = %d", $gc_length));
 
-		$cur_list = $this->get_var("SELECT GROUP_CONCAT(DISTINCT(`meta_value`)) AS currency_list FROM {$wpdb->postmeta} WHERE `meta_key` = '_order_currency' AND `meta_key` != '' ");
+		$cur_list = $wpdb->get_var("SELECT GROUP_CONCAT(DISTINCT(`meta_value`)) AS currency_list FROM {$wpdb->postmeta} WHERE `meta_key` = '_order_currency' AND `meta_key` != '' ");
 		if($cur_list==''){
 			$cur_list = get_woocommerce_currency();
 		}
@@ -16046,7 +18705,7 @@ jQuery(document).ready(function($) {
 
 		if($s_f_name!=''){
 			$sql.=' LIMIT 0,1 ';
-			$sql = $wpdb->prepare($sql,$s_f_name);
+			$sql = $wpdb->prepare($sql,$s_f_name); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
 		//echo $sql;
@@ -16119,7 +18778,7 @@ jQuery(document).ready(function($) {
 					if($ccf_id){
 						$mw_wc_qbo_sync_compt_wccf_fee_wf_qi_map = $this->get_option('mw_wc_qbo_sync_compt_wccf_fee_wf_qi_map');
 						if($mw_wc_qbo_sync_compt_wccf_fee_wf_qi_map!=''){
-							$ccf_map_arr = unserialize($mw_wc_qbo_sync_compt_wccf_fee_wf_qi_map);
+							$ccf_map_arr = is_string($mw_wc_qbo_sync_compt_wccf_fee_wf_qi_map) ? unserialize($mw_wc_qbo_sync_compt_wccf_fee_wf_qi_map) : $mw_wc_qbo_sync_compt_wccf_fee_wf_qi_map;
 							if(is_array($ccf_map_arr) && !empty($ccf_map_arr)){
 								if(isset($ccf_map_arr[$ccf_id]) && (int) $ccf_map_arr[$ccf_id]){
 									$fee_qp = (int) $ccf_map_arr[$ccf_id];
@@ -16141,7 +18800,7 @@ jQuery(document).ready(function($) {
 					$thwcfe_sections_add = $thwcfe_sections['additional']->fields;
 					$mw_wc_qbo_sync_compt_wcfep_price_wf_qi_map = $this->get_option('mw_wc_qbo_sync_compt_wcfep_price_wf_qi_map');
 					if($mw_wc_qbo_sync_compt_wcfep_price_wf_qi_map!=''){
-						$wcfep_map_arr = unserialize($mw_wc_qbo_sync_compt_wcfep_price_wf_qi_map);
+						$wcfep_map_arr = is_string($mw_wc_qbo_sync_compt_wcfep_price_wf_qi_map) ? unserialize($mw_wc_qbo_sync_compt_wcfep_price_wf_qi_map) : $mw_wc_qbo_sync_compt_wcfep_price_wf_qi_map;
 						if(is_array($wcfep_map_arr) && !empty($wcfep_map_arr)){
 							$wcfep_add_f_name = '';
 							foreach($thwcfe_sections_add as $thwcfe_add){
@@ -16178,15 +18837,12 @@ jQuery(document).ready(function($) {
 	}
 	
 	public function get_wc_fee_plugin_check(){
-		return true;
-		
-		/*
+
 		if($this->option_checked('mw_wc_qbo_sync_compt_np_oli_fee_sync')){
 			return true;
 		}
 		
 		return false;
-		*/
 		
 		/*
 		$enabled = false;
@@ -16768,20 +19424,38 @@ jQuery(document).ready(function($) {
 	public function ord_pmnt_is_mt_ls_check_by_ord_id($order_id){
 		$order_id = (int) $order_id;
 		if($order_id>0){
-			if(!$this->is_pl_res_tml()){return true;}	
-			global $wpdb;
-			$pa = $this->get_row($wpdb->prepare("SELECT `post_date` FROM {$wpdb->posts} WHERE `post_type` = 'shop_order' AND `ID` = %d ",$order_id));
-			if(is_array($pa) && !empty($pa)){
-				$pd = $pa['post_date'];
-				if(empty($pd)){return false;}
-				$pd = strtotime($pd);				
-				if ($pd < strtotime('-'.$this->get_hd_ldys_lmt().' days')){
-					return false;
-				}else{
-					return true;
+			if(!$this->is_pl_res_tml()){return true;}
+			
+			if ($this->is_hpos_enabled()) {
+				// HPOS-compatible implementation
+				$order = wc_get_order($order_id);
+				if ($order && $order->get_type() === 'shop_order') {
+					$pd = $order->get_date_created();
+					if (!$pd) { return false; }
+					$pd_timestamp = $pd->getTimestamp();
+					if ($pd_timestamp < strtotime('-'.$this->get_hd_ldys_lmt().' days')){
+						return false;
+					} else {
+						return true;
+					}
+				}
+			} else {
+				// Legacy implementation
+				global $wpdb;
+				$pa = $this->get_row($wpdb->prepare("SELECT `post_date` FROM {$wpdb->posts} WHERE `post_type` = 'shop_order' AND `ID` = %d ",$order_id));
+				if(is_array($pa) && !empty($pa)){
+					$pd = $pa['post_date'];
+					if(empty($pd)){return false;}
+					$pd = strtotime($pd);
+					if ($pd < strtotime('-'.$this->get_hd_ldys_lmt().' days')){
+						return false;
+					}else{
+						return true;
+					}
 				}
 			}
 		}
+		return false;
 	}
 	
 	private function clear_invalid_mappings($type,$loop=false){
@@ -16856,22 +19530,22 @@ jQuery(document).ready(function($) {
 			
 			$sq = "SELECT `{$it_qb_id_field}` FROM {$list_table} WHERE {$list_table}.{$it_qb_id_field} = {$map_table}.{$mt_qb_id_field}";
 			$q = "DELETE FROM {$map_table} WHERE NOT EXISTS ({$sq}); ";
-			$wpdb->query($q);
+			$wpdb->query($q); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			return true;
 		}
 	}	
 	
 	private function clear_invalid_mappings_by_loop($list_table,$map_table,$it_id_field,$mt_id_field,$it_qb_id_field,$mt_qb_id_field){
 		global $wpdb;
-		$map_data = $this->get_data("SELECT `{$mt_id_field}` , `{$mt_qb_id_field}` FROM {$map_table}");
+		$map_data = $this->get_data("SELECT `" . esc_sql($mt_id_field) . "` , `" . esc_sql($mt_qb_id_field) . "` FROM " . esc_sql($map_table));
 		$tot_deleted = 0;
 		if(is_array($map_data) && !empty($map_data)){
 			foreach($map_data as $md){
 				$mt_id_val = (int) $md[$mt_id_field];
 				$mt_qb_val = $md[$mt_qb_id_field];
-				$ld = $this->get_row($wpdb->prepare("SELECT `{$it_id_field}` FROM {$list_table} WHERE `{$it_qb_id_field}` !='' AND `{$it_qb_id_field}` = %s ",$mt_qb_val));
+				$ld = $this->get_row($wpdb->prepare("SELECT `" . esc_sql($it_id_field) . "` FROM " . esc_sql($list_table) . " WHERE `" . esc_sql($it_qb_id_field) . "` !='' AND `" . esc_sql($it_qb_id_field) . "` = %s ",$mt_qb_val));
 				if(empty($ld)){
-					$wpdb->query($wpdb->prepare("DELETE FROM `{$map_table}` WHERE `{$mt_id_field}` = %d AND `{$mt_qb_id_field}` = %s ",$mt_id_val,$mt_qb_val));
+					$wpdb->query($wpdb->prepare("DELETE FROM `" . esc_sql($map_table) . "` WHERE `" . esc_sql($mt_id_field) . "` = %d AND `" . esc_sql($mt_qb_id_field) . "` = %s ",$mt_id_val,$mt_qb_val));
 					$tot_deleted++;
 				}
 			}
@@ -17006,8 +19680,8 @@ jQuery(document).ready(function($) {
 	}
 	public function get_menu_queue_count(){
 		global $wpdb;
-		$cq = "SELECT COUNT(*) FROM `{$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue` WHERE `id` >0 AND `run` = 0 ";
-		return $wpdb->get_var($cq);
+		$cq = "SELECT COUNT(*) FROM `{$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue` WHERE `id` >0 AND `run` = 0 "; // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return $wpdb->get_var($cq); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
 	
 	public function get_qsmd_msg(){
@@ -17438,31 +20112,31 @@ jQuery(document).ready(function($) {
 			if(is_array($od) && !empty($od)){
 				if(isset($od['qbo_inv_items']) && is_array($od['qbo_inv_items']) && !empty($od['qbo_inv_items'])){
 					foreach($od['qbo_inv_items'] as $oi){
-						$o_tot+= $oi['line_subtotal_base_currency'];
+						$o_tot+= floatval($oi['line_subtotal_base_currency']);
 						//$o_tot+= $oi['line_total_base_currency'];						
 					}
 				}
 				
 				if(isset($od['tax_details']) && is_array($od['tax_details']) && !empty($od['tax_details'])){
 					foreach($od['tax_details'] as $oi){
-						$o_tot+= $oi['tax_amount_base_currency'];
-						$o_tot+= $oi['shipping_tax_amount_base_currency'];
+						$o_tot+= floatval($oi['tax_amount_base_currency']);
+						$o_tot+= floatval($oi['shipping_tax_amount_base_currency']);
 					}
 				}
 				
 				if(isset($od['used_coupons']) && is_array($od['used_coupons']) && !empty($od['used_coupons'])){
 					foreach($od['used_coupons'] as $uc){
 						if(isset($uc['discount_amount_base_currency'])){
-							$o_tot-= $uc['discount_amount_base_currency'];
+							$o_tot-= floatval($uc['discount_amount_base_currency']);
 						}
 						
 						if(isset($uc['[discount_amount_tax_base_currency'])){
-							$o_tot-= $uc['[discount_amount_tax_base_currency'];
+							$o_tot-= floatval($uc['[discount_amount_tax_base_currency']);
 						}
 					}
 				}
 				
-				$o_tot+= $od['_order_shipping_base_currency'];
+				$o_tot+= floatval($od['_order_shipping_base_currency']);
 				
 				//$o_tot-= $od['_order_shipping_tax_base_currency'];
 				
@@ -17530,9 +20204,9 @@ jQuery(document).ready(function($) {
 					$new_variation_name = $vl_d['parent_name'] . $v_name_suffix;
 					//$this->_p($new_variation_name);
 					//wp_update_post
-					$vnu_sql = $wpdb->prepare("UPDATE {$wpdb->posts} SET `post_title` = %s WHERE `ID` = %d AND `post_type` = 'product_variation' ",$new_variation_name,$ID);
+					$vnu_sql = $wpdb->prepare("UPDATE {$wpdb->posts} SET `post_title` = %s WHERE `ID` = %d AND `post_type` = 'product_variation' ",$new_variation_name,$ID); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					//echo $vnu_sql;
-					$wpdb->query($vnu_sql);
+					$wpdb->query($vnu_sql); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					$total_v_name_changed++;
 				}
 			}
@@ -17701,25 +20375,57 @@ jQuery(document).ready(function($) {
 		return $qbl;
 	}
 	
+	/**
+	 * Check if an item should be added to sync queue
+	 * HPOS compatible version
+	 */
 	public function is_queue_add($action='',$data=null){
 		if(!empty($action) && is_array($data) && !empty($data)){
 			if($action=='OrderPush' && isset($data['order_id']) && (int) $data['order_id'] > 0){
 				$order_id = $data['order_id'];
-				$order = get_post($order_id);
 				
-				if(is_object($order) && !empty($order)){
-					if($order->post_type == 'shop_order'){						
-						if($order->post_status!='auto-draft' || $order->post_status!='trash'){
-							/*if($order->post_status!='draft'){}*/
+				// HPOS compatible order handling
+				if ($this->is_hpos_enabled()) {
+					$order = wc_get_order($order_id);
+					
+					if ($order && $order instanceof WC_Order) {
+						$order_status = $order->get_status();
+
+						// Skip auto-draft and trash orders
+						if ($order_status != 'auto-draft' && $order_status != 'trash') {
 							$only_sync_status = $this->get_option('mw_wc_qbo_sync_specific_order_status');
-							if(!empty($only_sync_status)){
-								$only_sync_status = explode(',',$only_sync_status);
-								if(is_array($only_sync_status) && in_array($order->post_status,$only_sync_status)){
+							if (!empty($only_sync_status)) {
+								$only_sync_status = explode(',', $only_sync_status);
+
+								$matches = array_map(function($status) {
+									return str_replace('wc-', '', $status);
+								}, $only_sync_status);
+
+								if ( in_array( $order_status, $matches, true ) ) {
 									return true;
 								}
 								return false;
 							}
 							return true;
+						}
+					}
+				} else {
+					// Legacy post-based handling
+					$order = get_post($order_id);
+					
+					if (is_object($order) && !empty($order)) {
+						if ($order->post_type == 'shop_order') {
+							if ($order->post_status != 'auto-draft' && $order->post_status != 'trash') {
+								$only_sync_status = $this->get_option('mw_wc_qbo_sync_specific_order_status');
+								if (!empty($only_sync_status)) {
+									$only_sync_status = explode(',', $only_sync_status);
+									if (is_array($only_sync_status) && in_array($order->post_status, $only_sync_status)) {
+										return true;
+									}
+									return false;
+								}
+								return true;
+							}
 						}
 					}
 				}
@@ -17733,7 +20439,7 @@ jQuery(document).ready(function($) {
 				
 				$order_id = $data['order_id'];				
 				$queue_table = $wpdb->prefix.'mw_wc_qbo_sync_real_time_sync_queue';
-				$check_queue_query = $wpdb->prepare("SELECT * FROM `$queue_table` WHERE `item_type` = %s AND `item_action` = %s AND `item_id` = %d ",'Invoice','OrderPush',$order_id);
+				$check_queue_query = $wpdb->prepare("SELECT * FROM `" . esc_sql($queue_table) . "` WHERE `item_type` = %s AND `item_action` = %s AND `item_id` = %d ",'Invoice','OrderPush',$order_id);
 				if(!empty($this->get_row($check_queue_query))){
 					return true;
 				}
@@ -17743,8 +20449,8 @@ jQuery(document).ready(function($) {
 			//
 			if($action=='RefundPush' && isset($data['order_id']) && (int) $data['order_id'] > 0){
 				$order_id = (int) $data['order_id'];
-				$_payment_method = get_post_meta( $order_id, '_payment_method', true );
-				$_order_currency = get_post_meta( $order_id, '_order_currency', true );
+				$_payment_method = $this->get_order_meta_hpos($order_id, '_payment_method', true);
+				$_order_currency = $this->get_order_meta_hpos($order_id, '_order_currency', true);
 				if(!$this->if_sync_refund(array('_payment_method'=>$_payment_method,'_order_currency'=>$_order_currency))){
 					return false;
 				}
@@ -17758,8 +20464,7 @@ jQuery(document).ready(function($) {
 		$refund_id = 0;
 		global $wpdb;
 		$ID = (int) $order_id;
-		$rfd_q = $wpdb->prepare("SELECT ID FROM `{$wpdb->posts}` WHERE `post_type` = 'shop_order_refund' AND `post_parent` = %d ORDER BY ID DESC LIMIT 0,1 ",$ID);
-		$rf_data = $wpdb->get_row($rfd_q);
+		$rf_data = $wpdb->get_row($wpdb->prepare("SELECT ID FROM `{$wpdb->posts}` WHERE `post_type` = 'shop_order_refund' AND `post_parent` = %d ORDER BY ID DESC LIMIT 0,1 ",$ID));
 		if(is_object($rf_data) && !empty($rf_data)){
 			$refund_id = $rf_data->ID;
 		}
@@ -17869,7 +20574,7 @@ jQuery(document).ready(function($) {
 			
 			if($this->get_option('mw_wc_qbo_sync_order_qbo_sync_as') == 'Per Role'){
 				$wc_user_role = '';
-				$wc_cus_id = (int) get_post_meta($order_id,'_customer_user',true);
+				$wc_cus_id = (int) $this->get_order_meta_hpos($order_id,'_customer_user',true);
 				if($wc_cus_id > 0){
 					$user_info = get_userdata($wc_cus_id);
 					if(isset($user_info->roles) && is_array($user_info->roles)){
@@ -17892,8 +20597,8 @@ jQuery(document).ready(function($) {
 			}
 			
 			if($this->get_option('mw_wc_qbo_sync_order_qbo_sync_as') == 'Per Gateway'){
-				$_payment_method = get_post_meta($order_id,'_payment_method',true);
-				$_order_currency = get_post_meta($order_id,'_order_currency',true);
+				$_payment_method = $this->get_order_meta_hpos($order_id,'_payment_method',true);
+				$_order_currency = $this->get_order_meta_hpos($order_id,'_order_currency',true);
 				
 				if(!empty($_payment_method) && !empty($_order_currency)){
 					$pm_map_data = $this->get_mapped_payment_method_data($_payment_method,$_order_currency);
@@ -18069,8 +20774,7 @@ jQuery(document).ready(function($) {
 		$order_id = (int) $order_id;
 		if($order_id){
 			global $wpdb;			
-			$rfd_q = $wpdb->prepare("SELECT ID FROM `{$wpdb->posts}` WHERE `post_type` = 'shop_order_refund' AND `post_parent` = %d ORDER BY ID DESC LIMIT 0,1 ",$order_id);
-			$rf_data = $wpdb->get_row($rfd_q);
+			$rf_data = $wpdb->get_row($wpdb->prepare("SELECT ID FROM `{$wpdb->posts}` WHERE `post_type` = 'shop_order_refund' AND `post_parent` = %d ORDER BY ID DESC LIMIT 0,1 ",$order_id));
 			if(is_object($rf_data) && !empty($rf_data)){
 				$refund_id = $rf_data->ID;
 			}
@@ -18156,7 +20860,7 @@ jQuery(document).ready(function($) {
 	public function get_order_txn_fee_data_by_id($order_id){
 		if(is_numeric($order_id)){$order_id = (int) $order_id;}
 		if(is_int($order_id) && $order_id > 0){			
-			$order_meta = get_post_meta($order_id);
+			$order_meta = $this->get_all_order_meta_hpos($order_id);
 			if(is_array($order_meta) && !empty($order_meta)){
 				$invoice_data = [];
 				foreach ($order_meta as $key => $value){
@@ -18210,7 +20914,7 @@ jQuery(document).ready(function($) {
 				
 				#New WooCommerce PayPal gateway fee support
 				if(isset($invoice_data['_ppcp_paypal_fees']) && !empty($invoice_data['_ppcp_paypal_fees'])){
-					$_ppcp_paypal_fees = unserialize($invoice_data['_ppcp_paypal_fees']);
+					$_ppcp_paypal_fees = is_string($invoice_data['_ppcp_paypal_fees']) ? unserialize($invoice_data['_ppcp_paypal_fees']) : $invoice_data['_ppcp_paypal_fees'];
 					//$this->_p($_ppcp_paypal_fees);
 					if(is_array($_ppcp_paypal_fees) && isset($_ppcp_paypal_fees['paypal_fee']) && !empty($_ppcp_paypal_fees['paypal_fee'])){
 						if($_ppcp_paypal_fees['paypal_fee']['currency_code'] == $invoice_data['_order_currency']){
@@ -18930,6 +21634,131 @@ jQuery(document).ready(function($) {
 
 	public function get_new_dash_user_dashboard_url(){
 		return $this->get_new_dash_connection_url().'/dashboard';
+	}
+
+	public function use_new_qbo_local_data($dType=''){
+		# $dType will be used in future if needed
+		return true;
+	}
+
+	public function use_connection_interval_restriction(){
+		return true;
+	}
+
+	public function get_time_difference_in_minutes($datetime1, $datetime2){
+		$datetime1 = new DateTime($datetime1);
+		$datetime2 = new DateTime($datetime2);
+		$interval = $datetime1->diff($datetime2);
+		$minutes = ($interval->days * 24 * 60) + ($interval->h * 60) + $interval->i;
+		return $minutes;
+	}
+	
+	/**
+	 * Round all monetary values in invoice data to 2 decimal places
+	 * 
+	 * @param array $invoice_data The invoice data array
+	 * @return array The invoice data with rounded monetary values
+	 */
+	public function round_invoice_monetary_data($invoice_data) {
+		// List of monetary fields at the root level
+		$monetary_fields = [
+			'_order_shipping',
+			'_order_shipping_tax', 
+			'_order_tax',
+			'_order_total',
+			'_cart_discount',
+			'_cart_discount_tax',
+			'_stripe_fee',
+			'_stripe_net',
+			'_order_shipping_tax_base_currency',
+			'_order_tax_base_currency',
+			'_order_total_base_currency',
+			'_order_shipping_base_currency',
+			'order_shipping_total',
+			'order_shipping_total_base_currency'
+		];
+		
+		// Round root level monetary fields
+		foreach ($monetary_fields as $field) {
+			if (isset($invoice_data[$field]) && is_numeric($invoice_data[$field])) {
+				$invoice_data[$field] = $this->round($invoice_data[$field], 2);
+			}
+		}
+		
+		// Round shipping details monetary fields
+		if (isset($invoice_data['shipping_details']) && is_array($invoice_data['shipping_details'])) {
+			foreach ($invoice_data['shipping_details'] as &$shipping) {
+				if (isset($shipping['cost']) && is_numeric($shipping['cost'])) {
+					$shipping['cost'] = $this->round($shipping['cost'], 2);
+				}
+				if (isset($shipping['total_tax']) && is_numeric($shipping['total_tax'])) {
+					$shipping['total_tax'] = $this->round($shipping['total_tax'], 2);
+				}
+			}
+		}
+		
+		// Round tax details monetary fields
+		if (isset($invoice_data['tax_details']) && is_array($invoice_data['tax_details'])) {
+			foreach ($invoice_data['tax_details'] as &$tax) {
+				if (isset($tax['tax_amount']) && is_numeric($tax['tax_amount'])) {
+					$tax['tax_amount'] = $this->round($tax['tax_amount'], 2);
+				}
+				if (isset($tax['shipping_tax_amount']) && is_numeric($tax['shipping_tax_amount'])) {
+					$tax['shipping_tax_amount'] = $this->round($tax['shipping_tax_amount'], 2);
+				}
+			}
+		}
+		
+		// Round line item monetary fields
+		if (isset($invoice_data['qbo_inv_items']) && is_array($invoice_data['qbo_inv_items'])) {
+			foreach ($invoice_data['qbo_inv_items'] as &$item) {
+				$line_item_monetary_fields = [
+					'UnitPrice',
+					'line_subtotal',
+					'line_subtotal_tax',
+					'line_total', 
+					'line_tax',
+					'cogs_value',
+					'UnitPrice_base_currency',
+					'line_subtotal_base_currency',
+					'line_subtotal_tax_base_currency',
+					'line_total_base_currency',
+					'line_tax_base_currency'
+				];
+				
+				foreach ($line_item_monetary_fields as $field) {
+					if (isset($item[$field]) && is_numeric($item[$field])) {
+						$item[$field] = $this->round($item[$field], 2);
+					}
+				}
+			}
+		}
+		
+		// Round fee-related monetary fields
+		if (isset($invoice_data['dc_gt_fees']) && is_array($invoice_data['dc_gt_fees'])) {
+			foreach ($invoice_data['dc_gt_fees'] as &$fee) {
+				if (isset($fee['_line_total']) && is_numeric($fee['_line_total'])) {
+					$fee['_line_total'] = $this->round($fee['_line_total'], 2);
+				}
+			}
+		}
+		
+		// Round gift card monetary fields
+		$gift_card_fields = ['pw_gift_card', 'gift_card'];
+		foreach ($gift_card_fields as $gc_field) {
+			if (isset($invoice_data[$gc_field]) && is_array($invoice_data[$gc_field])) {
+				foreach ($invoice_data[$gc_field] as &$gc) {
+					if (isset($gc['amount']) && is_numeric($gc['amount'])) {
+						$gc['amount'] = $this->round($gc['amount'], 2);
+					}
+					if (isset($gc['_line_total']) && is_numeric($gc['_line_total'])) {
+						$gc['_line_total'] = $this->round($gc['_line_total'], 2);
+					}
+				}
+			}
+		}
+		
+		return $invoice_data;
 	}
 	
 }

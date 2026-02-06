@@ -5,10 +5,10 @@ exit;
 
 MyWorks_WC_QBO_Sync_Admin::is_trial_version_check();
 ?>
-<?php global $wpdb ?>
+<?php global $wpdb, $MSQS_AD; ?>
 
 <div class="container map-coupon-code-outer">
-	<div class="page_title"><h4><?php _e( 'System Environment', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'System Environment', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card">
 		<div class="card-content">
 			<div class="col s12 m12 l12">
@@ -17,13 +17,13 @@ MyWorks_WC_QBO_Sync_Admin::is_trial_version_check();
                     	<thead>
                         	<tr>
                             	<th width="30%">
-									<?php _e( 'WordPress Environment', 'mw_wc_qbo_sync' );?>								    	
+									<?php esc_html_e( 'WordPress Environment', 'mw_wc_qbo_sync' );?>								    	
                                 </th>
                                 <th width="10%">
-                                    <?php _e( 'Information', 'mw_wc_qbo_sync' );?>						    	
+                                    <?php esc_html_e( 'Information', 'mw_wc_qbo_sync' );?>						    	
                                 </th>
                                 <th width="60%">
-                                    <?php _e( 'WordPress Status', 'mw_wc_qbo_sync' );?> 
+                                    <?php esc_html_e( 'WordPress Status', 'mw_wc_qbo_sync' );?> 
                                 </th>
                         	</tr>
                         </thead>								
@@ -31,32 +31,32 @@ MyWorks_WC_QBO_Sync_Admin::is_trial_version_check();
 							<td>Home URL: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php echo home_url(); ?></td>
+							<td><?php echo esc_url(home_url()); ?></td>
 						</tr>
 						<tr>
 							<td>Site URL: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php echo site_url(); ?></td>
+							<td><?php echo esc_url(site_url()); ?></td>
 						</tr>
 
 						<tr>
 							<td>WC Version: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php echo WC()->version; ?></td>
+							<td><?php echo esc_html(WC()->version); ?></td>
 						</tr>
 						<tr>
 							<td>Log Directory Writable: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php echo MW_QBO_SYNC_LOG_DIR; ?>&nbsp;(<?php if ( @fopen( MW_QBO_SYNC_LOG_DIR . 'mw-qbo-sync-log.log', 'a' ) ) { echo 'Writable'; }else{ echo 'Not Writable'; } ?>)</td>
+							<td><?php echo esc_html(MW_QBO_SYNC_LOG_DIR); ?>&nbsp;(<?php if ( @fopen( MW_QBO_SYNC_LOG_DIR . 'mw-qbo-sync-log.log', 'a' ) ) { echo esc_html('Writable'); }else{ echo esc_html('Not Writable'); } ?>)</td>
 						</tr>
 						<tr>
 							<td>WP Version: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php echo get_bloginfo('version'); ?></td>
+							<td><?php echo esc_html(get_bloginfo('version')); ?></td>
 						</tr>
 						<tr>
 							<td>WP Multisite: </td>
@@ -76,7 +76,7 @@ MyWorks_WC_QBO_Sync_Admin::is_trial_version_check();
 								$memory        = max( $memory, $system_memory );
 							}
 							?>
-							<td><?php echo size_format( $memory ) ?></td>
+							<td><?php echo esc_html(size_format( $memory )); ?></td>
 						</tr>
 						<tr>
 							<td>WP Debug Mode: </td>
@@ -98,7 +98,7 @@ MyWorks_WC_QBO_Sync_Admin::is_trial_version_check();
 							<td>Language: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php echo get_locale(); ?></td>
+							<td><?php echo esc_html(get_locale()); ?></td>
 						</tr>
 						</table>
 
@@ -106,13 +106,13 @@ MyWorks_WC_QBO_Sync_Admin::is_trial_version_check();
                     	<thead>
                         	<tr>
                             	<th width="30%">
-									<?php _e( 'Server Environment', 'mw_wc_qbo_sync' );?>								    	
+									<?php esc_html_e( 'Server Environment', 'mw_wc_qbo_sync' );?>								    	
                                 </th>
                                 <th width="10%">
-                                    <?php _e( 'Information', 'mw_wc_qbo_sync' );?>						    	
+                                    <?php esc_html_e( 'Information', 'mw_wc_qbo_sync' );?>						    	
                                 </th>
                                 <th width="60%">
-                                    <?php _e( 'Server Status', 'mw_wc_qbo_sync' );?> 
+                                    <?php esc_html_e( 'Server Status', 'mw_wc_qbo_sync' );?> 
                                 </th>
                         	</tr>
                         </thead>
@@ -120,37 +120,37 @@ MyWorks_WC_QBO_Sync_Admin::is_trial_version_check();
 							<td>Server Info: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php echo $_SERVER['SERVER_SOFTWARE'] ?></td>
+							<td><?php echo esc_html(sanitize_text_field($_SERVER['SERVER_SOFTWARE'])); ?></td>
 						</tr>
 						<tr>
 							<td>PHP Version: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php echo phpversion(); ?></td>
+							<td><?php echo esc_html(phpversion()); ?></td>
 						</tr>
 						<tr>
 							<td>PHP Post Max Size: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php echo ini_get('post_max_size'); ?></td>
+							<td><?php echo esc_html(ini_get('post_max_size')); ?></td>
 						</tr>
 						<tr>
 							<td>PHP Time Limit: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php echo ini_get('max_execution_time');  ?></td>
+							<td><?php echo esc_html(ini_get('max_execution_time'));  ?></td>
 						</tr>
 						<tr>
 							<td>PHP Max Input Vars: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php echo ini_get('max_input_vars'); ?></td>
+							<td><?php echo esc_html(ini_get('max_input_vars')); ?></td>
 						</tr>
 						<tr>
 							<td>cURL Version: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php $curl_version = curl_version() ?><?php echo $curl_version['version'].', '.$curl_version['host'].', '. $curl_version['ssl_version'] ?></td>
+							<td><?php $curl_version = curl_version() ?><?php echo esc_html($curl_version['version'].', '.$curl_version['host'].', '. $curl_version['ssl_version']); ?></td>
 						</tr>
 						<tr>
 							<td>SUHOSIN Installed: </td>
@@ -162,19 +162,19 @@ MyWorks_WC_QBO_Sync_Admin::is_trial_version_check();
 							<td>MySQL Version: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php echo $wpdb->db_version(); ?></td>
+							<td><?php echo esc_html($wpdb->db_version()); ?></td>
 						</tr>
 						<tr>
 							<td>Max Upload Size: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php  echo ini_get('upload_max_filesize'); ?> </td>
+							<td><?php echo esc_html(ini_get('upload_max_filesize')); ?> </td>
 						</tr>
 						<tr>
 							<td>Default Timezone is UTC: </td>
 							<td><div class="material-icons tooltipped tooltip">?<span class="tooltiptext"></span>
 							</div></td>
-							<td><?php echo date_default_timezone_get(); ?></td>
+							<td><?php echo esc_html(date_default_timezone_get()); ?></td>
 						</tr>
 						<tr>
 							<td>fsockopen/cURL: </td>
@@ -243,22 +243,22 @@ MyWorks_WC_QBO_Sync_Admin::is_trial_version_check();
                     	<thead>
                         	<tr>
                             	<th width="30%">
-									<?php _e( 'Database Environment', 'mw_wc_qbo_sync' );?>								    	
+									<?php esc_html_e( 'Database Environment', 'mw_wc_qbo_sync' );?>								    	
                                 </th>
 								<th width="10%">&nbsp;</th>
                                 <th width="60%">
-                                    <?php _e( 'Database Status', 'mw_wc_qbo_sync' );?> 
+                                    <?php esc_html_e( 'Database Status', 'mw_wc_qbo_sync' );?> 
                                 </th>
                         	</tr>
                         </thead>
 						<?php
-							$tables = MyWorks_WC_QBO_Sync_Admin::health_checker('tables');
+							$tables = $MSQS_AD->health_checker('tables');
 							foreach ( $tables as $table ) {
 							?>
 							<tr>
 								<td><?php echo esc_html( $table ); ?></td>
 								<td>&nbsp;</td>
-								<td><?php echo $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s;", $wpdb->prefix . $table ) ) !== $wpdb->prefix . $table ? __( 'Table does not exist', 'mw_wc_qbo_sync' ) :  __( 'Table exist', 'mw_wc_qbo_sync' ) ; ?></td>
+								<td><?php echo esc_html($wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s;", $wpdb->prefix . $table ) ) !== $wpdb->prefix . $table ? __( 'Table does not exist', 'mw_wc_qbo_sync' ) :  __( 'Table exist', 'mw_wc_qbo_sync' )); ?></td>
 							</tr>
 						<?php } ?>
 					</table>

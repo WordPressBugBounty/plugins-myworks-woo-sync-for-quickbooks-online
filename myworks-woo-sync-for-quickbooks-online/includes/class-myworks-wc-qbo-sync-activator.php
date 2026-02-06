@@ -324,13 +324,10 @@ class MyWorks_WC_QBO_Sync_Activator {
 		)";
 		
 		if($sql){
-
 			foreach($sql as $query){
-
-				$wpdb->query($query);
-
+				// Execute schema creation queries - these are predefined CREATE TABLE statements
+				$wpdb->query($query); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			}
-
 		}
 
 		#New - Empty Check - Add Default Value
@@ -358,7 +355,7 @@ class MyWorks_WC_QBO_Sync_Activator {
 			'mw_wc_qbo_sync_queue_cron_interval_time' => 'MWQBO_5min',
 			'mw_wc_qbo_sync_ivnt_pull_interval_time' => 'MWQBO_5min',
 			'mw_wc_qbo_sync_ignore_cdc_for_invnt_import' => 'true',
-			#'mw_wc_qbo_sync_compt_np_oli_fee_sync' => 'true',
+			'mw_wc_qbo_sync_compt_np_oli_fee_sync' => 'true',
 			'mw_wc_qbo_sync_won_qbf_sync' => 'CustomerMemo',
 			'mw_wc_qbo_sync_sync_product_images_pp' => 'true',
 		);
@@ -397,54 +394,6 @@ class MyWorks_WC_QBO_Sync_Activator {
 	}
 	
 	protected static function do_after_activate(){
-		$url = get_bloginfo('url');
-		//wpurl
-		
-		$company = get_bloginfo('name');
-		$email = get_bloginfo('admin_email');
-		$wordpress_version = get_bloginfo('version');		
-		
-		$MyWorks_WC_QBO_Sync = new MyWorks_WC_QBO_Sync();
-		$version = $MyWorks_WC_QBO_Sync->get_version();
-		
-		global $woocommerce;
-		$woocommerce_version = $woocommerce->version;
-		
-		$message = '';
-		$message .= "<b>WooCommerce Sync for QuickBooks Online</b></br>";
-		$message .= "</br>";
-		$message .= "<b>Company:</b> ".$company."</br>";
-		$message .= "<b>Email:</b> ".$email."</br>";
-		$message .= "<b>WooCommerce URL:</b> ".$url ."</br>";
-		$message .= "<b>Wordpress Version:</b> ".$wordpress_version ."</br>";
-		$message .= "<b>WooCommerce Version:</b> ".$woocommerce_version ."</br>";
-		
-		
-		$headers = array(
-			'MIME-Version: 1.0',
-			'Content-type:text/html;charset=UTF-8',
-		);
-		
-		$to = 'notifications@myworks.design';		
-		
-		wp_mail($to, 'New Install - WooCommerce Sync', $message, $headers);
-		
-		$post_url = 'https://myworks.design/dashboard/api/dashboard/product/saveModule';
-		
-		$params = array(
-			'api_version'=>'0.1',
-			'result_type'=>'json',
-			'process'=>'activated',
-			'version'=>$version,
-			'company'=>$company,
-			'email'=>$email,
-			'system_url'=>$url
-		);		
-		
-		wp_remote_post($post_url, [
-			'timeout' => 30,
-			'body' => $params,
-		]);
 		
 		#New
 		global $wpdb;
@@ -453,7 +402,7 @@ class MyWorks_WC_QBO_Sync_Activator {
 		$ld = '';
 		$current_user = wp_get_current_user();
 		if(is_object($current_user) && !empty($current_user)){
-			$cu_name = $current_user->data->display_name;
+			$cu_name = isset($current_user->display_name) ? $current_user->display_name : '';
 			$ld = $cu_name;
 
 			if(isset($current_user->roles) && is_array($current_user->roles) && !empty($current_user->roles)){
@@ -472,4 +421,5 @@ class MyWorks_WC_QBO_Sync_Activator {
 		
 		$wpdb->insert($table, $log_data);
 	}
+
 }

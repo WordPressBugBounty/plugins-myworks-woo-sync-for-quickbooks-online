@@ -51,13 +51,32 @@ class QuickBooks_Loader
 		
 		$loaded[$file] = true;
 		
-		if (QUICKBOOKS_LOADER_REQUIREONCE)
-		{
-			require_once QUICKBOOKS_BASEDIR . $file;
-		}
-		else
-		{
-			require QUICKBOOKS_BASEDIR . $file;
+		// Security: Remove directory traversal attempts but preserve valid paths
+		$clean_file = str_replace(['../', '..\\'], '', $file);
+		$clean_file = ltrim($clean_file, '/\\');
+		
+		// Build full path with proper directory separator
+		$full_path = QUICKBOOKS_BASEDIR . DIRECTORY_SEPARATOR . $clean_file;
+		
+		// Security check: ensure file exists and is within allowed directory
+		if (file_exists($full_path)) {
+			// Additional security: verify the resolved path is within QUICKBOOKS_BASEDIR
+			$real_path = realpath($full_path);
+			$real_base = realpath(QUICKBOOKS_BASEDIR);
+			
+			if ($real_path && $real_base && strpos($real_path, $real_base) === 0) {
+				if (QUICKBOOKS_LOADER_REQUIREONCE) {
+					// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_require_once -- QuickBooks library file inclusion with validation
+					require_once $full_path; // nosemgrep
+				} else {
+					// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_require -- QuickBooks library file inclusion with validation  
+					require $full_path; // nosemgrep
+				}
+			} else {
+				return false; // Security: file outside allowed directory
+			}
+		} else {
+			return false; // File not found
 		}
 		
 		return true;

@@ -28,7 +28,7 @@ if($qbo_inv_id > 0 && is_user_logged_in()){
 		if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
 			$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true);	
 		}
-		$type = (isset( $_GET['type']) && ($_GET['type'] == 'SalesReceipt' || $_GET['type'] == 'CreditMemo'))?trim($_GET['type']):'';
+		$type = (isset($_GET['type']) && (wp_unslash($_GET['type']) == 'SalesReceipt' || wp_unslash($_GET['type']) == 'CreditMemo')) ? sanitize_text_field(trim(wp_unslash($_GET['type']))) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$MSQS_QL->get_qb_customer_invoice_pdf($qb_customer_id,$qbo_inv_id,$type);
 	}	
 }

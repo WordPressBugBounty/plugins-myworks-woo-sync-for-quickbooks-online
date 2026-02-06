@@ -6,35 +6,48 @@ global $MWQS_OF;
 global $MSQS_QL;
 global $wpdb;
 
+/*
 if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
 	$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true);	
 }
+*/
 
 $page_url = 'admin.php?page=myworks-wc-qbo-map&tab=custom-fields';
 $table = $wpdb->prefix.'mw_wc_qbo_sync_wq_cf_map';
 
+// Validate table name contains WordPress prefix for security
+if (strpos($table, $wpdb->prefix) !== 0) {
+	die('Invalid table name');
+}
+
 if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_cf', 'map_wc_qbo_cf' ) ) {
 	
 	//$MSQS_QL->_p($_POST);die;
-	$wpdb->query("DELETE FROM `".$table."` WHERE `id` > 0 ");
-	$wpdb->query("TRUNCATE TABLE `".$table."` ");
+	// Use esc_sql for table name and prepared statement for DELETE query
+	$table_name = esc_sql($table);
+	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped with esc_sql()
+	$wpdb->query($wpdb->prepare("DELETE FROM `{$table_name}` WHERE `id` > %d", 0));
+	// TRUNCATE cannot use prepared statements - use esc_sql for table name
+	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped with esc_sql()
+	$wpdb->query("TRUNCATE TABLE `{$table_name}`");
 	
 	if(isset($_POST['wq_mcf_wcf']) && is_array($_POST['wq_mcf_wcf']) && isset($_POST['wq_mcf_qcf']) && is_array($_POST['wq_mcf_qcf'])){
-		$wq_mcf_wcf = array_map('trim',$_POST['wq_mcf_wcf']);
-		$wq_mcf_wcf_tf = (isset($_POST['wq_mcf_wcf_tf']))?array_map('trim',$_POST['wq_mcf_wcf_tf']):array();
+		$wq_mcf_wcf = array_map('trim',array_map('sanitize_text_field',$_POST['wq_mcf_wcf']));
+		$wq_mcf_wcf_tf = (isset($_POST['wq_mcf_wcf_tf']))?array_map('trim',array_map('sanitize_text_field',$_POST['wq_mcf_wcf_tf'])):array();
 		
 		//
-		$wq_mcf_wcf_tf_ft = (isset($_POST['wq_mcf_wcf_tf_ft']))?array_map('trim',$_POST['wq_mcf_wcf_tf_ft']):array();
-		$wq_mcf_wcf_tf_ev = (isset($_POST['wq_mcf_wcf_tf_ev']))?array_map('trim',$_POST['wq_mcf_wcf_tf_ev']):array();
+		$wq_mcf_wcf_tf_ft = (isset($_POST['wq_mcf_wcf_tf_ft']))?array_map('trim',array_map('sanitize_text_field',$_POST['wq_mcf_wcf_tf_ft'])):array();
+		$wq_mcf_wcf_tf_ev = (isset($_POST['wq_mcf_wcf_tf_ev']))?array_map('trim',array_map('sanitize_text_field',$_POST['wq_mcf_wcf_tf_ev'])):array();
 		$ext_valid_ft = ['Date'];
 		$ext_valid_ev = ['yyyy-mm-dd','dd-mm-yyyy','mm-dd-yyyy','yyyy/mm/dd','dd/mm/yyyy','mm/dd/yyyy','yy/mm/dd'];
 		
 		if(array_filter($wq_mcf_wcf)) {
-			$wq_mcf_qcf = array_map('trim',$_POST['wq_mcf_qcf']);
+			$wq_mcf_qcf = array_map('trim',array_map('sanitize_text_field',$_POST['wq_mcf_qcf']));
 			
 			$values = array();
 			$place_holders = array();
-			$query = "INSERT INTO `{$table}` (wc_field, qb_field, ext_data) VALUES ";
+			// Use esc_sql for table name to prevent SQL injection
+			$query = "INSERT INTO `{$table_name}` (wc_field, qb_field, ext_data) VALUES ";
 			
 			for($i = 0; $i < count($wq_mcf_wcf); $i++){
 				if($wq_mcf_wcf[$i]!='' && isset($wq_mcf_qcf[$i]) && $wq_mcf_qcf[$i]!=''){
@@ -67,10 +80,13 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_c
 			}
 			$query .= implode(', ', $place_holders);
 			//$MSQS_QL->_p($values);die;
-			if(count($values)){
-				$query = $wpdb->prepare("$query ", $values);
-				//echo $query;die;
-				$wpdb->query($query);
+			if(count($values) && !empty($place_holders)){
+				// Prepare the complete query with placeholders and values - table name already validated
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query safely constructed with esc_sql table name and prepared values
+				$prepared_query = $wpdb->prepare($query, $values);
+				//echo $prepared_query;die;
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query already prepared with $wpdb->prepare()
+				$wpdb->query($prepared_query);
 			}			
 		}
 	}
@@ -98,11 +114,11 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
     }
 </style>
 <div class="container map-tax-class-outer">
-	<div class="page_title"><h4><?php _e( 'Custom Fields Mappings', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Custom Fields Mappings', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card">
 		<div class="card-content">
 			<div class="row mcf_cont">
-				<form method="POST" class="col s12 m12 l12" action="<?php echo $page_url;?>">
+				<form method="POST" class="col s12 m12 l12" action="<?php echo esc_url($page_url);?>">
 					<div class="row">
 						<div class="col s12 m12 l12">
 						<div class="myworks-wc-qbo-sync-table-responsive">
@@ -132,11 +148,11 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 															foreach($wc_avl_cf_list_by_group as $waclbg){
 																$og_s = (isset($waclbg['sub']))?'style="color:gray;"':'';
 																
-																echo '<optgroup '.$og_s.' label="'.$waclbg['title'].'">';
+																echo '<optgroup ' . $og_s . ' label="' . esc_attr($waclbg['title']) . '">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 																if(isset($waclbg['fields']) && is_array($waclbg['fields']) && count($waclbg['fields'])){
 																	foreach($waclbg['fields'] as $wcf_k => $wcf_v){
 																		$selected = ($cfm_data['wc_field']==$wcf_k)?'selected':'';
-																		echo '<option '.$selected.' value="'.$wcf_k.'">'.$wcf_v.'</option>';
+																		echo '<option ' . $selected . ' value="' . esc_attr($wcf_k) . '">' . esc_html($wcf_v) . '</option>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 																	}
 																}
 															}
@@ -144,7 +160,7 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 													?>
 												</select>
 											<?php else:?>
-												<input type="text" value="<?php echo $cfm_data['wc_field'];?>" class="mcf_txt" name="wq_mcf_wcf[]"/>
+												<input type="text" value="<?php echo esc_attr($cfm_data['wc_field']);?>" class="mcf_txt" name="wq_mcf_wcf[]"/>
 											<?php endif;?>								
 											
 											<?php
@@ -158,8 +174,8 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 												if(is_array($ext_data) && !empty($ext_data)){
 													if(isset($ext_data['field_type']) && isset($ext_data['ext_val'])){
 														if(!empty($ext_data['field_type']) && !empty($ext_data['ext_val'])){
-															$ext_ft_ev_txt = $ext_data['field_type'].' ('.$ext_data['ext_val'].')';
-															$ext_ft_ev_txt = '&nbsp;<span>'.$ext_ft_ev_txt.'</span>';
+															$ext_ft_ev_txt = esc_html($ext_data['field_type']).' ('.esc_html($ext_data['ext_val']).')';
+															$ext_ft_ev_txt = '&nbsp;<span>'.esc_html($ext_ft_ev_txt).'</span>';
 															
 															$m_ed_field_n = $cfm_data['wc_field'];
 															$m_ed_field_type = $ext_data['field_type'];
@@ -168,23 +184,23 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 													}
 												}
 											}
-											echo $ext_ft_ev_txt;
+											echo $ext_ft_ev_txt; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 											?>
 											
-											<input type="hidden" class="mcf_txt" name="wq_mcf_wcf_tf[]" value="<?php echo $m_ed_field_n;?>"/>
+											<input type="hidden" class="mcf_txt" name="wq_mcf_wcf_tf[]" value="<?php echo esc_attr($m_ed_field_n);?>"/>
 											
-											<input type="hidden" class="mcf_txt" name="wq_mcf_wcf_tf_ft[]" value="<?php echo $m_ed_field_type;?>"/>
-											<input type="hidden" class="mcf_txt" name="wq_mcf_wcf_tf_ev[]" value="<?php echo $m_ed_ext_val;?>"/>
+											<input type="hidden" class="mcf_txt" name="wq_mcf_wcf_tf_ft[]" value="<?php echo esc_attr($m_ed_field_type);?>"/>
+											<input type="hidden" class="mcf_txt" name="wq_mcf_wcf_tf_ev[]" value="<?php echo esc_attr($m_ed_ext_val);?>"/>
 											
 										</td>
 										<td></td>										
 										<td>											
 											<?php if(is_array($qbo_avl_cf_list) && count($qbo_avl_cf_list) && array_key_exists($cfm_data['qb_field'],$qbo_avl_cf_list)):?>
 												<select class="mcf_select" name="wq_mcf_qcf[]">
-													<?php echo $MSQS_QL->only_option($cfm_data['qb_field'],$qbo_avl_cf_list);?>
+													<?php echo wp_kses($MSQS_QL->only_option($cfm_data['qb_field'],$qbo_avl_cf_list, '', '', true) ?? '', array('option' => array('value' => array(), 'selected' => array())));?>
 												</select>
 											<?php else:?>
-												<input type="text" value="<?php echo $cfm_data['qb_field'];?>" class="mcf_txt" name="wq_mcf_qcf[]"/>
+												<input type="text" value="<?php echo esc_attr($cfm_data['qb_field']);?>" class="mcf_txt" name="wq_mcf_qcf[]"/>
 											<?php endif;?>
 										</td>
 										<td><a href="#" class="remove_field">Remove</a></td>
@@ -219,10 +235,10 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 										foreach($wc_avl_cf_list_by_group as $waclbg){
 											$og_s = (isset($waclbg['sub']))?'style="color:gray;"':'';
 											
-											echo '<optgroup '.$og_s.' label="'.$waclbg['title'].'">';
+											echo '<optgroup ' . esc_attr($og_s) . ' label="' . esc_attr($waclbg['title']) . '">';
 											if(isset($waclbg['fields']) && is_array($waclbg['fields']) && count($waclbg['fields'])){
 												foreach($waclbg['fields'] as $wcf_k => $wcf_v){													
-													echo '<option value="'.$wcf_k.'">'.$wcf_v.'</option>';
+													echo '<option value="' . esc_attr($wcf_k) . '">' . esc_html($wcf_v) . '</option>';
 												}
 											}
 										}
@@ -255,7 +271,7 @@ $cf_map_data = $MSQS_QL->get_tbl($table);
 						<td>
 							<select class="mcf_select" name="wq_mcf_qcf[]">
 								<option value=""></option>
-								<?php echo $MSQS_QL->only_option('',$qbo_avl_cf_list);?>
+								<?php echo wp_kses($MSQS_QL->only_option('', $qbo_avl_cf_list, '', '', true) ?? '', array('option' => array('value' => array(), 'selected' => array())));?>
 							</select>
 						</td>
 						<td><a href="#" class="remove_field">Remove</a></td>

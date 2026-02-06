@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) )
 exit;
 
 /**
- * Add PurchaseOrder Into Quickbooks Online.
+ * Add PurchaseOrder Into QuickBooks Online.
  *
  * @since    1.0.0
  * Last Updated: 2019-11-04
@@ -84,10 +84,16 @@ if($include_this_function){
 				$is_send_doc_num = true;
 				if($this->option_checked('mw_wc_qbo_sync_use_qb_next_ord_num_iowon') && !$this->get_qbo_company_setting('is_custom_txn_num_allowed')){
 					//$is_send_doc_num = false;
+					// HPOS Compatible meta retrieval
+				if (get_option('woocommerce_custom_orders_table_enabled') === 'yes') {
+					$order = wc_get_order($wc_inv_id);
+					$DocNumber = $order ? $order->get_meta('_mw_qbo_sync_ord_doc_no', true) : '';
+				} else {
 					$DocNumber = get_post_meta($wc_inv_id,'_mw_qbo_sync_ord_doc_no',true);
+				}
 					$DocNumber = trim($DocNumber);
 					if(empty($DocNumber)){
-						$this->save_log('Export Purchase Order Error #'.$ord_id_num,'Order Quickbooks Doc Number not found','PurchaseOrder',0);
+						$this->save_log('Export Purchase Order Error #'.$ord_id_num,'Order QuickBooks Doc Number not found','PurchaseOrder',0);
 						return false;
 					}
 				}
@@ -205,9 +211,9 @@ if($include_this_function){
 				$qbo_date = ''; $is_line_item_date = false;
 				if(is_array($qbo_inv_items) && count($qbo_inv_items)){
 					foreach($qbo_inv_items as $qbo_item){
-						$total_line_subtotal+=$qbo_item['line_subtotal'];
+						$total_line_subtotal+=floatval($qbo_item['line_subtotal']);
 						if($this->wacs_base_cur_enabled()){
-							$line_subtotal_base_currency+=$qbo_item['line_subtotal_base_currency'];
+							$line_subtotal_base_currency+=floatval($qbo_item['line_subtotal_base_currency']);
 						}
 						if(empty($qbo_date) && isset($qbo_item['Date_QF'])){
 							$qbo_date = $qbo_item['Date_QF'];
@@ -301,7 +307,7 @@ if($include_this_function){
 									$TaxInclusiveAmt = $Amount;
 									$TaxInclusiveAmt = $this->trim_after_decimal_place($TaxInclusiveAmt,7);
 									
-									$NetAmountTaxable += $qbo_item['line_total'];
+									$NetAmountTaxable += floatval($qbo_item['line_total']);
 									$ItemBasedExpenseLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt);
 								}
 

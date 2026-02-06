@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) )
 exit;
 
 /**
- * Add Refund Into Quickbooks Online.
+ * Add Refund Into QuickBooks Online.
  *
  * @since    
  * Last Updated: 2019-01-25
@@ -35,6 +35,14 @@ if($include_this_function){
 			//$this->add_txt_to_log_file('Refund Test');
 			$qbo_customer_id = (int) $this->get_array_isset($refund_data,'qbo_customerid',0);
 			if(!$this->if_refund_exists($refund_data)){
+
+				$cf_map_data = array();
+				$cfm_iv = array();
+				if($this->is_only_plugin_active('myworks-qbo-sync-custom-field-mapping') && $this->check_sh_cfm_hash()){
+					$cf_map_data = $this->get_cf_map_data();
+					$cfm_iv = $this->get_cf_map_data(true);
+				}
+
 				//
 				$_billing_email = $this->get_array_isset($refund_data,'_billing_email','');
 				
@@ -555,7 +563,7 @@ if($include_this_function){
 										$gp_line->setDetailType('SalesItemLineDetail');
 										$UnitPrice = $qbo_gp_item["UnitPrice"];
 										//$Amount = $qbo_gp_item['Qty']*$UnitPrice;
-										$Amount = ($qbo_gp_item['Qty']*$qbo_item['Qty'])*$UnitPrice;
+										$Amount = (floatval($qbo_gp_item['Qty'])*floatval($qbo_item['Qty']))*floatval($UnitPrice);
 										$gp_line->setAmount($Amount);
 										
 										if(!$this->option_checked('mw_wc_qbo_sync_skip_os_lid')){												
@@ -623,7 +631,7 @@ if($include_this_function){
 										//$Qty = $qbo_item['Qty'];
 										
 										//$salesItemLineDetail->setQty($Qty);
-										$salesItemLineDetail->setQty($Qty*$qbo_item['Qty']);
+										$salesItemLineDetail->setQty(floatval($Qty)*floatval($qbo_item['Qty']));
 										$salesItemLineDetail->setUnitPrice($UnitPrice);
 										//$salesItemLineDetail->setUnitPrice($UnitPrice*$qbo_item['Qty']);
 										
@@ -668,7 +676,7 @@ if($include_this_function){
 								}
 								
 								$qbo_b_tp = $qbo_gp_details['b_tp'];
-								$qbo_b_tp = $qbo_b_tp*$qbo_item['Qty'];
+								$qbo_b_tp = $qbo_b_tp*floatval($qbo_item['Qty']);
 								$gp_p_diff = ($wc_b_price-$qbo_b_tp);
 								
 								$allow_bndl_line_adstmnt = true;
@@ -680,7 +688,7 @@ if($include_this_function){
 									$UnitPrice = $gp_p_diff;
 									//$UnitPrice = $gp_p_diff*$qbo_item['Qty'];
 									$Qty = 1;
-									$Amount = $Qty*$UnitPrice;
+									$Amount = floatval($Qty)*floatval($UnitPrice);
 									$gp_line->setAmount($Amount);
 
 									$gp_line->setDescription('Bundle Product Price Adjustment');
@@ -855,7 +863,7 @@ if($include_this_function){
 							}
 						}
 						
-						$Amount = $qbo_item['Qty']*$UnitPrice;
+						$Amount = floatval($qbo_item['Qty'])*floatval($UnitPrice);
 						$line->setDescription('Refund - '.$qbo_item['Description']);
 						
 						if(!$is_partial && $qbo_is_sales_tax){

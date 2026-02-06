@@ -8,7 +8,7 @@ global $MSQS_QL;
 $disable_access_token = true;
 
 if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
-	$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true);
+	$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true,false,false,true);
 }
 
 $plugin_dir_url = plugin_dir_url( dirname(__FILE__) );
@@ -39,6 +39,17 @@ if($MSQS_QL->is_connected()){
 	$CompanyInfoService = new QuickBooks_IPP_Service_CompanyInfo();
 	$quickbooks_CompanyInfo = $CompanyInfoService->get($Context, $realm);
 	//$MSQS_QL->_p($quickbooks_CompanyInfo);
+
+	# New - Save QBO Company Info Object
+	if(!empty($quickbooks_CompanyInfo)){
+		$saveObj = serialize($quickbooks_CompanyInfo);
+		update_option('mw_wc_qbo_sync_app_data_new_qbo_companyinfo_object',$saveObj,false);
+		$MSQS_QL->set_qbo_company_info_from_object($quickbooks_CompanyInfo);
+	}
+
+	# Get Company Preferences Realtime
+	$MSQS_QL->get_qbo_company_preferences(true);
+
 	$local_connection_status_txt = 'Connected';
 	
 	/**/
@@ -63,7 +74,7 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 					<div class="lt-top">
 					   <div class="lkq">
 						  <div class="lkg-img">
-							 <img src="<?php echo plugins_url( $plugin_folder_name.'/admin/image/quick.png' ) ?>" class="img-res">
+							 <img src="<?php echo esc_url( plugins_url( $plugin_folder_name.'/admin/image/quick.png' ) ) ?>" class="img-res">
 						  </div>
 						  <div class="lkg-content">
 							 <h3>QuickBooks Connection</h3>
@@ -75,20 +86,20 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 					   <div class="inr-l">
 						  <div class="value-key">
 							 <label for="mw_wc_qbo_sync_license_update"> License key</label>
-							 <input title="<?php echo __('To update your license key, deactivate and re-activate the plugin. All your settings and mappings will be saved.','mw_wc_qbo_sync');?>" type="text" name="mw_wc_qbo_sync_license_update" id="mw_wc_qbo_sync_license_update" value="<?php echo $mw_wc_qbo_sync_license;?>" disabled="disabled">
+							 <input title="<?php echo esc_attr__('To update your license key, deactivate and re-activate the plugin. All your settings and mappings will be saved.','mw_wc_qbo_sync');?>" type="text" name="mw_wc_qbo_sync_license_update" id="mw_wc_qbo_sync_license_update" value="<?php echo esc_attr($mw_wc_qbo_sync_license);?>" disabled="disabled">
 							 
 							 <div class="refresh-key">
-								<img src="<?php echo plugins_url( $plugin_folder_name.'/admin/image/refresh-key.png' ) ?>" class="img-res">
-								<span><a id="mwqs_dllk" title="<?php echo __('Refresh your license information','mw_wc_qbo_sync');?>" href="javascript:void(0);">Refresh License</a></span>
+								<img src="<?php echo esc_url( plugins_url( $plugin_folder_name.'/admin/image/refresh-key.png' ) ) ?>" class="img-res">
+								<span><a id="mwqs_dllk" title="<?php echo esc_attr__('Refresh your license information','mw_wc_qbo_sync');?>" href="javascript:void(0);">Refresh License</a></span>
 								<?php wp_nonce_field( 'myworks_wc_qbo_sync_del_license_local_key', 'del_license_local_key' );?>
 							 </div>
 						  </div>
 						  
 						  <?php if(!$disable_access_token):?>
-						  <form id="lkqc_atls_form" method="post" action="<?php echo $page_url;?>">
+						  <form id="lkqc_atls_form" method="post" action="<?php echo esc_url($page_url);?>">
 							  <div class="value-key" style="margin-top:15px;">
 								 <label for="mw_wc_qbo_sync_access_token_update"> Access Token</label>
-								 <input title="<?php echo __('Enter the access token found inside your account with us after connecting to QuickBooks.','mw_wc_qbo_sync');?>" type="text" name="mw_wc_qbo_sync_access_token_update" id="mw_wc_qbo_sync_access_token_update" value="<?php echo $mw_wc_qbo_sync_access_token;?>">
+								 <input title="<?php echo esc_attr__('Enter the access token found inside your account with us after connecting to QuickBooks.','mw_wc_qbo_sync');?>" type="text" name="mw_wc_qbo_sync_access_token_update" id="mw_wc_qbo_sync_access_token_update" value="<?php echo esc_attr($mw_wc_qbo_sync_access_token);?>">
 							  </div>
 							  
 							  <div class="">
@@ -107,7 +118,7 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 								   Status
 								</div>
 								<div class="right-status">
-								   <?php echo (isset($ldfcpv['status']))?$ldfcpv['status']:''?>
+								   <?php echo esc_html((isset($ldfcpv['status'])) ? $ldfcpv['status'] : ''); ?>
 								</div>
 							 </li>
 							 <li>
@@ -115,7 +126,7 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 								   Plan
 								</div>
 								<div class="right-status">
-								   <?php echo (isset($ldfcpv['plan']))?$ldfcpv['plan']:''?>
+								   <?php echo esc_html((isset($ldfcpv['plan'])) ? $ldfcpv['plan'] : ''); ?>
 								</div>
 							 </li>
 							 <li>
@@ -123,7 +134,7 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 								   Next Due Date
 								</div>
 								<div class="right-status">
-								  <?php echo (isset($ldfcpv['nextduedate']) && !empty($ldfcpv['nextduedate']) && $ldfcpv['nextduedate'] != '0000-00-00')?date('M j, Y',strtotime($ldfcpv['nextduedate'])):''?>
+								  <?php echo esc_html((isset($ldfcpv['nextduedate']) && !empty($ldfcpv['nextduedate']) && $ldfcpv['nextduedate'] != '0000-00-00') ? date('M j, Y',strtotime($ldfcpv['nextduedate'])) : ''); ?>
 								</div>
 							 </li>
 							 <li>
@@ -131,7 +142,7 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 								   Billing Cycle
 								</div>
 								<div class="right-status">
-								  <?php echo (isset($ldfcpv['billingcycle']))?$ldfcpv['billingcycle']:''?>
+								  <?php echo esc_html((isset($ldfcpv['billingcycle'])) ? $ldfcpv['billingcycle'] : ''); ?>
 								</div>
 							 </li>
 							 <?php if(!$MSQS_QL->is_plg_lc_p_sr()):?>
@@ -154,6 +165,10 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 				  		if($MSQS_QL->use_new_dash_connection_url()){
 				  			$qb_connect_manage_c_url = $MSQS_QL->get_new_dash_connect_manage_c_url();
 				  		}
+
+						$subscription_id = $MSQS_QL->get_option('mw_wc_qbo_sync_stripe_sub_id');
+
+						$qb_connect_manage_c_url = empty($subscription_id) ? $qb_connect_manage_c_url : $MSQS_QL->get_new_dash_connection_url() . '/subscription-details-qbonline/'. $subscription_id;
 				  	?>
 
 					<?php  if($MSQS_QL->is_connected()):?>
@@ -162,7 +177,7 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 						  <h3>Manage QuickBooks Connection</h3>
 						  <p>You're already connected to QuickBooks, you can manage your connection here.</p>
 						  <div class="Connect-now">
-							<a  target="_blank" href="<?php echo $qb_connect_manage_c_url;?>" class="CmnBtn">Manage Connection</a>
+							<a  target="_blank" href="<?php echo esc_url($qb_connect_manage_c_url);?>" class="CmnBtn">Manage Connection</a>
 						  </div>
 					   </div>
 					</div>
@@ -173,7 +188,7 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 						  <h3>Connect to QuickBooks</h3>
 						  <p>Your license key is active, click here to connect to your QuickBooks Online account.</p>
 						  <div class="Connect-now">						  	
-							<a  target="_blank" href="<?php echo $qb_connect_manage_c_url;?>" class="CmnBtn">Connect</a>
+							<a  target="_blank" href="<?php echo esc_url($qb_connect_manage_c_url);?>" class="CmnBtn">Connect</a>
 						  </div>
 					   </div>
 					</div> 
@@ -188,7 +203,7 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 		   <div class="cols-md-4 right-row">
 			  <div class="side-bar">
 				 <div class="i-img">
-					<img src="<?php echo plugins_url( $plugin_folder_name.'/admin/image/i.png' ) ?>" class="img-res">
+					<img src="<?php echo esc_url( plugins_url( $plugin_folder_name.'/admin/image/i.png' ) ) ?>" class="img-res">
 				 </div>
 				 <h3>Connection Info</h3>
 				 <?php  if($MSQS_QL->is_connected()):?>
@@ -197,13 +212,13 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 					<h3>
 						<?php
 						if($quickbooks_CompanyInfo->countCompanyName()){
-							print($quickbooks_CompanyInfo->getCompanyName());
+							echo esc_html($quickbooks_CompanyInfo->getCompanyName());
 						}	 
 						?>
 						
 						<?php
 						if($quickbooks_CompanyInfo->countCountry()){
-							print('['.$quickbooks_CompanyInfo->getCountry().']');
+							echo '[' . esc_html($quickbooks_CompanyInfo->getCountry()) . ']';
 						}	 
 						?>
 					</h3>
@@ -211,7 +226,7 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 						<?php
 						if($quickbooks_CompanyInfo->countEmail()){		
 							if(is_object($quickbooks_CompanyInfo->getEmail()) && $quickbooks_CompanyInfo->getEmail()->countAddress()){
-								print($quickbooks_CompanyInfo->getEmail()->getAddress());
+								echo esc_html($quickbooks_CompanyInfo->getEmail()->getAddress());
 							}
 						}	
 						?>
@@ -226,7 +241,7 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 							 Status
 						  </div>
 						  <div class="right-status">
-							<?php echo $local_connection_status_txt;?>
+							<?php echo !empty($local_connection_status_txt) ? $local_connection_status_txt : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 						  </div>
 					   </li>
 					   <li>
@@ -234,7 +249,7 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 							 Realm
 						  </div>
 						  <div class="right-status">
-							 <?php print($realm); ?>
+							 <?php echo esc_html($realm); ?>
 						  </div>
 					   </li>
 					</ul>
@@ -247,7 +262,7 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 							 Status
 						  </div>
 						  <div class="right-status">
-							<?php echo $local_connection_status_txt;?>
+							<?php echo !empty($local_connection_status_txt) ? $local_connection_status_txt : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 						  </div>
 					   </li>					   
 					</ul>
@@ -256,8 +271,8 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 				 
 				 <?php if(!$MSQS_QL->option_checked('mw_wc_qbo_sync_is_oauth2_qb_connection_fa')):?>
 				 <div class="refresh-key">
-					<img src="<?php echo plugins_url( $plugin_folder_name.'/admin/image/side-bar-refresh-key.png' ) ?>" class="img-res">
-					<span><a id="mwqs_dqcclk" title="<?php echo __('Refresh QuickBooks Connection Status.','mw_wc_qbo_sync');?>" href="javascript:void(0);">Refresh Connection</a></span>
+					<img src="<?php echo esc_url( plugins_url( $plugin_folder_name.'/admin/image/side-bar-refresh-key.png' ) ) ?>" class="img-res">
+					<span><a id="mwqs_dqcclk" title="<?php echo esc_attr__('Refresh QuickBooks Connection Status.','mw_wc_qbo_sync');?>" href="javascript:void(0);">Refresh Connection</a></span>
 					<?php wp_nonce_field( 'myworks_wc_qbo_sync_del_conn_cred_local_key', 'del_conn_cred_local_key' );?>
 				 </div>
 				 <?php endif;?>
@@ -269,17 +284,17 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 					<br>
 					</p>
 					<div class="Connect-now">
-							 <a href="https://support.myworks.software/woocommerce-sync-for-quickbooks-online" class="CmnBtn">Documentation</a>
+							 <a href="https://support.myworks.software/en_US/360003544674-WooCommerce-Sync-for-QuickBooks-Online" class="CmnBtn">Help Center</a>
 						  </div>
 				 </div>
 				 
 			  </div>
 			  <div class="side-bar dflt">
-				  <h3>Still need help? Easily open a ticket.</h3>
+				  <h3>Still need help? Our support team is here!</h3>
 				 <div class="usa-block">
-					<p>Have a question and can't find an answer in our documentation? Our helpful support team is always online via support ticket to give you a hand.</p>
+					<p>Have a question and can't find an answer in our help center? Our helpful support team is always online via support ticket to give you a hand.</p>
 					<div class="Connect-now">
-							 <a href="<?php echo $MSQS_QL->get_quickbooks_connection_dashboard_url();?>/submitticket.php?step=2&deptid=2" target="_blank" class="CmnBtn">Open Ticket</a>
+							 <a href="https://support.myworks.software/en_US/360003544674-WooCommerce-Sync-for-QuickBooks-Online" target="_blank" class="CmnBtn">Open Ticket</a>
 						  </div>
 				 </div>
 				 
@@ -351,14 +366,14 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 		<?php endif;?>
 		
 		<?php
-			$invalid_license_msg = '<strong>Please enter your MyWorks license key to continue.</strong> </br><a target="_blank" href="https://myworks.software/pricing?utm_source=plugin_link&utm_medium=link&utm_campaign=plugin_link">Don\'t have one? Sign up for a MyWorks account here.</a></br></br>';
+			$invalid_license_msg = '<strong>Please enter your MyWorks license key to continue.</strong> </br><a target="_blank" href="https://myworks.software/pricing/?utm_source=plugin_link&utm_medium=link&utm_campaign=plugin_link#woocommerce+quickbooks_online">Don\'t have one? Sign up for a MyWorks account here.</a></br></br>';
 			
 			if($MWQS_OF->get_license_status()=='Invalid'){
 				$invalid_license_msg = 'Please enter a valid MyWorks license key in order to continue.
 				</br></br>
 				<strong>Installing for the first time?</strong> Great! Simply enter your key below.
 				</br>
-				<strong>Moving sites?</strong> Don\'t forget to re-issue your license with us in your account.
+				<strong>Moving sites?</strong> Don\'t forget to update your domain/URL in your MyWorks account.
 				</br></br>';
 			}
 			
@@ -373,11 +388,11 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 		
 		<?php if($MWQS_OF->get_license_status()!='Active'):?>
 		<div class="qbd_input_license">
-			<p><?php echo $invalid_license_msg;?></p>
+			<p><?php echo !empty($invalid_license_msg) ? $invalid_license_msg : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></p>
 			<div class="mwqs_conection_license_check">
 				<form method="post" id="myworks_wc_qbo_sync_check_license">
 					<label for ="mw_wc_qbo_sync_license">License Key: </label>
-					<input type="text" placeholder = "QBOSync-000000000000000000" name="mw_wc_qbo_sync_license" id="mw_wc_qbo_sync_license" value="<?php echo $mw_wc_qbo_sync_license;?>">
+					<input type="text" placeholder = "QBOSync-000000000000000000" name="mw_wc_qbo_sync_license" id="mw_wc_qbo_sync_license" value="<?php echo esc_attr($mw_wc_qbo_sync_license);?>">
 					 <?php wp_nonce_field( 'myworks_wc_qbo_sync_check_license', 'check_plugin_license' ); ?>
 					<input size="30" type="submit" value="Enter" class="button button-primary">
 					<span id="mwqs_license_chk_loader" style="visibility:hidden;">
@@ -388,4 +403,5 @@ $ldfcpv = $MWQS_OF->get_ldfcpv();
 		</div>
 		<?php endif;?>
 	 </div>
+
 </div>

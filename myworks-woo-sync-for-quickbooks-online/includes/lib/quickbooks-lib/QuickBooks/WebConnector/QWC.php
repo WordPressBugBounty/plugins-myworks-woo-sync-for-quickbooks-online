@@ -120,7 +120,7 @@ class QuickBooks_WebConnector_QWC
 	{
 		header('Content-type: text/xml');
 		header('Content-Disposition: attachment; filename="' . $filename . '"');
-		print($this->generate());
+		print(wp_kses_post($this->generate()));
 		return true;
 	}
 	

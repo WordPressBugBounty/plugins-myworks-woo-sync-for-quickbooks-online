@@ -495,9 +495,14 @@ abstract class QuickBooks_QBXML_Object
 		}
 		
 		$class = 'QuickBooks_QBXML_Schema_Object_' . $request;
-		$file = 'QuickBooks/QBXML/Schema/Object/' . $request . '.php';
+		$safe_request = preg_replace('/[^a-zA-Z0-9_]/', '', $request); // Sanitize request for file inclusion
+		$file = 'QuickBooks/QBXML/Schema/Object/' . $safe_request . '.php';
 		
-		include_once $file;
+		// Validate file exists before inclusion
+		if (file_exists($file)) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_include_once -- QuickBooks library schema file with validation
+			include_once $file; // nosemgrep
+		}
 		
 		if (class_exists($class))
 		{
@@ -914,7 +919,7 @@ abstract class QuickBooks_QBXML_Object
 				}
 				else
 				{
-					print('Missing class: ' . $childclass . "\n");
+					print('Missing class: ' . esc_html($childclass) . "\n");
 				}
 			}
 			

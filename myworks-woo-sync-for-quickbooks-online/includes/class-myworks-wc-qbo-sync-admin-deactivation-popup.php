@@ -83,11 +83,11 @@ public function mw_admin_deactivation_popup_footer() {
     <input type="radio" name="deactivation_reason" value="It is a temporary deactivation"> It's a temporary deactivation<br>
     <input type="radio" name="deactivation_reason" value="Other"> Other<br><br>
     
-    <input type="hidden" name="deactivation_domain" value="<?php echo $license_domain; ?>">
+    <input type="hidden" name="deactivation_domain" value="<?php echo esc_attr($license_domain); ?>">
     
-    <input type="hidden" name="deactivation_license_key" value="<?php echo $license_key; ?>">
+    <input type="hidden" name="deactivation_license_key" value="<?php echo esc_attr($license_key); ?>">
     
-    <input type="hidden" name="email" value="<?php echo $license_email; ?>">
+    <input type="hidden" name="email" value="<?php echo esc_attr($license_email); ?>">
 
     <input type="hidden" name="action" value="mw_wc_qbo_sync_redirect_deactivation_popup" />
     
@@ -113,7 +113,7 @@ public function mw_admin_deactivation_popup_footer() {
 
             formData = $(this).serialize();
 
-            $.post('<?php echo admin_url( 'admin-ajax.php' ); ?>', formData, function(response) {
+            $.post('<?php echo esc_js(admin_url( 'admin-ajax.php' )); ?>', formData, function(response) {
                 if(response) {
                     $.modal.close();
                     location.href = deactivateLink.attr('href');

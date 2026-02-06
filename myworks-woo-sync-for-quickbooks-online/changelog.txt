@@ -1,14 +1,27 @@
 *** MyWorks Sync for WooCommerce & QuickBooks Online ***
 
-= 2025-07-15 version 2.9.3 =
-* Updated plugin name to resolve WooCommerce trademark overlap
+= 2025-12-19 version 3.0.3 =
+* Improved order date handling for stores not yet running HPOS
+* Improved view of PDF in WooCommerce order widget
 
-= 2025-04-10 version 2.9.2 =
-* Updated compatibility with ATUM Inventory plugin to resolve a minor XSS conflict, reproducible only when logged in as an administrator user
+= 2025-12-18 version 3.0.2 =
+* Improved order data handling for stores not yet running HPOS
+* Improved handling for syncing fee line items, with the ability to disable if desired
+* Improved compatibility with PHP 8.3 and 8.4
 
-= 2025-02-24 version 2.9.1 =
-* Added support for PHP 8.3
-* Updated MyWorks connection process
-* Improved reliability when syncing products, pricing and payments from QuickBooks to WooCommerce
-* Improved QuickBooks API connection efficiency
-* Resolved minor bugs
+= 2025-12-11 version 3.0.1 =
+* Improved handling for order notes and order dates in stores not yet running HPOS
+* Improved compatibility with PHP 8.3 and 8.4
+
+= 2025-11-30 version 3.0.0 =
+* Added support for PHP 8.4
+* Added full support for stores using HPOS
+* Added support to sync Cost with new WooCommerce Product COGS field
+* Improved efficiency interacting with the QuickBooks Online API 
+* Improved support for WordPress users in multiple roles
+* Improved support to prevent orders being synced more than once together in rare cases
+* Improved handling for shipping tax in orders containing inclusive tax
+* Improved handling for emailing invoices from QuickBooks when order is synced
+* Resolved issue causing products to become unmapped if multiple products are matched to the same QuickBooks item while syncing pricing
+* Removed wp-cron warning message
+* Removed the deletion of our database tables when plugin is deleted from site

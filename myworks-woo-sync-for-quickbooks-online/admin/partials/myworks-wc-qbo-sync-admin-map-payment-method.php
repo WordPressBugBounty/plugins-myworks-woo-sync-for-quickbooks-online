@@ -7,15 +7,47 @@ global $MSQS_QL;
 global $wpdb;
 global $woocommerce;
 
+/*
 if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
 	$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true);	
 }
+*/
 
 $page_url = 'admin.php?page=myworks-wc-qbo-map&tab=payment-method';
+
+# New
+if($MSQS_QL->use_new_qbo_local_data('account') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_accounts_data_fetched') != 'true'){
+	# Fetch and save new QBO accounts into DB
+	$MSQS_QL->save_all_accounts();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_accounts_data_fetched','true',false);
+}
+
+if($MSQS_QL->use_new_qbo_local_data('paymentmethod') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_paymentmethods_data_fetched') != 'true'){
+	# Fetch and save new QBO payment methods into DB
+	$MSQS_QL->save_all_payment_methods();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_paymentmethods_data_fetched','true',false);
+}
+
+if($MSQS_QL->use_new_qbo_local_data('term') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_terms_data_fetched') != 'true'){
+	# Fetch and save new QBO terms into DB
+	$MSQS_QL->save_all_terms();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_terms_data_fetched','true',false);
+}
+
+if($MSQS_QL->use_new_qbo_local_data('vendor') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_vendors_data_fetched') != 'true'){
+	# Fetch and save new QBO vendors into DB
+	$MSQS_QL->save_all_vendors();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_vendors_data_fetched','true',false);
+}
+
 if (! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_payment_methods', 'map_wc_qbo_payment_method' ) ) {
 	$table = $wpdb->prefix.'mw_wc_qbo_sync_paymentmethod_map';
 	
-	$wpdb->query($wpdb->prepare("DELETE FROM `$table` WHERE `id` > %d",0));
+	// Validate table name for security and use esc_sql for table name
+	if (strpos($table, $wpdb->prefix) === 0) {
+		$table_name = esc_sql($table);
+		$wpdb->query($wpdb->prepare("DELETE FROM `{$table_name}` WHERE `id` > %d",0)); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
 	
 	$pm_name_cur_list_arr = array();
 	 foreach($_POST as $k=>$val){
@@ -44,58 +76,58 @@ if (! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_pa
 				}
 				$pm_name_cur_list_arr[$p_method.'__'.$p_cur] = true;
 				
-				$term_id = (int) (isset($_POST[$p_method.'__'.$p_cur.'_term']))?$_POST[$p_method.'__'.$p_cur.'_term']:0;
+				$term_id = (int) (isset($_POST[$p_method.'__'.$p_cur.'_term']))?sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_term']):0;
 				
 				if($q_a_id || $term_id>0){					
 					$p_map_tran = 0;
 			
-					if(isset($_POST[$p_method.'__'.$p_cur.'_transaction'])){
+					if(isset($_POST[$p_method.'__'.$p_cur.'_transaction']) && sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_transaction']) === '1'){
 						$p_map_tran = 1;
 					}
 					
 					
 					$p_map_ep = 0;
 					
-					if(isset($_POST[$p_method.'__'.$p_cur.'_ep'])){
+					if(isset($_POST[$p_method.'__'.$p_cur.'_ep']) && sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_ep']) === '1'){
 						$p_map_ep = 1;
 					}
 					
 					
 					$p_map_tr = 0;
 					
-					if(isset($_POST[$p_method.'__'.$p_cur.'_tr'])){
+					if(isset($_POST[$p_method.'__'.$p_cur.'_tr']) && sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_tr']) === '1'){
 						$p_map_tr = 1;
 					}
 					
 					
 					$p_map_er = 0;
 					
-					if(isset($_POST[$p_method.'__'.$p_cur.'_er'])){
+					if(isset($_POST[$p_method.'__'.$p_cur.'_er']) && sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_er']) === '1'){
 						$p_map_er = 1;
 					}
 					
-					$p_txn_exp_acc = (int) (isset($_POST[$p_method.'__'.$p_cur.'_expacc']))?$_POST[$p_method.'__'.$p_cur.'_expacc']:0;
+					$p_txn_exp_acc = (int) (isset($_POST[$p_method.'__'.$p_cur.'_expacc']))?sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_expacc']):0;
 					
 					$enable_batch = 0;					
-					if(isset($_POST[$p_method.'__'.$p_cur.'_ebatch'])){
+					if(isset($_POST[$p_method.'__'.$p_cur.'_ebatch']) && sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_ebatch']) === '1'){
 						$enable_batch = 1;
 					}
 					
-					$udf_account_id = (int) (isset($_POST[$p_method.'__'.$p_cur.'_udfacc']))?$_POST[$p_method.'__'.$p_cur.'_udfacc']:0;
+					$udf_account_id = (int) (isset($_POST[$p_method.'__'.$p_cur.'_udfacc']))?sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_udfacc']):0;
 					
 					
-					$vendor_id = (int) (isset($_POST[$p_method.'__'.$p_cur.'_vendor']))?$_POST[$p_method.'__'.$p_cur.'_vendor']:0;
+					$vendor_id = (int) (isset($_POST[$p_method.'__'.$p_cur.'_vendor']))?sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_vendor']):0;
 					
-					$deposit_date_field = (int) (isset($_POST[$p_method.'__'.$p_cur.'_batchdate']))?$_POST[$p_method.'__'.$p_cur.'_batchdate']:0;
+					$deposit_date_field = (isset($_POST[$p_method.'__'.$p_cur.'_batchdate']))?sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_batchdate']):'post_date';
 					
 					//$term_id = (int) (isset($_POST[$p_method.'__'.$p_cur.'_term']))?$_POST[$p_method.'__'.$p_cur.'_term']:0;
 					
 					//04-05-2017
-					$ps_order_status = (int) (isset($_POST[$p_method.'__'.$p_cur.'_orst']))?$_POST[$p_method.'__'.$p_cur.'_orst']:'';
+					$ps_order_status = (isset($_POST[$p_method.'__'.$p_cur.'_orst']))?sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_orst']):'';
 					
-					$deposit_cron_sch = (isset($_POST[$p_method.'__'.$p_cur.'_dsch']))?trim($_POST[$p_method.'__'.$p_cur.'_dsch']):'';
+					$deposit_cron_sch = (isset($_POST[$p_method.'__'.$p_cur.'_dsch']))?trim(sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_dsch'])):'';
 					
-					$deposit_cron_utc = (int) (isset($_POST[$p_method.'__'.$p_cur.'_dct']))?$_POST[$p_method.'__'.$p_cur.'_dct']:'';
+					$deposit_cron_utc = (isset($_POST[$p_method.'__'.$p_cur.'_dct']))?sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_dct']):'';
 					if($deposit_cron_utc!=''){
 						$utc_arr = $MSQS_QL->get_dps_utc_time_arr();
 						if(!is_array($utc_arr)){
@@ -109,13 +141,13 @@ if (! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_pa
 					
 					$lump_weekend_batches = 0;
 					
-					if(isset($_POST[$p_method.'__'.$p_cur.'_lwb'])){
+					if(isset($_POST[$p_method.'__'.$p_cur.'_lwb']) && sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_lwb']) === '1'){
 						$lump_weekend_batches = 1;
 					}
 					
 					$individual_batch_support = 0;
 					
-					if(isset($_POST[$p_method.'__'.$p_cur.'_ibs'])){
+					if(isset($_POST[$p_method.'__'.$p_cur.'_ibs']) && sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_ibs']) === '1'){
 						$individual_batch_support = 1;
 					}
 					
@@ -132,12 +164,12 @@ if (! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_pa
 					
 					$inv_due_date_days = 0;
 					if(isset($_POST[$p_method.'__'.$p_cur.'_iddd'])){
-						$inv_due_date_days = (int) $_POST[$p_method.'__'.$p_cur.'_iddd'];
+						$inv_due_date_days = (int) sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_iddd']);
 					}
 
-					$order_sync_as = (isset($_POST[$p_method.'__'.$p_cur.'_qosa']))?$_POST[$p_method.'__'.$p_cur.'_qosa']:'';
+					$order_sync_as = (isset($_POST[$p_method.'__'.$p_cur.'_qosa']))?sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_qosa']):'';
 					
-					$qb_p_method_id = (int) (isset($_POST[$p_method.'__'.$p_cur.'_qbpmethod']))?$_POST[$p_method.'__'.$p_cur.'_qbpmethod']:0;
+					$qb_p_method_id = (int) (isset($_POST[$p_method.'__'.$p_cur.'_qbpmethod']))?sanitize_text_field($_POST[$p_method.'__'.$p_cur.'_qbpmethod']):0;
 					
 					/**/
 					if($udf_account_id <1 || empty($deposit_cron_utc)){
@@ -176,7 +208,9 @@ if (! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_pa
 					
 					$pm_map_save_data = array_map(array($MSQS_QL, 'sanitize'), $pm_map_save_data);
 					//$MSQS_QL->_p($pm_map_save_data);
-					$wpdb->insert($table, $pm_map_save_data);					
+					if (strpos($table, $wpdb->prefix) === 0) {
+						$wpdb->insert($table, $pm_map_save_data);
+					}					
 						
 				}
 			}
@@ -211,7 +245,13 @@ if(is_array($wc_p_methods) && count($wc_p_methods) && is_array($wc_currency_list
 	$is_valid_pm = true;
 }
 
-$pm_map_data = $MSQS_QL->get_tbl($wpdb->prefix.'mw_wc_qbo_sync_paymentmethod_map');
+$table_name = $wpdb->prefix.'mw_wc_qbo_sync_paymentmethod_map';
+// Validate table name for security
+if (strpos($table_name, $wpdb->prefix) === 0) {
+	$pm_map_data = $MSQS_QL->get_tbl($table_name);
+} else {
+	$pm_map_data = array();
+}
 
 $qbo_account_options = '<option value=""></option>';
 $qbo_account_options.= $MSQS_QL->get_account_dropdown_list('',true,true);
@@ -273,7 +313,7 @@ $disable_this_section = true;
 .mw_pmm_tbl{border-bottom:1px solid #DDDDDD;}
 </style>
 <div class="container map-product-responsive">
-	<div class="page_title flex-box"><h4><?php _e( 'Payment Method Mappings', 'mw_wc_qbo_sync' );?></h4> 
+	<div class="page_title flex-box"><h4><?php esc_html_e( 'Payment Method Mappings', 'mw_wc_qbo_sync' );?></h4> 
 	<?php if(!$MSQS_QL->is_plg_lc_p_l(false)):?>
 	<div class="dashboard_main_buttons p-mapbtn">
 		<button class="show_advanced_payment_sync" id="show_advanced_payment_sync">Show Advanced Options</button>
@@ -291,14 +331,14 @@ $disable_this_section = true;
 						<div class="col s12 m12 l12">
 							<?php foreach($wc_p_methods as $pm_key => $pm_val):?>							
 							<div class="pm_map_list" style="margin:10px 0px 10px 0px;">
-								<h5><?php echo $pm_val.' ('.$pm_key.')';?></h5>
+								<h5><?php echo esc_html($pm_val.' ('.esc_attr($pm_key).')');?></h5>
 								<div class="myworks-wc-qbo-sync-table-responsive">
 								<table class="mw-qbo-sync-settings-table menu-blue-bg menu-bg-a new-table mw_pmm_tbl" style="width:100%" cellpadding="5" cellspacing="5">
 									<thead>
 										<tr>
 										<th width="40%">&nbsp;</th>
 										<?php foreach($wc_currency_list as $c_val){?>			
-										<th><b><?php echo $c_val;?></b></th>
+										<th><b><?php echo esc_html($c_val);?></b></th>
 										<?php }?>
 										<th>&nbsp;</th>
 										</tr>
@@ -310,16 +350,16 @@ $disable_this_section = true;
 										<?php foreach($wc_currency_list as $c_val){?>
 										<?php
 											if(!in_array($pm_key.$c_val,$pmd_pmca)){
-												$js_dtos.= 'jQuery("#'.$pm_key.'__'.$c_val.'_er").prop("checked", true);';
+												$js_dtos.= 'jQuery("#'.esc_js($pm_key).'__'.esc_js($c_val).'_er").prop("checked", true);';
 											}
 										?>
 										<td>
-											<input data-cba="pm__<?php echo $pm_key;?>__<?php echo $c_val;?>" data-cba-qbpmethod="<?php echo $pm_key;?>__<?php echo $c_val;?>_qbpmethod" type="checkbox" class="pm_chk_ep pm_chk" value="1" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_ep" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_ep">											
+											<input data-cba="pm__<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>" data-cba-qbpmethod="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_qbpmethod" type="checkbox" class="pm_chk_ep pm_chk" value="1" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_ep" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_ep">											
 										</td>
 										<?php }?>
 										<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Enable the syncing of payments for this gateway & specific currency. If not enabled, payments will not be synced in real time to QuickBooks Online.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Enable the syncing of payments for this gateway & specific currency. If not enabled, payments will not be synced in real time to QuickBooks Online.','mw_wc_qbo_sync') ?></span>
 										</div>
                                         </td>
 									</tr>
@@ -332,14 +372,14 @@ $disable_this_section = true;
 										
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td class="new-widt">
-											<select class="qbo_select" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_qosa" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_qosa">												
-												<?php echo $MSQS_QL->only_option('',$qost_arr);?>
+											<select class="qbo_select" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_qosa" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_qosa">												
+												<?php echo wp_kses($MSQS_QL->only_option('',$qost_arr) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 											</select>
 										</td>
 										<?php }?>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Choose whether the WooCommerce order as Invoice or SalesReceipt','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Choose whether the WooCommerce order as Invoice or SalesReceipt','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>	
 									</tr>
@@ -352,14 +392,14 @@ $disable_this_section = true;
 										
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td class="new-widt">
-											<select style="background-color:#f4f4f4" disabled="disabled" title="Enable payment first" class="qbo_select" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_qbpmethod" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_qbpmethod">
-												<?php echo $qbo_payment_method_options;?>
+											<select style="background-color:#f4f4f4" disabled="disabled" title="Enable payment first" class="qbo_select" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_qbpmethod" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_qbpmethod">
+												<?php echo wp_kses($qbo_payment_method_options, array('option' => array('value' => array())));?>
 											</select>
 										</td>
 										<?php }?>
                                         <td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select the Payment Method that this woocommerce Gateway corresponds to in QuickBooks Online. This will be reflected in invoice payments made in QuickBooks Online, and deposits made if batch support is enabled.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select the Payment Method that this woocommerce Gateway corresponds to in QuickBooks Online. This will be reflected in invoice payments made in QuickBooks Online, and deposits made if batch support is enabled.','mw_wc_qbo_sync') ?></span>
 										</div>
                                         </td>
 									</tr>                                    
@@ -371,15 +411,15 @@ $disable_this_section = true;
 										
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td class="new-widt">
-											<select style="background-color:#f4f4f4" disabled="disabled" title="Enable payment first" class="qbo_select dd_qoba" name="pm__<?php echo $pm_key;?>__<?php echo $c_val;?>" id="pm__<?php echo $pm_key;?>__<?php echo $c_val;?>">
-												<?php echo $qbo_account_options;?>
+											<select style="background-color:#f4f4f4" disabled="disabled" title="Enable payment first" class="qbo_select dd_qoba" name="pm__<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>" id="pm__<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>">
+												<?php echo wp_kses($qbo_account_options, array('option' => array('value' => array())));?>
 											</select>
-											<input type="hidden" name="pm__<?php echo $pm_key;?>__<?php echo $c_val;?>__PMC" value="0">
+											<input type="hidden" name="pm__<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>__PMC" value="0">
 										</td>
 										<?php }?>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Choose the Bank Account in QuickBooks Online that payments from your woocommerce gateway will be deposited into in real life / in QuickBooks Online.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Choose the Bank Account in QuickBooks Online that payments from your woocommerce gateway will be deposited into in real life / in QuickBooks Online.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 										
@@ -391,12 +431,12 @@ $disable_this_section = true;
 										</td>
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td>
-											<input class="pm_chk" type="checkbox" value="1" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_er" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_er">
+											<input class="pm_chk" type="checkbox" value="1" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_er" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_er">
 										</td>
 										<?php }?>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											<span class="tooltiptext"><?php echo __('Enable the syncing of refunds made with this gateway in this specific currency. If not enabled, refunds will not be synced in real time to QuickBooks Online.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											<span class="tooltiptext"><?php echo esc_html__('Enable the syncing of refunds made with this gateway in this specific currency. If not enabled, refunds will not be synced in real time to QuickBooks Online.','mw_wc_qbo_sync') ?></span>
 											</div>
                                         </td>
 									</tr>
@@ -407,12 +447,12 @@ $disable_this_section = true;
 										</td>
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td>
-											<input data-cba="<?php echo $pm_key;?>__<?php echo $c_val;?>_expacc" type="checkbox" class="pm_chk_trn pm_chk" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_transaction" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_transaction" value="1">
+											<input data-cba="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_expacc" type="checkbox" class="pm_chk_trn pm_chk" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_transaction" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_transaction" value="1">
 										</td>
 										<?php }?>
 										<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Enable the syncing of transaction fees to QuickBooks Online. <br><br>These will show up as a journal entry in QuickBooks Online crediting the bank account chosen to the left and debiting the expense account chosen to the right on this page.<br><br> NOTE: Transaction fees will only be synced if this option is turned on and transaction fees are recorded in woocommerce by the gateway.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Enable the syncing of transaction fees to QuickBooks Online. <br><br>These will show up as a journal entry in QuickBooks Online crediting the bank account chosen to the left and debiting the expense account chosen to the right on this page.<br><br> NOTE: Transaction fees will only be synced if this option is turned on and transaction fees are recorded in woocommerce by the gateway.','mw_wc_qbo_sync') ?></span>
 										</div>
                                         </td>
 									</tr>
@@ -424,14 +464,14 @@ $disable_this_section = true;
 										
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td class="new-widt">
-											<select style="background-color:#f4f4f4" disabled="disabled" title="Enable transaction Fee first" class="qbo_select" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_expacc" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_expacc">
-												<?php echo $qbo_account_options_all;?>
+											<select style="background-color:#f4f4f4" disabled="disabled" title="Enable transaction Fee first" class="qbo_select" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_expacc" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_expacc">
+												<?php echo wp_kses($qbo_account_options_all, array('option' => array('value' => array())));?>
 											</select>
 										</td>
 										<?php }?>
 										<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Choose the Expense Account in QuickBooks Online that transaction fees recorded in woocommerce will be synced to. This option is only enabled if the Sync TXN fees option is on.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Choose the Expense Account in QuickBooks Online that transaction fees recorded in woocommerce will be synced to. This option is only enabled if the Sync TXN fees option is on.','mw_wc_qbo_sync') ?></span>
 										</div>
 										</td>										
 									</tr>
@@ -442,12 +482,12 @@ $disable_this_section = true;
 										</td>
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td>
-											<input class="pm_chk" type="checkbox" value="1" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_tr" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_tr">
+											<input class="pm_chk" type="checkbox" value="1" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_tr" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_tr">
 										</td>
 										<?php }?>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Enable the syncing of transaction fee refunds when a woocommerce refund is processed and synced to QuickBooks Online. <br><br>These will show up as a journal entry in QuickBooks Online debiting the bank account chosen to the left and crediting the expense account chosen to the right on this page for the amount of the transaction fee.<br><br> This option is helpful if you have a gateway like PayPal that refunds transaction fees when a payment refund is processed.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Enable the syncing of transaction fee refunds when a woocommerce refund is processed and synced to QuickBooks Online. <br><br>These will show up as a journal entry in QuickBooks Online debiting the bank account chosen to the left and crediting the expense account chosen to the right on this page for the amount of the transaction fee.<br><br> This option is helpful if you have a gateway like PayPal that refunds transaction fees when a payment refund is processed.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>
 									</tr>
@@ -462,12 +502,12 @@ $disable_this_section = true;
 										</td>
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td>
-											<input data-cba="<?php echo $pm_key;?>__<?php echo $c_val;?>_udfacc" data-cba-vendor="<?php echo $pm_key;?>__<?php echo $c_val;?>_vendor" data-cba-batchdate="<?php echo $pm_key;?>__<?php echo $c_val;?>_batchdate" data-cba-lwb="<?php echo $pm_key;?>__<?php echo $c_val;?>_lwb" data-cba-ibs="<?php echo $pm_key;?>__<?php echo $c_val;?>_ibs" class="pm_chk_batch pm_chk" type="checkbox" value="1" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_ebatch" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_ebatch">
+											<input data-cba="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_udfacc" data-cba-vendor="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_vendor" data-cba-batchdate="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_batchdate" data-cba-lwb="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_lwb" data-cba-ibs="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_ibs" class="pm_chk_batch pm_chk" type="checkbox" value="1" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_ebatch" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_ebatch">
 										</td>
 										<?php }?>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Batch Payment Support will allow maximum compatibility with card processors that deposit daily batches into your bank account.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Batch Payment Support will allow maximum compatibility with card processors that deposit daily batches into your bank account.','mw_wc_qbo_sync') ?></span>
 											</div>
                                         </td>
 									</tr>
@@ -480,12 +520,12 @@ $disable_this_section = true;
 										
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td>					
-											<input class="pm_chk" disabled="disabled" title="Enable batch payment first" type="checkbox" value="1" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_ibs" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_ibs">
+											<input class="pm_chk" disabled="disabled" title="Enable batch payment first" type="checkbox" value="1" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_ibs" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_ibs">
 										</td>
 										<?php }?>
 										<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Individual Batch Support','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Individual Batch Support','mw_wc_qbo_sync') ?></span>
 										</div>
                                         </td>
 									</tr>
@@ -498,15 +538,15 @@ $disable_this_section = true;
 										
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td>										
-											<select class="qbo_select pm_nbv dd_dcsch" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_dsch" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_dsch">
+											<select class="qbo_select pm_nbv dd_dcsch" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_dsch" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_dsch">
 												<!--<option value=""></option>-->
-												<?php echo $MSQS_QL->only_option('',$MSQS_QL->get_dps_sch_arr());?>
+												<?php echo wp_kses($MSQS_QL->only_option('',$MSQS_QL->get_dps_sch_arr()) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 											</select>
 										</td>
 										<?php }?>
 										<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select the day of week that our integration should create a bank deposit in QuickBooks.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select the day of week that our integration should create a bank deposit in QuickBooks.','mw_wc_qbo_sync') ?></span>
 										</div>
                                         </td>
 									</tr>
@@ -519,15 +559,15 @@ $disable_this_section = true;
 										
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td>										
-											<select class="qbo_select pm_nbv" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_dct" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_dct">
+											<select class="qbo_select pm_nbv" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_dct" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_dct">
 												<option value=""></option>
-												<?php echo $MSQS_QL->only_option('',$MSQS_QL->get_dps_utc_time_arr());?>
+												<?php echo wp_kses($MSQS_QL->only_option('',$MSQS_QL->get_dps_utc_time_arr()) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 											</select>
 										</td>
 										<?php }?>
 										<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select the time that our integration should create a bank deposit in QuickBooks that batches the last 24 hours of payments.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select the time that our integration should create a bank deposit in QuickBooks that batches the last 24 hours of payments.','mw_wc_qbo_sync') ?></span>
 										</div>
                                         </td>
 									</tr>
@@ -539,14 +579,14 @@ $disable_this_section = true;
 										
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td class="new-widt">
-											<select style="background-color:#f4f4f4" disabled="disabled" title="Enable batch payment first" class="qbo_select pm_nbv" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_udfacc" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_udfacc">												
-												<?php echo $qbo_account_options;?>
+											<select style="background-color:#f4f4f4" disabled="disabled" title="Enable batch payment first" class="qbo_select pm_nbv" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_udfacc" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_udfacc">												
+												<?php echo wp_kses($qbo_account_options, array('option' => array('value' => array())));?>
 											</select>
 										</td>
 										<?php }?>
 										<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select your Undeposited Funds account - where payments will be recorded to when synced into QuickBooks. The daily deposit we create in QuickBooks will move the funds from here into the bank account chosen above.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select your Undeposited Funds account - where payments will be recorded to when synced into QuickBooks. The daily deposit we create in QuickBooks will move the funds from here into the bank account chosen above.','mw_wc_qbo_sync') ?></span>
 										</div>
                                         </td>
 									</tr>     
@@ -558,14 +598,14 @@ $disable_this_section = true;
 											
 											<?php foreach($wc_currency_list as $c_val){?>			
 											<td class="new-widt">
-												<select style="background-color:#f4f4f4" disabled="disabled" title="Enable batch payment first" class="qbo_select" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_vendor" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_vendor">
-													<?php echo $qbo_vendor_options;?>
+												<select style="background-color:#f4f4f4" disabled="disabled" title="Enable batch payment first" class="qbo_select" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_vendor" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_vendor">
+													<?php echo wp_kses($qbo_vendor_options, array('option' => array('value' => array())));?>
 												</select>
 											</td>
 											<?php }?>
 										<td>
-											<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-											  <span class="tooltiptext"><?php echo __('Select the vendor in QuickBooks Online that the transaction fees line item in the daily deposit will be recorded to if Batch Support and Transaction Fee Syncing is enabled above.','mw_wc_qbo_sync') ?></span>
+											<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+											  <span class="tooltiptext"><?php echo esc_html__('Select the vendor in QuickBooks Online that the transaction fees line item in the daily deposit will be recorded to if Batch Support and Transaction Fee Syncing is enabled above.','mw_wc_qbo_sync') ?></span>
 											</div>
 										</td>	
 									</tr>									
@@ -586,7 +626,7 @@ $disable_this_section = true;
 										}
 									}
 									?>
-									<tr class="advanced_payment_sync <?php echo $pm_key.'__'.$c_val.'_wbtr';?> <?php echo $tr_ext_cls;?>">
+									<tr class="advanced_payment_sync <?php echo esc_attr($pm_key.'__'.$c_val.'_wbtr');?> <?php echo esc_attr($tr_ext_cls);?>">
 										<td height="40">
 											Combine weekend payments in Monday's batch</br>
 											<span style="font-size:10px;color:grey;">Turn this option on if using Stripe.</span> 										
@@ -594,12 +634,12 @@ $disable_this_section = true;
 										
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td>					
-											<input class="pm_chk" disabled="disabled" title="Enable batch payment first" type="checkbox" value="1" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_lwb" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_lwb">
+											<input class="pm_chk" disabled="disabled" title="Enable batch payment first" type="checkbox" value="1" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_lwb" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_lwb">
 										</td>
 										<?php }?>
 										<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Enable this option if your processor lumps payments from Saturday & Sunday into Mondays batch for one deposit into your account.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Enable this option if your processor lumps payments from Saturday & Sunday into Mondays batch for one deposit into your account.','mw_wc_qbo_sync') ?></span>
 										</div>
                                         </td>
 									</tr>
@@ -618,14 +658,14 @@ $disable_this_section = true;
 											
 											<?php foreach($wc_currency_list as $c_val){?>			
 											<td class="new-widt">
-												<select style="background-color:#f4f4f4" disabled="disabled" title="Enable batch payment first" class="qbo_select" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_batchdate" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_batchdate">
-													<?php echo $MSQS_QL->only_option('',$b_date_fields);?>
+												<select style="background-color:#f4f4f4" disabled="disabled" title="Enable batch payment first" class="qbo_select" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_batchdate" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_batchdate">
+													<?php echo wp_kses($MSQS_QL->only_option('',$b_date_fields) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 												</select>
 											</td>
 											<?php }?>
 										<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select the order date field that will be used when calculating if an order should be included in a specific batch for the day. This should be set to Order Date by default, but can be changed to Date Paid if dealing with edge scenarios where orders can be paid on a different date than when they were placed.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select the order date field that will be used when calculating if an order should be included in a specific batch for the day. This should be set to Order Date by default, but can be changed to Date Paid if dealing with edge scenarios where orders can be paid on a different date than when they were placed.','mw_wc_qbo_sync') ?></span>
 										</div>
 										</td>	
 									</tr>
@@ -637,14 +677,14 @@ $disable_this_section = true;
 										
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td class="new-widt">
-											<select class="qbo_select" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_term" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_term">
-												<?php echo $qbo_term_options;?>
+											<select class="qbo_select" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_term" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_term">
+												<?php echo wp_kses($qbo_term_options, array('option' => array('value' => array())));?>
 											</select>
 										</td>
 										<?php }?>
 										<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select the Term in the QuickBooks Online Invoice, if any, that should be assigned to invoices paid with this payment method.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select the Term in the QuickBooks Online Invoice, if any, that should be assigned to invoices paid with this payment method.','mw_wc_qbo_sync') ?></span>
 										</div>
 										</td>	
 									</tr>
@@ -657,15 +697,15 @@ $disable_this_section = true;
 										
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td class="new-widt">
-											<select class="qbo_select" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_orst" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_orst">
+											<select class="qbo_select" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_orst" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_orst">
 												<option value=""></option>
-												<?php echo $MSQS_QL->only_option('',$order_statuses);?>
+												<?php echo wp_kses($MSQS_QL->only_option('',$order_statuses) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 											</select>
 										</td>
 										<?php }?>
 										<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('This setting is ONLY for gateways like COD or BACS where the payment is actually not recorded in WooCommerce. When orders are placed with these types of gateways, there is no actual payment recorded in WooCommerce, so the payment can only be synced to QuickBooks Online when the order reaches a certain status.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('This setting is ONLY for gateways like COD or BACS where the payment is actually not recorded in WooCommerce. When orders are placed with these types of gateways, there is no actual payment recorded in WooCommerce, so the payment can only be synced to QuickBooks Online when the order reaches a certain status.','mw_wc_qbo_sync') ?></span>
 										</div>
 										</td>	
 									</tr>
@@ -673,20 +713,20 @@ $disable_this_section = true;
 									<?php if($wo_qsa =='Invoice'):?>
 									<tr class="advanced_payment_sync">
 										<td height="40">
-											<?php echo __('QuickBooks Invoice Due Date Delay','mw_wc_qbo_sync') ?>
+											<?php echo esc_html__('QuickBooks Invoice Due Date Delay','mw_wc_qbo_sync') ?>
 										</td>
 										
 										<?php foreach($wc_currency_list as $c_val){?>			
 										<td class="new-widt">
-											<select class="qbo_select" name="<?php echo $pm_key;?>__<?php echo $c_val;?>_iddd" id="<?php echo $pm_key;?>__<?php echo $c_val;?>_iddd">
+											<select class="qbo_select" name="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_iddd" id="<?php echo esc_attr($pm_key);?>__<?php echo esc_attr($c_val);?>_iddd">
 												<option value="0">0</option>
-												<?php echo $MSQS_QL->only_option('',$MSQS_QL->due_days_list_arr());?>
+												<?php echo wp_kses($MSQS_QL->only_option('',$MSQS_QL->due_days_list_arr()) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 											</select>
 										</td>
 										<?php }?>
 										<td>
-										<div class="material-icons tooltipped right tooltip"><?php echo __('?','mw_wc_qbo_sync') ?>
-										  <span class="tooltiptext"><?php echo __('Select the amount of days from the order date to set the QuickBooks Invoice Due Date field. The default is 0 - the same date as the WooCommerce order.','mw_wc_qbo_sync') ?></span>
+										<div class="material-icons tooltipped right tooltip"><?php echo esc_html__('?','mw_wc_qbo_sync') ?>
+										  <span class="tooltiptext"><?php echo esc_html__('Select the amount of days from the order date to set the QuickBooks Invoice Due Date field. The default is 0 - the same date as the WooCommerce order.','mw_wc_qbo_sync') ?></span>
 										</div>
 										</td>	
 									</tr>
@@ -712,7 +752,7 @@ $disable_this_section = true;
 				<?php //echo MyWorks_WC_QBO_Sync_Admin::get_checkbox_switch_assets();?>
 				<script type="text/javascript">
 				jQuery(document).ready(function(e){
-					<?php echo $js_dtos;?>
+					<?php echo wp_kses($js_dtos, array());?>
 					//jQuery('.default_payment_sync').show();
 					jQuery('#show_advanced_payment_sync').show();
 					jQuery('.advanced_payment_sync').hide();
@@ -902,7 +942,7 @@ $disable_this_section = true;
 					<?php foreach($pm_map_data as $list):?>
 					
 					<?php 
-						$p_map_ac_id = $list['qbo_account_id'];
+						$p_map_ac_id = (int) $list['qbo_account_id'];
 						$w_p_method = $list['wc_paymentmethod'];
 						$p_map_cur = $list['currency'];
 						$p_map_tran = $list['enable_transaction'];
@@ -913,14 +953,14 @@ $disable_this_section = true;
 						
 						$p_map_er = $list['enable_refund'];
 						
-						$p_map_expacc = $list['txn_expense_acc_id'];
+						$p_map_expacc = (int) $list['txn_expense_acc_id'];
 						
 						$enable_batch = $list['enable_batch'];
 						
-						$udf_account_id = $list['udf_account_id'];
+						$udf_account_id = (int) $list['udf_account_id'];
 						
 						//
-						$vendor_id = $list['vendor_id'];
+						$vendor_id = (int) $list['vendor_id'];
 						
 						$deposit_date_field = $list['deposit_date_field'];
 						if(empty($deposit_date_field)){
@@ -933,7 +973,7 @@ $disable_this_section = true;
 						$individual_batch_support = $list['individual_batch_support'];
 						
 						//
-						$term_id = $list['term_id'];
+						$term_id = (int) $list['term_id'];
 						
 						$ps_order_status = $list['ps_order_status'];
 						
@@ -948,58 +988,58 @@ $disable_this_section = true;
 						$order_sync_as = $list['order_sync_as'];
 					?>
 					
-					jQuery('#pm__<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>').val('<?php echo $p_map_ac_id;?>');
+					jQuery('#pm__<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>').val('<?php echo esc_js($p_map_ac_id);?>');
 					<?php if($p_map_tran==1):?>
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_transaction').prop('checked', true);
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_transaction').prop('checked', true);
 					<?php endif;?>
 					
 					<?php if($p_map_ep==1):?>
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_ep').prop('checked', true);
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_ep').prop('checked', true);
 					<?php endif;?>
 					
 					<?php if($p_map_tr==1):?>
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_tr').prop('checked', true);
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_tr').prop('checked', true);
 					<?php endif;?>
 					
 					<?php if($p_map_er==1):?>
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_er').prop('checked', true);
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_er').prop('checked', true);
 					<?php endif;?>
 					
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_expacc').val('<?php echo $p_map_expacc;?>');
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_expacc').val('<?php echo esc_js($p_map_expacc);?>');
 					
 					<?php if($enable_batch==1):?>
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_ebatch').prop('checked', true);
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_ebatch').prop('checked', true);
 					<?php endif;?>
 					
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_udfacc').val('<?php echo $udf_account_id;?>');
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_udfacc').val('<?php echo esc_js($udf_account_id);?>');
 					
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_vendor').val('<?php echo $vendor_id;?>');
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_vendor').val('<?php echo esc_js($vendor_id);?>');
 					
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_batchdate').val('<?php echo $deposit_date_field;?>');
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_batchdate').val('<?php echo esc_js($deposit_date_field);?>');
 					
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_term').val('<?php echo $term_id;?>');
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_term').val('<?php echo esc_js($term_id);?>');
 					
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_orst').val('<?php echo $ps_order_status;?>');
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_orst').val('<?php echo esc_js($ps_order_status);?>');
 					
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_dsch').val('<?php echo $deposit_cron_sch;?>');
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_dct').val('<?php echo $deposit_cron_utc;?>');
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_dsch').val('<?php echo esc_js($deposit_cron_sch);?>');
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_dct').val('<?php echo esc_js($deposit_cron_utc);?>');
 					
 					<?php if($wo_qsa =='Invoice'):?>
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_iddd').val('<?php echo $inv_due_date_days;?>');
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_iddd').val('<?php echo esc_js($inv_due_date_days);?>');
 					<?php endif;?>
 					
 					<?php if(!empty($order_sync_as)):?>
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_qosa').val('<?php echo $order_sync_as;?>');
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_qosa').val('<?php echo esc_js($order_sync_as);?>');
 					<?php endif;?>
 					
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_qbpmethod').val('<?php echo $qb_p_method_id;?>');
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_qbpmethod').val('<?php echo esc_js($qb_p_method_id);?>');
 					
 					<?php if($lump_weekend_batches==1):?>
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_lwb').prop('checked', true);
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_lwb').prop('checked', true);
 					<?php endif;?>
 					
 					<?php if($individual_batch_support==1):?>
-					jQuery('#<?php echo $w_p_method;?>__<?php echo $p_map_cur;?>_ibs').prop('checked', true);
+					jQuery('#<?php echo esc_js($w_p_method);?>__<?php echo esc_js($p_map_cur);?>_ibs').prop('checked', true);
 					<?php endif;?>
 					
 					<?php endforeach;?>
@@ -1209,7 +1249,7 @@ $disable_this_section = true;
 				}
 				</script>				
 				
-				<?php echo $MWQS_OF->get_select2_js();?>
+				<?php echo $MWQS_OF->get_select2_js(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized in get_select2_js function ?>
 				
 			<?php endif;?>
 			</div>

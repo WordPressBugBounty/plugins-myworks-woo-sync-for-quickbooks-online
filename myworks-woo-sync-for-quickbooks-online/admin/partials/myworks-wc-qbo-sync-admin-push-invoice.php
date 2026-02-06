@@ -30,6 +30,7 @@ $offset = $MSQS_QL->get_offset($MSQS_QL->get_page_var(),$items_per_page);
 $pagination_links = $MSQS_QL->get_paginate_links($total_records,$items_per_page);
 
 $wc_order_list = $MSQS_QL->get_order_list($invoice_push_search," $offset , $items_per_page",$invoice_date_from,$invoice_date_to,$invoice_status_srch);
+
 $order_statuses = wc_get_order_statuses();
 
 $wc_currency = get_woocommerce_currency();
@@ -79,7 +80,7 @@ if($show_sync_status && is_array($wc_order_list) && count($wc_order_list)){
 	.ss_pf_span{display:none;}
 </style>
 <div class="container">
-	<div class="page_title"><h4><?php _e( 'Order Push', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Order Push', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card qo-push-responsive">
 		<div class="card-content">			
 						<div class="col s12 m12 l12">
@@ -88,16 +89,16 @@ if($show_sync_status && is_array($wc_order_list) && count($wc_order_list)){
 						            <div class="mw_wc_filter">
 									 <span class="search_text">Search</span>
 									  &nbsp;
-									  <input placeholder="<?php echo __('Name / Company / ID / NUM','mw_wc_qbo_sync')?>" type="text" id="invoice_push_search" value="<?php echo $invoice_push_search;?>">
+									  <input placeholder="<?php echo esc_html__('Name / Company / ID / NUM','mw_wc_qbo_sync')?>" type="text" id="invoice_push_search" value="<?php echo esc_attr($invoice_push_search);?>">
 									  &nbsp;
-									  <input style="width:130px;" class="mwqs_datepicker" placeholder="<?php echo __('From yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="invoice_date_from" value="<?php echo $invoice_date_from;?>">
+									  <input style="width:130px;" class="mwqs_datepicker" placeholder="<?php echo esc_html__('From yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="invoice_date_from" value="<?php echo esc_attr($invoice_date_from);?>">
 									  &nbsp;
-									  <input style="width:130px;" class="mwqs_datepicker" placeholder="<?php echo __('To yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="invoice_date_to" value="<?php echo $invoice_date_to;?>">
+									  <input style="width:130px;" class="mwqs_datepicker" placeholder="<?php echo esc_html__('To yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="invoice_date_to" value="<?php echo esc_attr($invoice_date_to);?>">
 									  &nbsp;
 									  <span>
 										  <select style="width:130px;" name="invoice_status_srch" id="invoice_status_srch">
 											<option value="">All</option>
-											<?php echo  $MSQS_QL->only_option($invoice_status_srch,$order_statuses);?>
+											<?php echo wp_kses($MSQS_QL->only_option($invoice_status_srch,$order_statuses) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 										  </select>
 									  </span>
 									  &nbsp;
@@ -108,8 +109,8 @@ if($show_sync_status && is_array($wc_order_list) && count($wc_order_list)){
 									  <span class="filter-right-sec"> 
 										  <span class="entries">Show entries</span>
 										  &nbsp;
-										  <select style="width:50px;" onchange="javascript:window.location='<?php echo $page_url;?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-											<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+										  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_attr($MSQS_QL->per_page_keyword);?>='+this.value;">
+											<?php echo wp_kses($MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 										 </select>
 									 </span>
 									 </div>
@@ -118,9 +119,9 @@ if($show_sync_status && is_array($wc_order_list) && count($wc_order_list)){
 									 <?php if(is_array($wc_order_list) && count($wc_order_list)):?>
 									 <div class="row">
 										<div class="input-field col s12 m12 14">
-											<button id="push_selected_invoice_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo __('Push Selected Orders','mw_wc_qbo_sync')?></button>
-											<button id="push_all_invoice_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo __('Push All Orders','mw_wc_qbo_sync')?></button>
-											<button disabled="disabled" id="push_all_unsynced_invoice_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo __('Push Un-synced Orders','mw_wc_qbo_sync')?></button>
+											<button id="push_selected_invoice_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo esc_html__('Push Selected Orders','mw_wc_qbo_sync')?></button>
+											<button id="push_all_invoice_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo esc_html__('Push All Orders','mw_wc_qbo_sync')?></button>
+											<button disabled="disabled" id="push_all_unsynced_invoice_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green hide"><?php echo esc_html__('Push Un-synced Orders','mw_wc_qbo_sync')?></button>
 										</div>
 									</div>
 									 <br />
@@ -144,9 +145,9 @@ if($show_sync_status && is_array($wc_order_list) && count($wc_order_list)){
 													<th width="15%">Company</th>
 													<th width="13%">Date</th>
 													<th width="10%">Amount</th>
-													<th width="13%">Payment</br>Method</th>
-													<th width="14%">Order</br>Status</th>
-													<th width="5%" <?php echo $sstchc;?>>Sync</br>Status</th>
+													<th width="13%"><?php echo wp_kses( __( 'Payment<br>Method', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+													<th width="14%"><?php echo wp_kses( __( 'Order<br>Status', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+													<th width="5%" <?php echo esc_attr($sstchc);?>><?php echo wp_kses( __( 'Sync<br>Status', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
 												</tr>
 											</thead>
 											<tbody>
@@ -158,39 +159,39 @@ if($show_sync_status && is_array($wc_order_list) && count($wc_order_list)){
 													}
 												?>
 												<tr>
-													<td><input type="checkbox" id="invoice_push_<?php echo $order_details['ID']?>"></td>
+													<td><input type="checkbox" id="invoice_push_<?php echo esc_attr($order_details['ID'])?>"></td>
 													
 													<?php
 													$wc_inv_no = $MSQS_QL->get_woo_ord_number_from_order($order_details['ID'],$order_details);
 													?>
 													
 													<td>
-													<a target="_blank" href="<?php echo admin_url('post.php?post='.$order_details['ID'].'&action=edit') ?>">
-													<?php echo (!empty($wc_inv_no))?$wc_inv_no.'<br/>':'';?>
-													<?php echo $order_details['ID'] ?>													
+													<a target="_blank" href="<?php echo esc_url(admin_url('post.php?post='.$order_details['ID'].'&action=edit')) ?>">
+													<?php echo (!empty($wc_inv_no))?esc_html($wc_inv_no).'<br/>':'';?>
+													<?php echo esc_html($order_details['ID']) ?>													
 													</a>
 													</td>
 													<?php $dts=true;?>
 													<td <?php if(!$dts && !(int) $order_details['customer_user']):?> style="color:#039be5;" title="Guest Order"<?php endif;?>>
-													<?php echo $order_details['billing_first_name'] ?> <?php echo $order_details['billing_last_name'] ?>
+													<?php echo esc_html($order_details['billing_first_name'] ?? '') ?> <?php echo esc_html($order_details['billing_last_name'] ?? '') ?>
 													</td>
-													<td><?php echo $order_details['billing_company'] ?></td>
-													<td><?php echo $order_details['post_date'] ?></td>
+													<td><?php echo esc_html($order_details['billing_company'] ?? '') ?></td>
+													<td><?php echo esc_html($order_details['post_date'] ?? '') ?></td>
 													<td>
 													<?php
 													if($wc_currency==$order_details['order_currency']){
-														echo $wc_currency_symbol;
+														echo esc_html($wc_currency_symbol);
 													}else{
-														echo $MSQS_QL->get_array_isset($MSQS_QL->get_world_currency_list(true),$order_details['order_currency'],$order_details['order_currency'],false);
+														echo esc_html($MSQS_QL->get_array_isset($MSQS_QL->get_world_currency_list(true),$order_details['order_currency'],$order_details['order_currency'],false));
 													}													
-													echo ($order_details['order_total']!='')?$order_details['order_total']:'0.00';
+													echo ($order_details['order_total']!='')?esc_html($order_details['order_total']):'0.00';
 													?>
 													</td>
-													<td title="<?php echo $order_details['payment_method_title'] ?>">
-														<?php echo $order_details['payment_method'] ?>
+													<td title="<?php echo esc_attr($order_details['payment_method_title']) ?>">
+														<?php echo esc_html($order_details['payment_method'] ?? '') ?>
 													</td>
 													
-													<td><?php echo $MSQS_QL->get_array_isset($order_statuses,$order_details['post_status'],$order_details['post_status']); ?></td>
+													<td><?php echo esc_html($MSQS_QL->get_array_isset($order_statuses,$order_details['post_status'],$order_details['post_status'])); ?></td>
 													<?php
 														$r_key = $order_details['ID'];
 														/**/
@@ -202,7 +203,7 @@ if($show_sync_status && is_array($wc_order_list) && count($wc_order_list)){
 														
 														$r_key = md5($r_key);
 													?>
-													<td class="ph_inv_ss<?php if(!$show_sync_status){echo ' sstchc';}?>" id="ph_inv_ss_<?php echo $r_key;?>"><?php echo $sync_status_html;?></td>
+													<td class="ph_inv_ss<?php if(!$show_sync_status){echo ' sstchc';}?>" id="ph_inv_ss_<?php echo esc_attr($r_key);?>"><?php echo !empty($sync_status_html) ? $sync_status_html : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
 												</tr>
 												<?php endforeach;?>		    	
 											</tbody>
@@ -213,16 +214,16 @@ if($show_sync_status && is_array($wc_order_list) && count($wc_order_list)){
 									<?php if($MSQS_QL->is_pl_res_tml()):?>
 										<div class="pp_mt_lsk_msg" style="text-align:center; padding:10px 5px;">
 											<p>											
-											<?php echo $MSQS_QL->get_slmt_hstry_msg();?>
+											<?php echo esc_html($MSQS_QL->get_slmt_hstry_msg());?>
 											</p>
 										</div>
 									<?php endif;?>
 									
-									<?php echo $pagination_links?>
+									<?php echo !empty($pagination_links) ? $pagination_links : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 									
 									<?php else:?>
 									<h4 class="mw_mlp_ndf">
-										<?php _e( 'No available orders to display.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'No available orders to display.', 'mw_wc_qbo_sync' );?>
 									</h4>
 									<?php endif;?>
 						        </div>
@@ -247,14 +248,14 @@ if($show_sync_status && is_array($wc_order_list) && count($wc_order_list)){
 		invoice_status_srch = jQuery.trim(invoice_status_srch);
 		
 		if(invoice_push_search!='' || invoice_date_from!='' || invoice_date_to!='' || invoice_status_srch!=''){		
-			window.location = '<?php echo $page_url;?>&invoice_push_search='+invoice_push_search+'&invoice_date_from='+invoice_date_from+'&invoice_date_to='+invoice_date_to+'&invoice_status_srch='+invoice_status_srch;
+			window.location = '<?php echo esc_url_raw($page_url);?>&invoice_push_search='+invoice_push_search+'&invoice_date_from='+invoice_date_from+'&invoice_date_to='+invoice_date_to+'&invoice_status_srch='+invoice_status_srch;
 		}else{
-			alert('<?php echo __('Please enter search keyword or dates and status.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_html__('Please enter search keyword or dates and status.','mw_wc_qbo_sync')?>');
 		}
 	}
 
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&invoice_push_search=&invoice_date_from=&invoice_date_to=&invoice_status_srch=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&invoice_push_search=&invoice_date_from=&invoice_date_to=&invoice_status_srch=';
 	}
 	
 	jQuery(document).ready(function($) {
@@ -288,12 +289,12 @@ if($show_sync_status && is_array($wc_order_list) && count($wc_order_list)){
 		  }
 		  $c_doc_no = md5($c_doc_no);
 		  ?>
-		 if($.inArray('<?php echo $c_doc_no;?>', list_ids) == -1){
-		 list_ids.push("<?php echo $c_doc_no;?>");		
-		 jQuery('#ph_inv_ss_<?php echo $c_doc_no;?>').html('<?php echo $sync_status_html?>');
+		 if($.inArray('<?php echo esc_js($c_doc_no);?>', list_ids) == -1){
+		 list_ids.push("<?php echo esc_js($c_doc_no);?>");		
+		 jQuery('#ph_inv_ss_<?php echo esc_js($c_doc_no);?>').html(<?php echo wp_json_encode($sync_status_html)?>);
 		 }else{
-			var ss_title = jQuery('#ph_inv_ss_<?php echo $c_doc_no;?>').children('i').attr('title');
-			jQuery('#ph_inv_ss_<?php echo $c_doc_no;?>').children('i').attr('title',ss_title+', #<?php echo $pmd['Id'];?>');
+			var ss_title = jQuery('#ph_inv_ss_<?php echo esc_js($c_doc_no);?>').children('i').attr('title');
+			jQuery('#ph_inv_ss_<?php echo esc_js($c_doc_no);?>').children('i').attr('title',ss_title+', #<?php echo esc_js($pmd['Id']);?>');
 		 }
 		 
 		 <?php endforeach;?>
@@ -330,21 +331,21 @@ if($show_sync_status && is_array($wc_order_list) && count($wc_order_list)){
 			}
 			
 			if(item_checked==0){
-				alert('<?php echo __('Please select at least one item.','mw_wc_qbo_sync');?>');
+				alert('<?php echo esc_html__('Please select at least one item.','mw_wc_qbo_sync');?>');
 				return false;
 			}
 			
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_invoice_push',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=push&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_invoice_push',0,0,650,350);
 			return false;
 		});
 		
 		$('#push_all_invoice_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&sync_all=1&item_type='+item_type,'mw_qs_invoice_push',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=push&sync_all=1&item_type='+item_type,'mw_qs_invoice_push',0,0,650,350);
 			return false;
 		});
 		
 		$('#push_all_unsynced_invoice_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=push&sync_unsynced=1&item_type='+item_type,'mw_qs_invoice_push',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=push&sync_unsynced=1&item_type='+item_type,'mw_qs_invoice_push',0,0,650,350);
 			return false;
 		});
 	});
@@ -361,4 +362,4 @@ if($show_sync_status && is_array($wc_order_list) && count($wc_order_list)){
 		);
 	  } );
  </script>
- <?php echo $MWQS_OF->get_tablesorter_js('#mwqs_invoice_push_table');?>
+<?php echo wp_kses( $MWQS_OF->get_tablesorter_js('#mwqs_invoice_push_table'), array('script' => array('src' => array(), 'type' => array(), 'crossorigin' => array(), 'onerror' => array()), 'style' => array()) );?>

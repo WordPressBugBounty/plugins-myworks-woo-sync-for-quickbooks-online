@@ -52,7 +52,7 @@ $show_only_mapped_qty_mismatch_items = $MSQS_QL->option_checked('mw_wc_qbo_sync_
 ?>
 </br></br>
 <div class="container">
-	<div class="page_title"><h4><?php _e( 'Inventory Pull', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Inventory Pull', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card pull-block-responsive">
 		<div class="card-content">
 
@@ -62,11 +62,11 @@ $show_only_mapped_qty_mismatch_items = $MSQS_QL->option_checked('mw_wc_qbo_sync_
 									<div class="mw_wc_filter">
 									 <span class="search_text">Search</span>
 									  &nbsp;
-									  <input placeholder="<?php echo __('Name','mw_wc_qbo_sync')?>" type="text" id="inventory_pull_search" value="<?php echo esc_attr($inventory_pull_search);?>">
+									  <input placeholder="<?php echo esc_attr__('Name','mw_wc_qbo_sync')?>" type="text" id="inventory_pull_search" value="<?php echo esc_attr($inventory_pull_search);?>">
 									  &nbsp;
-									  <input class="mwqs_datepicker" placeholder="<?php echo __('Updated from yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="inventory_pull_date_from" value="<?php echo esc_attr($inventory_pull_date_from);?>">
+									  <input class="mwqs_datepicker" placeholder="<?php echo esc_attr__('Updated from yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="inventory_pull_date_from" value="<?php echo esc_attr($inventory_pull_date_from);?>">
 									  &nbsp;
-									  <input class="mwqs_datepicker" placeholder="<?php echo __('Updated to yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="inventory_pull_date_to" value="<?php echo esc_attr($inventory_pull_date_to);?>">
+									  <input class="mwqs_datepicker" placeholder="<?php echo esc_attr__('Updated to yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="inventory_pull_date_to" value="<?php echo esc_attr($inventory_pull_date_to);?>">
 									  &nbsp;									  
 									  <button onclick="javascript:search_item();" class="btn btn-info">Filter</button>
 									  &nbsp;
@@ -75,15 +75,15 @@ $show_only_mapped_qty_mismatch_items = $MSQS_QL->option_checked('mw_wc_qbo_sync_
 									  <span class="filter-right-sec">
 										  <span class="entries">Show entries</span>
 										  &nbsp;
-										  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url($page_url);?>&<?php echo $MSQS_QL->escape($MSQS_QL->per_page_keyword);?>='+this.value;">
-											<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+										  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_attr($MSQS_QL->per_page_keyword);?>='+this.value;">
+											<?php echo wp_kses($MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 										 </select>
 									 </span>
 									 </div>
 									 <br />
 									 <div class="row">						
 										<div class="input-field col s12 m12 14">
-											<button id="pull_selected_inventory_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo __('pull Selected Inventories','mw_wc_qbo_sync')?></button>
+											<button id="pull_selected_inventory_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo esc_html__('pull Selected Inventories','mw_wc_qbo_sync')?></button>
 										
 											
 										</div>
@@ -101,16 +101,16 @@ $show_only_mapped_qty_mismatch_items = $MSQS_QL->option_checked('mw_wc_qbo_sync_
 														<input type="checkbox" onclick="javascript:mw_qbo_sync_check_all(this,'inventory_pull_')">
 													</th>
 													<th width="4%">ID</th>
-													<th width="23%"><?php _e( 'QuickBooks Product Name', 'mw_wc_qbo_sync' ) ?></th>
-													<th width="12%"><?php _e( 'SKU', 'mw_wc_qbo_sync' ) ?></th>
-													<th width="5%"><?php _e( 'Active', 'mw_wc_qbo_sync' ) ?></th>												
-													<th title="UnitPrice" width="7%"><?php _e( 'Price', 'mw_wc_qbo_sync' ) ?></th>
-													<th title="TrackQtyOnHand" width="7%"><?php _e( 'Manage</br>Stock', 'mw_wc_qbo_sync' ) ?></th>
-													<th title="WooCommerce Stock" width="8%"><?php _e( 'WooCommerce</br>Stock', 'mw_wc_qbo_sync' ) ?></th>
-													<th title="QtyOnHand" width="8%"><?php _e( 'QuickBooks</br>Stock', 'mw_wc_qbo_sync' ) ?></th>
-													<th title="InvStartDate" width="7%"><?php _e( 'Start Date', 'mw_wc_qbo_sync' ) ?></th>
-													<th title="LastUpdatedTime" width="13%"><?php _e( 'Updated', 'mw_wc_qbo_sync' ) ?></th>
-													<th width="5%">Sync</br>Status</th>
+													<th width="23%"><?php esc_html_e( 'QuickBooks Product Name', 'mw_wc_qbo_sync' ) ?></th>
+													<th width="12%"><?php esc_html_e( 'SKU', 'mw_wc_qbo_sync' ) ?></th>
+													<th width="5%"><?php esc_html_e( 'Active', 'mw_wc_qbo_sync' ) ?></th>												
+													<th title="UnitPrice" width="7%"><?php esc_html_e( 'Price', 'mw_wc_qbo_sync' ) ?></th>
+													<th title="TrackQtyOnHand" width="7%"><?php echo wp_kses( __( 'Manage<br>Stock', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+													<th title="WooCommerce Stock" width="8%"><?php echo wp_kses( __( 'WooCommerce<br>Stock', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+													<th title="QtyOnHand" width="8%"><?php echo wp_kses( __( 'QuickBooks<br>Stock', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
+													<th title="InvStartDate" width="7%"><?php esc_html_e( 'Start Date', 'mw_wc_qbo_sync' ) ?></th>
+													<th title="LastUpdatedTime" width="13%"><?php esc_html_e( 'Updated', 'mw_wc_qbo_sync' ) ?></th>
+													<th width="5%"><?php echo wp_kses( __( 'Sync<br>Status', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
 												</tr>
 											</thead>
 											
@@ -156,23 +156,23 @@ $show_only_mapped_qty_mismatch_items = $MSQS_QL->option_checked('mw_wc_qbo_sync_
 												}												
 												?>
 													<tr class="wip_vtr" id="tr_wi_<?php echo (int) $inventory_id;?>">
-														<td><input type="checkbox" id="inventory_pull_<?php echo $inventory_id?>"></td>
-														<td><?php echo (int) $inventory_id?></td>
-														<td><?php echo $MSQS_QL->escape($inventory->getName());?></td>
-														<td><?php echo $MSQS_QL->escape($inventory->getSku());?></td>
-														<td><?php echo $MSQS_QL->escape($inventory->getActive());?></td>
+														<td><input type="checkbox" id="inventory_pull_<?php echo esc_attr($inventory_id);?>"></td>
+														<td><?php echo (int) $inventory_id; ?></td>
+														<td><?php echo esc_html($inventory->getName());?></td>
+														<td><?php echo esc_html($inventory->getSku());?></td>
+														<td><?php echo esc_html($inventory->getActive());?></td>
 														<td>
 														<?php 
-														echo ($wc_currency==$qbo_home_currency)?$MSQS_QL->escape($wc_currency_symbol):$MSQS_QL->escape($qbo_home_currency);
-														echo $MSQS_QL->escape($inventory->getUnitPrice());
+														echo ($wc_currency==$qbo_home_currency)?esc_html($wc_currency_symbol):esc_html($qbo_home_currency);
+														echo esc_html($inventory->getUnitPrice());
 														?>
 														</td>
-														<td><?php echo $MSQS_QL->escape($inventory->getTrackQtyOnHand());?></td>
+														<td><?php echo esc_html($inventory->getTrackQtyOnHand());?></td>
 														<td id="p_wc_stock_<?php echo (int) $inventory_id;?>"></td>
-														<td><?php echo $MSQS_QL->escape($inventory->getQtyOnHand());?></td>
-														<td><?php echo $MSQS_QL->escape($inventory->getInvStartDate());?></td>
+														<td><?php echo esc_html($inventory->getQtyOnHand());?></td>
+														<td><?php echo esc_html($inventory->getInvStartDate());?></td>
 														<td>
-														<?php echo $MSQS_QL->escape($MSQS_QL->view_date($inventory->getMetaData()->getLastUpdatedTime(),'Y-m-d H:i:s'));?>
+														<?php echo esc_html($MSQS_QL->view_date($inventory->getMetaData()->getLastUpdatedTime(),'Y-m-d H:i:s'));?>
 														</td>
 														<td class="p_invt_ss" id="p_invt_ss_<?php echo (int) $inventory_id;?>"></td>
 													</tr>
@@ -181,11 +181,11 @@ $show_only_mapped_qty_mismatch_items = $MSQS_QL->option_checked('mw_wc_qbo_sync_
 										</table>
 										</div>
 									</div>
-									<?php echo $pagination_links?>
+									<?php echo $pagination_links; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 									<?php else:?>
 									
 									<h4 class="mw_mlp_ndf">
-										<?php _e( 'No available inventories to display.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'No available inventories to display.', 'mw_wc_qbo_sync' );?>
 									</h4>
 									<?php endif;?>
 								
@@ -210,14 +210,14 @@ $show_only_mapped_qty_mismatch_items = $MSQS_QL->option_checked('mw_wc_qbo_sync_
 		inventory_pull_date_to = jQuery.trim(inventory_pull_date_to);
 		
 		if(inventory_pull_search!='' || inventory_pull_date_from!='' || inventory_pull_date_to!=''){		
-			window.location = '<?php echo $page_url;?>&inventory_pull_search='+inventory_pull_search+'&inventory_pull_date_from='+inventory_pull_date_from+'&inventory_pull_date_to='+inventory_pull_date_to;
+			window.location = '<?php echo esc_url_raw($page_url);?>&inventory_pull_search='+inventory_pull_search+'&inventory_pull_date_from='+inventory_pull_date_from+'&inventory_pull_date_to='+inventory_pull_date_to;
 		}else{
-			alert('<?php echo __('Please enter search keyword or dates.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_js(__('Please enter search keyword or dates.','mw_wc_qbo_sync')); ?>');
 		}
 	}
 
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&inventory_pull_search=&inventory_pull_date_from=&inventory_pull_date_to=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&inventory_pull_search=&inventory_pull_date_from=&inventory_pull_date_to=';
 	}
 	
 	jQuery(document).ready(function($) {
@@ -229,9 +229,9 @@ $show_only_mapped_qty_mismatch_items = $MSQS_QL->option_checked('mw_wc_qbo_sync_
 		 <?php 
 			$sync_status_html = '<i title="Mapped to #'.$pmd['wc_product_id'].'" class="fa fa-check-circle" style="color:green"></i>';
 		 ?>
-		 list_ids.push("<?php echo $pmd['quickbook_product_id']?>");
-		 jQuery('#p_wc_stock_<?php echo $pmd['quickbook_product_id']?>').html('<?php echo (float) $pmd['stock']?>');
-		 jQuery('#p_invt_ss_<?php echo $pmd['quickbook_product_id']?>').html('<?php echo $sync_status_html?>');
+		 list_ids.push("<?php echo esc_js($pmd['quickbook_product_id']);?>");
+		 jQuery('#p_wc_stock_<?php echo esc_js($pmd['quickbook_product_id']);?>').html('<?php echo esc_js((float) $pmd['stock']);?>');
+		 jQuery('#p_invt_ss_<?php echo esc_js($pmd['quickbook_product_id']);?>').html('<?php echo $sync_status_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>');
 		 <?php endforeach;?>
 		 <?php endif;?>
 		 <?php unset($pull_map_data_arr);?>
@@ -250,9 +250,9 @@ $show_only_mapped_qty_mismatch_items = $MSQS_QL->option_checked('mw_wc_qbo_sync_
 		 <?php 
 			$sync_status_html = '<i title="Mapped to Variation #'.$pmd['wc_variation_id'].'" class="fa fa-check-circle" style="color:green"></i>';
 		 ?>
-		 list_ids.push("<?php echo $pmd['quickbook_product_id']?>");
-		 jQuery('#p_wc_stock_<?php echo $pmd['quickbook_product_id']?>').html('<?php echo (float) $pmd['stock']?>');
-		 jQuery('#p_invt_ss_<?php echo $pmd['quickbook_product_id']?>').html('<?php echo $sync_status_html?>');
+		 list_ids.push("<?php echo esc_js($pmd['quickbook_product_id']);?>");
+		 jQuery('#p_wc_stock_<?php echo esc_js($pmd['quickbook_product_id']);?>').html('<?php echo esc_js((float) $pmd['stock']);?>');
+		 jQuery('#p_invt_ss_<?php echo esc_js($pmd['quickbook_product_id']);?>').html('<?php echo $sync_status_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>');
 		 <?php endforeach;?>
 		 <?php endif;?>
 		 <?php unset($pull_map_data_arr_variation);?>
@@ -265,7 +265,7 @@ $show_only_mapped_qty_mismatch_items = $MSQS_QL->option_checked('mw_wc_qbo_sync_
 		 });
 		
 		<?php if($qmhi):?>
-		 $('.mwqspd_si_txt').append(' ('+'<?php echo $qmhi;?>'+' Hidden)');
+		 $('.mwqspd_si_txt').append(' ('+'<?php echo esc_js($qmhi);?>'+' Hidden)');
 		<?php endif;?>
 		 
 		var item_type = 'inventory';
@@ -289,16 +289,16 @@ $show_only_mapped_qty_mismatch_items = $MSQS_QL->option_checked('mw_wc_qbo_sync_
 			}
 			
 			if(item_checked==0){
-				alert('<?php echo __('Please select at least one item.','mw_wc_qbo_sync');?>');
+				alert('<?php echo esc_js(__('Please select at least one item.','mw_wc_qbo_sync')); ?>');
 				return false;
 			}
 			
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=pull&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_inventory_pull',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=pull&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_inventory_pull',0,0,650,350);
 			return false;
 		});
 		
 		$('#pull_all_inventory_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=pull&sync_all=1&item_type='+item_type,'mw_qs_inventory_pull',0,0,650,350);
+			popUpWindow('<?php echo esc_js($sync_window_url);?>&sync_type=pull&sync_all=1&item_type='+item_type,'mw_qs_inventory_pull',0,0,650,350);
 			return false;
 		});	
 		
@@ -316,4 +316,4 @@ $show_only_mapped_qty_mismatch_items = $MSQS_QL->option_checked('mw_wc_qbo_sync_
 		);
 	  } );
  </script>
- <?php echo $MWQS_OF->get_tablesorter_js('#mwqs_inventory_pull_table');?>
+<?php echo wp_kses( $MWQS_OF->get_tablesorter_js('#mwqs_inventory_pull_table'), array('script' => array('src' => array(), 'type' => array(), 'crossorigin' => array(), 'onerror' => array()), 'style' => array()) );?>

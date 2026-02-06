@@ -9865,9 +9865,9 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 							{
 								case QuickBooks_WebConnector_Server_SQL::CONFLICT_NEWER:
 								
-									$msg = 'Conflict mode: (newer) ' . $callback_config['conflicts'] . ' is not supported right now.';
-									trigger_error($msg);
-									die($msg);
+									$msg = 'Conflict mode: (newer) ' . esc_html($callback_config['conflicts']) . ' is not supported right now.';
+									trigger_error(esc_html($msg));
+									die(esc_html($msg));
 								
 								case QuickBooks_WebConnector_Server_SQL::CONFLICT_QUICKBOOKS:
 									
@@ -9882,9 +9882,9 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 									break;
 								case QuickBooks_WebConnector_Server_SQL::CONFLICT_CALLBACK:
 									
-									$msg = 'Conflict mode: (callback) ' . $callback_config['conflicts'] . ' is not supported right now.';
-									trigger_error($msg);
-									die($msg);
+									$msg = 'Conflict mode: (callback) ' . esc_html($callback_config['conflicts']) . ' is not supported right now.';
+									trigger_error(esc_html($msg));
+									die(esc_html($msg));
 									
 									break;
 								case QuickBooks_WebConnector_Server_SQL::CONFLICT_SQL:

@@ -1196,7 +1196,7 @@ class QuickBooks_IPP
 
 		if ($this->_debug)
 		{
-			print($message . QUICKBOOKS_CRLF);
+			print(esc_html($message) . esc_html(QUICKBOOKS_CRLF));
 		}
 
 		if ($this->_driver)
@@ -1221,6 +1221,9 @@ class QuickBooks_IPP
 	
 	protected function _request($Context, $type, $url, $action, $data, $post = true,$uprd=array())
 	{
+		// Log request data to WooCommerce logs if MyWorks class is available
+		$this->_logQuickBooksRequest($Context, $type, $url, $action, $data, $post, $uprd, null, true);
+		
 		$headers = array(
 			);
 
@@ -1356,6 +1359,10 @@ class QuickBooks_IPP
 
 		// Everything is good, return the data!
 		$this->_setError(QuickBooks_IPP::ERROR_OK, '');
+		
+		// Log response data to WooCommerce logs if MyWorks class is available
+		$this->_logQuickBooksRequest($Context, $type, $url, $action, $data, $post, $uprd, $return, true);
+		
 		return $return;
 	}
 
@@ -1471,5 +1478,150 @@ class QuickBooks_IPP
 		}
 
 		$this->_last_debug[$class] = array_merge($existing, $arr);
+	}
+
+	/**
+	 * Log QuickBooks request data to WooCommerce logs via MyWorks class
+	 *
+	 * @param mixed $Context Request context
+	 * @param string $type Request type
+	 * @param string $url Request URL
+	 * @param string $action Action being performed
+	 * @param mixed $data Request data
+	 * @param bool $post Whether this is a POST request
+	 * @param array $uprd Upload-related data
+	 * @param mixed $response Response data (null for request logging)
+	 * @param bool $debug_mode Whether debug logging is enabled
+	 */
+	protected function _logQuickBooksRequest($Context, $type, $url, $action, $data, $post = true, $uprd = array(), $response = null, $debug_mode = false)
+	{
+		// Use constant from main plugin file to enable/disable logging
+		$debug_mode = defined('MW_QBO_SYNC_DEBUG_LOGGING') ? MW_QBO_SYNC_DEBUG_LOGGING : false;
+		
+		// Only log if debug mode is enabled and we have WooCommerce
+		if (!$debug_mode || !function_exists('wc_get_logger')) {
+			return;
+		}
+		
+		// Simple direct logging approach
+		try {
+			$log = wc_get_logger();
+			
+			$log_data = array(
+				'timestamp' => current_time('Y-m-d H:i:s'),
+				'debug_mode' => $debug_mode,
+				'type' => $type,
+				'url' => $url,
+				'action' => $action,
+				'method' => $post ? 'POST' : 'GET',
+			);
+			
+			// Add request data - FULL DATA, NO TRUNCATION OR MASKING
+			if ($data) {
+				$log_data['request_data'] = $this->_formatXmlForLogging($data);
+			}
+			
+			// Add response data if provided - FULL DATA, NO TRUNCATION
+			if ($response !== null) {
+				$log_data['response_data'] = $this->_formatXmlForLogging($response);
+			}
+			
+			// Format the log message
+			$output = "=== QUICKBOOKS REQUEST LOG ===\n";
+			$output .= "Timestamp: " . $log_data['timestamp'] . "\n";
+			$output .= "Debug Mode: " . ($log_data['debug_mode'] ? 'true' : 'false') . "\n";
+			$output .= "Type: " . $log_data['type'] . "\n";
+			$output .= "URL: " . $log_data['url'] . "\n";
+			$output .= "Action: " . $log_data['action'] . "\n";
+			$output .= "Method: " . $log_data['method'] . "\n";
+			
+			if (isset($log_data['request_data'])) {
+				$output .= "Request Data: " . (is_array($log_data['request_data']) || is_object($log_data['request_data']) 
+					? print_r($log_data['request_data'], true) 
+					: $log_data['request_data']) . "\n";
+			}
+			
+			if (isset($log_data['response_data'])) {
+				$output .= "Response Data: " . (is_array($log_data['response_data']) || is_object($log_data['response_data']) 
+					? print_r($log_data['response_data'], true) 
+					: $log_data['response_data']) . "\n";
+			}
+			
+			$output .= str_repeat('=', 50) . "\n";
+			
+			// Log to WooCommerce logs
+			$log->info($output, array('source' => 'Myworks-QB-Request-Logger'));
+			
+		} catch (Exception $e) {
+			// Fallback: write to error log if WooCommerce logging fails
+			error_log('QuickBooks Logging Error: ' . $e->getMessage());
+		}
+	}
+
+	/**
+	 * Format XML data for better readability in logs
+	 *
+	 * @param mixed $data The data to format (could be XML string or other data)
+	 * @return string Formatted data for logging
+	 */
+	protected function _formatXmlForLogging($data)
+	{
+		// If it's not a string or doesn't look like XML, return as-is
+		if (!is_string($data) || strpos(trim($data), '<') !== 0) {
+			return $data;
+		}
+
+		try {
+			// Try to format as XML
+			$dom = new DOMDocument('1.0');
+			$dom->preserveWhiteSpace = false;
+			$dom->formatOutput = true;
+			
+			// Suppress warnings for malformed XML
+			$previous_setting = libxml_use_internal_errors(true);
+			
+			if ($dom->loadXML($data)) {
+				$formatted = $dom->saveXML();
+				libxml_use_internal_errors($previous_setting);
+				return $formatted;
+			}
+			
+			libxml_use_internal_errors($previous_setting);
+		} catch (Exception $e) {
+			error_log('XML formatting error: ' . $e->getMessage());
+		}
+
+		// Fallback: return original data if formatting fails
+		return $data;
+	}
+
+	/**
+	 * Add basic indentation to XML for readability when DOMDocument fails
+	 *
+	 * @param string $xml The XML string
+	 * @return string XML with basic indentation
+	 */
+	protected function _addBasicXmlIndentation($xml)
+	{
+		$formatted = '';
+		$indent = 0;
+		$lines = explode('>', $xml);
+		
+		foreach ($lines as $line) {
+			if (empty(trim($line))) continue;
+			
+			$line = trim($line);
+			if (strpos($line, '</') === 0) {
+				$indent--;
+			}
+			
+			$formatted .= str_repeat('  ', max(0, $indent)) . $line . ">\n";
+			
+			if (strpos($line, '</') !== 0 && strpos($line, '/>') === false && !empty($line)) {
+				$indent++;
+			}
+		}
+		
+		return rtrim($formatted, ">\n");
 	}
 }

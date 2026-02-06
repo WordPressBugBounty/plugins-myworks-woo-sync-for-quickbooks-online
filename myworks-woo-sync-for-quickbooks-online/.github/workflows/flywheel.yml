@@ -1,0 +1,24 @@
+name: Flywheel Plugin Deploy
+
+on:
+  push:
+    branches: [ "dev" ]   # Only deploy when pushing to dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4   # latest version
+
+    # Optional: if you build assets (npm, composer, etc.), you can add steps here
+
+    - name: Deploy to Flywheel
+      uses: easingthemes/ssh-deploy@v4.1.8
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+        REMOTE_USER: ${{ secrets.REMOTE_USER }}
+        ARGS: "-rltgoDzvO --delete --exclude=.git --exclude=.github"
+        TARGET: /www/wp-content/plugins/myworks-woo-sync-for-quickbooks-online/ # confirm path in Flywheel

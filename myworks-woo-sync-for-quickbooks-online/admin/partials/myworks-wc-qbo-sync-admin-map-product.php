@@ -6,11 +6,27 @@ global $MWQS_OF;
 global $MSQS_QL;
 global $wpdb;
 
+/*
 if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
 	$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true);	
 }
+*/
 
 $page_url = 'admin.php?page=myworks-wc-qbo-map&tab=product';
+
+// Validate table names for security
+function validate_table_name($table_name, $wpdb) {
+	if (!str_starts_with($table_name, $wpdb->prefix)) {
+		die('Invalid table name');
+	}
+}
+
+# New
+if($MSQS_QL->use_new_qbo_local_data('class') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_classes_data_fetched') != 'true'){
+	# Fetch and save new QBO classes into DB
+	$MSQS_QL->save_all_classes();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_classes_data_fetched','true',false);
+}
 
 if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_product', 'map_wc_qbo_product' ) ) {
 	$item_ids = array();
@@ -24,12 +40,13 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_p
 	}
 	
 	$table = $wpdb->prefix.'mw_wc_qbo_sync_product_pairs';
+	validate_table_name($table, $wpdb);
 	
 	if(count($item_ids)){
 		foreach ($item_ids as $key=>$value){
 			$save_data = array();			
 			$save_data['quickbook_product_id'] = $value;
-			$save_data['class_id'] = (isset($_POST['class_map_product_'.$key]))?$_POST['class_map_product_'.$key]:'';			
+			$save_data['class_id'] = (isset($_POST['class_map_product_'.$key]))?sanitize_text_field($_POST['class_map_product_'.$key]):'';			
 			
 			if($MSQS_QL->get_field_by_val($table,'id','wc_product_id',$key)){
 				$wpdb->update($table,$save_data,array('wc_product_id'=>$key),'',array('%d'));
@@ -41,7 +58,10 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_p
 		$MSQS_QL->set_session_val('map_page_update_message',__('Products mapped successfully.','mw_wc_qbo_sync'));
 	}
 	//
-	$wpdb->query("DELETE FROM `".$table."` WHERE `quickbook_product_id` = 0 ");
+	// Use esc_sql for table name to prevent SQL injection
+	$table_name = esc_sql($table);
+	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped with esc_sql()
+	$wpdb->query($wpdb->prepare("DELETE FROM `{$table_name}` WHERE `quickbook_product_id` = %d", 0));
 	$MSQS_QL->redirect($page_url);
 }
 
@@ -62,7 +82,8 @@ $total_records = $MSQS_QL->count_woocommerce_product_list($product_map_search,fa
 $offset = $MSQS_QL->get_offset($MSQS_QL->get_page_var(),$items_per_page);
 $pagination_links = $MSQS_QL->get_paginate_links($total_records,$items_per_page);
 
-$wc_product_list = $MSQS_QL->get_woocommerce_product_list($product_map_search," $offset , $items_per_page",false,$product_type_srch,$product_um_srch);
+$wc_product_list = $MSQS_QL->get_woocommerce_product_list($product_map_search,"$offset,$items_per_page",false,$product_type_srch,$product_um_srch);
+
 
 $qbo_product_options = '';
 if(!$MSQS_QL->option_checked('mw_wc_qbo_sync_select2_ajax')){
@@ -84,7 +105,7 @@ $wc_p_types = wc_get_product_types();
 	<div class="mw_wc_filter">
 	 <span class="search_text">Search</span>
 	  &nbsp;
-	  <input type="text" id="product_map_search" placeholder="NAME / SKU / ID" value="<?php echo $product_map_search;?>">
+	  <input type="text" id="product_map_search" placeholder="NAME / SKU / ID" value="<?php echo esc_attr($product_map_search);?>">
 	  &nbsp;
 									  
 	  <span class="search_text">Product Type</span>
@@ -92,7 +113,7 @@ $wc_p_types = wc_get_product_types();
 	  <select id="product_type_srch" style="width:200px !important;">
 		<option value="">All but parent variable products</option>
 		<option value="all"<?php if($product_type_srch == 'all'){echo ' selected';}?>>All</option>
-		<?php echo  $MSQS_QL->only_option($product_type_srch,$wc_p_types);?>
+		<?php echo $MSQS_QL->only_option($product_type_srch,$wc_p_types); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	  </select>
 	  &nbsp;
 		
@@ -101,7 +122,7 @@ $wc_p_types = wc_get_product_types();
 			<?php if(empty($product_um_srch)):?>
 			<option value="">All</option>
 			<?php endif;?>
-			<?php echo  $MSQS_QL->only_option($product_um_srch,array('only_um'=>'Only Unmapped','only_m'=>'Only Mapped'));?>
+			<?php echo $MSQS_QL->only_option($product_um_srch,array('only_um'=>'Only Unmapped','only_m'=>'Only Mapped')); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		 </select>
 	 </span>
 	 
@@ -113,8 +134,8 @@ $wc_p_types = wc_get_product_types();
 	  <span class="filter-right-sec">
 		  <span class="entries">Show entries</span>
 		  &nbsp;
-		  <select style="width:50px;" onchange="javascript:window.location='<?php echo $page_url;?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-			<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+		  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_attr($MSQS_QL->per_page_keyword);?>='+this.value;">
+			<?php echo $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		 </select>
 	 </span>
 	 </div>
@@ -123,7 +144,7 @@ $wc_p_types = wc_get_product_types();
 		<div class="card-content">
 			<div class="row">
 				<?php if(is_array($wc_product_list) && count($wc_product_list)):?>
-				<form method="POST" class="col s12 m12 l12" action="<?php echo $page_url;?>">
+				<form method="POST" class="col s12 m12 l12" action="<?php echo esc_url($page_url);?>">
 					<div class="row">
 						<div class="col s12 m12 l12">
 							<div class="myworks-wc-qbo-sync-table-responsive">
@@ -151,13 +172,13 @@ $wc_p_types = wc_get_product_types();
 									</thead>
 									<?php foreach($wc_product_list as $p_val):?>
 									<tr>
-										<td><?php echo $p_val['ID']?></td>
+										<td><?php echo esc_html($p_val['ID'] ?? '')?></td>
 										<td>
-										<b><a href="<?php echo admin_url('post.php?action=edit&post=').$p_val['ID'] ?>" target="_blank"><?php esc_html_e( $p_val['name'], 'mw_wc_qbo_sync' );?></b>
+										<b><a href="<?php echo esc_url(admin_url('post.php?action=edit&post=').$p_val['ID']) ?>" target="_blank"><?php esc_html_e( $p_val['name'], 'mw_wc_qbo_sync' );?></b>
 										</a>					
 										</td>
-										<td><?php echo $p_val['sku']?></td>
-										<td><?php echo $p_val['wc_product_type'];?></td>
+										<td><?php echo esc_html($p_val['sku'] ?? '')?></td>
+										<td><?php echo esc_html($p_val['wc_product_type'] ?? '');?></td>
 										<td>										
 											
 											<?php
@@ -166,7 +187,7 @@ $wc_p_types = wc_get_product_types();
 											if($MSQS_QL->option_checked('mw_wc_qbo_sync_select2_ajax')){
 												$dd_ext_class = 'mwqs_dynamic_select';
 												if((int) $p_val['quickbook_product_id']){												
-													$dd_options = '<option value="'.$p_val['quickbook_product_id'].'">'.$MSQS_QL->escape(stripslashes($p_val['qp_name'])).'</option>';
+													$dd_options = '<option value="'.esc_attr($p_val['quickbook_product_id']).'">'.$MSQS_QL->escape(stripslashes($p_val['qp_name'])).'</option>';
 												}
 											}else{
 												$dd_options.=$qbo_product_options;
@@ -176,15 +197,15 @@ $wc_p_types = wc_get_product_types();
 											}																		
 											?>
 											
-											<select class="mw_wc_qbo_sync_select2 <?php echo $dd_ext_class;?>" name="map_product_<?php echo $p_val['ID']?>" id="map_product_<?php echo $p_val['ID']?>">
-												<?php echo $dd_options;?>
+											<select class="mw_wc_qbo_sync_select2 <?php echo esc_attr($dd_ext_class);?>" name="map_product_<?php echo esc_attr($p_val['ID'])?>" id="map_product_<?php echo esc_attr($p_val['ID'])?>">
+												<?php echo wp_kses($dd_options, array('option' => array('value' => array(), 'selected' => array()))); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 											</select>
 											
 										</td>
 										<?php if(!empty($qbo_class_options_value)){ ?>
 										<td>
-											<select class="mw_wc_qbo_sync_select2" name="class_map_product_<?php echo $p_val['ID']?>" id="class_map_product_<?php echo $p_val['ID']?>">
-												<?php echo $qbo_class_options;?>
+											<select class="mw_wc_qbo_sync_select2" name="class_map_product_<?php echo esc_attr($p_val['ID'])?>" id="class_map_product_<?php echo esc_attr($p_val['ID'])?>">
+												<?php echo wp_kses($qbo_class_options, array('option' => array('value' => array(), 'selected' => array()))); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 											</select>
 											<?php 
 											if(!empty($p_val['class_id'])){
@@ -196,7 +217,7 @@ $wc_p_types = wc_get_product_types();
 									</tr>
 									<?php endforeach;?>
 								</table>
-								<?php echo $pagination_links?>
+								<?php echo !empty($pagination_links) ? $pagination_links : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</div>
 						</div>
 					</div>
@@ -240,18 +261,18 @@ $wc_p_types = wc_get_product_types();
 		product_um_srch = jQuery.trim(product_um_srch);
 		
 		if(product_map_search!='' || product_type_srch!='' || product_um_srch!=''){			
-			window.location = '<?php echo $page_url;?>&product_map_search='+product_map_search+'&product_type_srch='+product_type_srch+'&product_um_srch='+product_um_srch;
+			window.location = '<?php echo esc_url_raw($page_url);?>&product_map_search='+product_map_search+'&product_type_srch='+product_type_srch+'&product_um_srch='+product_um_srch;
 		}else{
-			alert('<?php echo $MWQS_OF->get_mpp_bs_msg($page_url);?>');
+			alert('<?php echo esc_js($MWQS_OF->get_mpp_bs_msg(esc_url($page_url)));?>');
 		}
 	}
 	
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&product_map_search=&product_type_srch=&product_um_srch=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&product_map_search=&product_type_srch=&product_um_srch=';
 	}
 	<?php if($selected_options_script!=''):?>
 	jQuery(document).ready(function(){
-		<?php echo $selected_options_script;?>
+		<?php echo $selected_options_script; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	});
 	<?php endif;?>
 	
@@ -267,7 +288,7 @@ $wc_p_types = wc_get_product_types();
 			
 			if(pam_wf!='' && pam_qf!=''){
 				$('#pam_wqf_e_msg').html('');
-				if(confirm('<?php echo __('This will override any previous product mappings, and scan your WooCommerce & QuickBooks Online products by selected fields to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
+				if(confirm('<?php echo esc_html__('This will override any previous product mappings, and scan your WooCommerce & QuickBooks Online products by selected fields to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 					var data = {
 						"action": 'mw_wc_qbo_sync_automap_products_wf_qf',
 						"automap_products_wf_qf": jQuery('#automap_products_wf_qf').val(),
@@ -288,7 +309,7 @@ $wc_p_types = wc_get_product_types();
 					   success: function(result){
 						   if(result!=0 && result!=''){							
 							jQuery('#mwqs_automap_products_msg').html(result);							
-							window.location='<?php echo admin_url($page_url)?>';
+							window.location='<?php echo esc_url(admin_url($page_url))?>';
 						   }else{
 							 jQuery('#mwqs_automap_products_msg').html('Automap was timed out and could not fully complete. Please try again');					
 						   }				  
@@ -306,7 +327,7 @@ $wc_p_types = wc_get_product_types();
 		
 		<?php if($js_section=false):?>
 		$('#mwqs_automap_products').click(function(){
-			if(confirm('<?php echo __('This will override any previous product mappings, and scan your WooCommerce & QuickBooks Online products by SKU to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
+			if(confirm('<?php echo esc_html__('This will override any previous product mappings, and scan your WooCommerce & QuickBooks Online products by SKU to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 				jQuery('#mwqs_automap_products_msg').html('');
 				jQuery('#mwqs_automap_products_msg_by_name').html('');
 				var data = {
@@ -328,7 +349,7 @@ $wc_p_types = wc_get_product_types();
 						jQuery('#mwqs_automap_products_msg').html(result);
 						//alert('Success!');
 						//location.reload();
-						window.location='<?php echo admin_url($page_url)?>';
+						window.location='<?php echo esc_url(admin_url($page_url))?>';
 					   }else{
 						 jQuery('#mwqs_automap_products_msg').html('Error!');
 						 //alert('Error!');			 
@@ -343,7 +364,7 @@ $wc_p_types = wc_get_product_types();
 		});
 		
 		$('#mwqs_automap_products_by_name').click(function(){
-			if(confirm('<?php echo __('This will override any previous product mappings, and scan your WooCommerce & QuickBooks Online products by name to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
+			if(confirm('<?php echo esc_html__('This will override any previous product mappings, and scan your WooCommerce & QuickBooks Online products by name to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 				jQuery('#mwqs_automap_products_msg_by_name').html('');
 				jQuery('#mwqs_automap_products_msg').html('');
 				var data = {
@@ -365,7 +386,7 @@ $wc_p_types = wc_get_product_types();
 						jQuery('#mwqs_automap_products_msg_by_name').html(result);
 						//alert('Success!');
 						//location.reload();
-						window.location='<?php echo admin_url($page_url)?>';
+						window.location='<?php echo esc_url(admin_url($page_url))?>';
 					   }else{
 						 jQuery('#mwqs_automap_products_msg_by_name').html('Error!');
 						 //alert('Error!');			 
@@ -382,7 +403,7 @@ $wc_p_types = wc_get_product_types();
 		<?php endif;?>
 		
 		$('#mwqs_capm_btn').click(function(){
-			if(confirm('<?php echo __('Are you sure, you want to clear all product mappings?','mw_wc_qbo_sync')?>')){
+			if(confirm('<?php echo esc_html__('Are you sure, you want to clear all product mappings?','mw_wc_qbo_sync')?>')){
 				var loading_msg = 'Loading...';
 				jQuery('#mwqs_capm_msg').html(loading_msg);
 				var data = {
@@ -399,7 +420,7 @@ $wc_p_types = wc_get_product_types();
 					   if(result!=0 && result!=''){
 						 //alert('Success');
 						 jQuery('#mwqs_capm_msg').html('Success!');
-						 window.location='<?php echo admin_url($page_url)?>';
+						 window.location='<?php echo esc_url(admin_url($page_url))?>';
 					   }else{
 						 //alert('Error!');
 						jQuery('#mwqs_capm_msg').html('Error!');
@@ -414,7 +435,7 @@ $wc_p_types = wc_get_product_types();
 		});
 		
 		$('#mwqs_refresh_data_from_qbo').click(function(event){
-			if(!confirm('<?php echo __('Are you sure, you want to refresh data from quickbooks?','mw_wc_qbo_sync')?>')){
+			if(!confirm('<?php echo esc_html__('Are you sure, you want to refresh data from QuickBooks?','mw_wc_qbo_sync')?>')){
 				event.preventDefault();
 			}
 		});
@@ -422,4 +443,4 @@ $wc_p_types = wc_get_product_types();
 		
 	});
  </script>
- <?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select2','qbo_product');?>
+ <?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select2','qbo_product'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized in get_select2_js function ?>

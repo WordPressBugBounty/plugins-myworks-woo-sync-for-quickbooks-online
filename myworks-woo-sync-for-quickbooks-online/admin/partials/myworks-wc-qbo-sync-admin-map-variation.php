@@ -9,6 +9,20 @@ global $wpdb;
 $page_url_product = 'admin.php?page=myworks-wc-qbo-map&tab=product';
 $page_url = 'admin.php?page=myworks-wc-qbo-map&tab=product&variation=1';
 
+// Validate table names for security
+function validate_table_name($table_name, $wpdb) {
+	if (!str_starts_with($table_name, $wpdb->prefix)) {
+		die('Invalid table name');
+	}
+}
+
+# New
+if($MSQS_QL->use_new_qbo_local_data('class') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_classes_data_fetched') != 'true'){
+	# Fetch and save new QBO classes into DB
+	$MSQS_QL->save_all_classes();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_classes_data_fetched','true',false);
+}
+
 if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_variation', 'map_wc_qbo_variation' ) ) {
 	$item_ids = array();
 	foreach ($_POST as $key=>$value){
@@ -21,12 +35,13 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_v
 	}
 	
 	$table = $wpdb->prefix.'mw_wc_qbo_sync_variation_pairs';
+	validate_table_name($table, $wpdb);
 	
 	if(count($item_ids)){
 		foreach ($item_ids as $key=>$value){
 			$save_data = array();			
 			$save_data['quickbook_product_id'] = $value;
-			$save_data['class_id'] = (isset($_POST['class_map_variation_'.$key]))?$_POST['class_map_variation_'.$key]:'';			
+			$save_data['class_id'] = (isset($_POST['class_map_variation_'.$key])) ? sanitize_text_field($_POST['class_map_variation_'.$key]) : '';
 			
 			if($MSQS_QL->get_field_by_val($table,'id','wc_variation_id',$key)){
 				$wpdb->update($table,$save_data,array('wc_variation_id'=>$key),'',array('%d'));
@@ -38,7 +53,10 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_v
 		$MSQS_QL->set_session_val('map_page_update_message',__('Variations mapped successfully.','mw_wc_qbo_sync'));
 	}
 	//
-	$wpdb->query("DELETE FROM `".$table."` WHERE `quickbook_product_id` = 0 ");
+	// Static DELETE query - use hardcoded table name to prevent SQL injection
+	$table_name = $wpdb->prefix . 'mw_wc_qbo_sync_variation_pairs';
+	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safely constructed from wpdb prefix
+	$wpdb->query($wpdb->prepare("DELETE FROM `{$table_name}` WHERE `quickbook_product_id` = %d", 0));
 	$MSQS_QL->redirect($page_url);
 }
 
@@ -79,7 +97,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 	<div class="mw_wc_filter">
 	 <span class="search_text">Search</span>
 	  &nbsp;
-	  <input type="text" id="variation_map_search" placeholder="NAME / SKU / ID" value="<?php echo $variation_map_search;?>">
+	  <input type="text" id="variation_map_search" placeholder="NAME / SKU / ID" value="<?php echo esc_attr($variation_map_search);?>">
 	  &nbsp;
 	
 	  <span>
@@ -87,7 +105,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 			<?php if(empty($variation_um_srch)):?>
 			<option value="">All</option>
 			<?php endif;?>
-			<?php echo  $MSQS_QL->only_option($variation_um_srch,array('only_um'=>'Only Unmapped','only_m'=>'Only Mapped'));?>
+			<?php echo $MSQS_QL->only_option($variation_um_srch,array('only_um'=>'Only Unmapped','only_m'=>'Only Mapped')); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		  </select>
 	  </span>
 	 
@@ -99,8 +117,8 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 	  <span class="filter-right-sec">
 		  <span class="entries">Show entries</span>
 		  &nbsp;
-		  <select style="width:50px;" onchange="javascript:window.location='<?php echo $page_url;?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-			<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+		  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_attr($MSQS_QL->per_page_keyword);?>='+this.value;">
+			<?php echo $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		 </select>
 	 </span>
 	 </div>
@@ -109,7 +127,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 		<div class="card-content">
 			<div class="row">
 				<?php if(is_array($wc_variation_list) && count($wc_variation_list)):?>
-				<form method="POST" class="col s12 m12 l12" action="<?php echo $page_url;?>">
+				<form method="POST" class="col s12 m12 l12" action="<?php echo esc_url($page_url);?>">
 					<div class="row">
 						<div class="col s12 m12 l12">
 							<div class="myworks-wc-qbo-sync-table-responsive">
@@ -138,12 +156,12 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 									</thead>
 									<?php foreach($wc_variation_list as $p_val):?>
 									<tr>
-										<td><?php echo $p_val['ID']?></td>
-										<td title="<?php echo $p_val['post_name']?>">
-										<a href="<?php echo admin_url('post.php?action=edit&post=').wp_get_post_parent_id( $p_val['ID'] ) ?>" target="_blank"><b><?php esc_html_e( $p_val['name'], 'mw_wc_qbo_sync' );?></b>
+										<td><?php echo esc_html($p_val['ID'] ?? '')?></td>
+										<td title="<?php echo esc_attr($p_val['post_name'])?>">
+										<a href="<?php echo esc_url(admin_url('post.php?action=edit&post=').wp_get_post_parent_id( $p_val['ID'] )) ?>" target="_blank"><b><?php esc_html_e( $p_val['name'], 'mw_wc_qbo_sync' );?></b>
 										
 										<p>
-										Price: <?php echo $wc_currency_symbol.$p_val['price'];?>
+										Price: <?php echo esc_html($wc_currency_symbol.$p_val['price']);?>
 										<?php 
 											if($p_val['attribute_names']!='' && $p_val['attribute_values']!=''){
 												$attr_key_arr = explode(',',$p_val['attribute_names']);
@@ -162,7 +180,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 													if(is_array($attr_arr) && count($attr_arr)){
 														echo '<br />';
 														foreach($attr_arr as $key=>$val){
-															echo $key.': '.$val.'<br />';
+															echo esc_html($key).': '.esc_html($val).'<br />';
 														}
 													}
 												}
@@ -171,12 +189,12 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 										</p></a>
 										</td>
 										
-										<td><?php echo $p_val['sku']?></td>
+										<td><?php echo esc_html($p_val['sku'] ?? '')?></td>
 										
 										
 										<td>
-											<a title="<?php echo $p_val['parent_name']?>" target="_blank" href="post.php?post=<?php echo $p_val['parent_id']?>&action=edit">
-												<?php echo $p_val['parent_id']?>
+											<a title="<?php echo esc_attr($p_val['parent_name'])?>" target="_blank" href="<?php echo esc_url('post.php?post='.$p_val['parent_id'].'&action=edit')?>">
+												<?php echo esc_html($p_val['parent_id'] ?? '')?>
 											</a>
 										</td>
 										<td>
@@ -186,7 +204,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 											if($MSQS_QL->option_checked('mw_wc_qbo_sync_select2_ajax')){
 												$dd_ext_class = 'mwqs_dynamic_select';
 												if((int) $p_val['quickbook_product_id']){												
-													$dd_options = '<option value="'.$p_val['quickbook_product_id'].'">'.$MSQS_QL->escape(stripslashes($p_val['qp_name'])).'</option>';
+													$dd_options = '<option value="'.esc_attr($p_val['quickbook_product_id']).'">'.$MSQS_QL->escape(stripslashes($p_val['qp_name'])).'</option>';
 												}
 											}else{
 												$dd_options.=$qbo_product_options;
@@ -196,14 +214,14 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 											}																	
 											?>
 											
-											<select class="mw_wc_qbo_sync_select2 <?php echo $dd_ext_class;?>" name="map_variation_<?php echo $p_val['ID']?>" id="map_variation_<?php echo $p_val['ID']?>">
-												<?php echo $dd_options;?>
+											<select class="mw_wc_qbo_sync_select2 <?php echo esc_attr($dd_ext_class);?>" name="map_variation_<?php echo esc_attr($p_val['ID'])?>" id="map_variation_<?php echo esc_attr($p_val['ID'])?>">
+												<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 											</select>
 										</td>
 										<?php if(!empty($qbo_class_options_value)){ ?>
 										<td>
-											<select class="mw_wc_qbo_sync_select2" name="class_map_variation_<?php echo $p_val['ID']?>" id="class_map_variation_<?php echo $p_val['ID']?>">
-												<?php echo $qbo_class_options;?>
+											<select class="mw_wc_qbo_sync_select2" name="class_map_variation_<?php echo esc_attr($p_val['ID'])?>" id="class_map_variation_<?php echo esc_attr($p_val['ID'])?>">
+												<?php echo $qbo_class_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 											</select>
 											<?php 
 											if(!empty($p_val['class_id'])){
@@ -215,7 +233,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 									</tr>
 									<?php endforeach;?>
 								</table>
-								<?php echo $pagination_links?>
+								<?php echo !empty($pagination_links) ? $pagination_links : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</div>
 						</div>
 					</div>
@@ -256,18 +274,18 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 		variation_um_srch = jQuery.trim(variation_um_srch);
 		
 		if(variation_map_search!='' || variation_um_srch!=''){
-			window.location = '<?php echo $page_url;?>&variation_map_search='+variation_map_search+'&variation_um_srch='+variation_um_srch;
+			window.location = '<?php echo esc_url_raw($page_url);?>&variation_map_search='+variation_map_search+'&variation_um_srch='+variation_um_srch;
 		}else{
-			alert('<?php echo __('Please enter search keyword or select mapped/unmapped.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_js(__('Please enter search keyword or select mapped/unmapped.','mw_wc_qbo_sync')); ?>');
 		}
 	}
 	
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&variation_map_search=&variation_um_srch=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&variation_map_search=&variation_um_srch=';
 	}
 	<?php if($selected_options_script!=''):?>
 	jQuery(document).ready(function(){
-		<?php echo $selected_options_script;?>
+		<?php echo $selected_options_script; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	});
 	<?php endif;?>
 	
@@ -284,7 +302,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 			
 			if(vam_wf!='' && vam_qf!=''){
 				$('#vam_wqf_e_msg').html('');
-				if(confirm('<?php echo __('This will override any previous variation mappings, and scan your WooCommerce & QuickBooks Online variations by selected fields to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
+				if(confirm('<?php echo esc_html__('This will override any previous variation mappings, and scan your WooCommerce & QuickBooks Online variations by selected fields to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 					jQuery('#mwqs_automap_variations_msg').html('');
 					var data = {
 						"action": 'mw_wc_qbo_sync_automap_variations_wf_qf',
@@ -304,7 +322,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 					   success: function(result){
 						   if(result!=0 && result!=''){						
 							jQuery('#mwqs_automap_variations_msg').html(result);						
-							window.location='<?php echo admin_url($page_url)?>';
+							window.location='<?php echo esc_url(admin_url($page_url))?>';
 						   }else{
 							jQuery('#mwqs_automap_variations_msg').html('Automap was timed out and could not fully complete. Please try again');						 
 						   }				  
@@ -321,7 +339,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 		
 		<?php if($js_section=false):?>
 		$('#mwqs_automap_variations').click(function(){
-			if(confirm('<?php echo __('Are you sure, you want to automap all variations?', 'mw_wc_qbo_sync')?>')){
+			if(confirm('<?php echo esc_html__('Are you sure, you want to automap all variations?', 'mw_wc_qbo_sync')?>')){
 				jQuery('#mwqs_automap_variations_msg').html('');
 				var data = {
 					"action": 'mw_wc_qbo_sync_automap_variations',
@@ -342,7 +360,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 						jQuery('#mwqs_automap_variations_msg').html(result);
 						//alert('Success!');
 						//location.reload();
-						window.location='<?php echo admin_url($page_url)?>';
+						window.location='<?php echo esc_url(admin_url($page_url))?>';
 					   }else{
 						 jQuery('#mwqs_automap_variations_msg').html('Error!');
 						 //alert('Error!');			 
@@ -359,7 +377,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 		<?php endif;?>
 		
 		$('#mwqs_cavm_btn').click(function(){
-			if(confirm('<?php echo __('Are you sure, you want to clear all variation mappings?','mw_wc_qbo_sync')?>')){
+			if(confirm('<?php echo esc_html__('Are you sure, you want to clear all variation mappings?','mw_wc_qbo_sync')?>')){
 				var loading_msg = 'Loading...';
 				jQuery('#mwqs_cavm_msg').html(loading_msg);
 				var data = {
@@ -376,7 +394,7 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 					   if(result!=0 && result!=''){
 						 //alert('Success');
 						 jQuery('#mwqs_cavm_msg').html('Success!');
-						 window.location='<?php echo admin_url($page_url)?>';
+						 window.location='<?php echo esc_url(admin_url($page_url))?>';
 					   }else{
 						 //alert('Error!');
 						jQuery('#mwqs_cavm_msg').html('Error!');
@@ -391,11 +409,11 @@ $wc_currency_symbol = get_woocommerce_currency_symbol();
 		});
 		
 		$('#mwqs_refresh_data_from_qbo').click(function(event){
-			if(!confirm('<?php echo __('Are you sure, you want to refresh data from quickbooks?','mw_wc_qbo_sync')?>')){
+			if(!confirm('<?php echo esc_html__('Are you sure, you want to refresh data from QuickBooks?','mw_wc_qbo_sync')?>')){
 				event.preventDefault();
 			}
 		});
 		
 	});
  </script>
- <?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select2','qbo_product');?>
+ <?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select2','qbo_product'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized in get_select2_js function ?>

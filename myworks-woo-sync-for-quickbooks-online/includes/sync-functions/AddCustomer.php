@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) )
 exit;
 
 /**
- * Add Customer Into Quickbooks Online.
+ * Add Customer Into QuickBooks Online.
  *
  * @since    1.0.0
  * Last Updated: 2019-01-25
@@ -166,7 +166,7 @@ if($include_this_function){
 				if ($resp = $customerService->add($Context, $realm, $customer)){
 					$qbo_customerid = $this->qbo_clear_braces($resp);
 					$log_title.="Export Customer #$wc_customerid\n";
-					$log_details.="Customer #$wc_customerid has been exported, Quickbooks Customer ID is #$qbo_customerid";
+					$log_details.="Customer #$wc_customerid has been exported, QuickBooks Customer ID is #$qbo_customerid";
 					$log_status = 1;
 					$this->save_log($log_title,$log_details,'Customer',$log_status,true,'Add');
 					$this->add_qbo_item_obj_into_log_file('Customer Add',$customer_data,$customer,$this->get_IPP()->lastRequest(),$this->get_IPP()->lastResponse(),true);

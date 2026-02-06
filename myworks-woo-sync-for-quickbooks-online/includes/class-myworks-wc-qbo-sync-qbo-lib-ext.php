@@ -23,6 +23,36 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  */
 
 class MyWorks_WC_QBO_Sync_QBO_Lib_Ext extends MyWorks_WC_QBO_Sync_QBO_Lib{
+	
+	private function is_hpos_enabled() {
+		return class_exists('Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController') &&
+			wc_get_container()->get('Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController')->custom_orders_table_usage_is_enabled();
+	}
+	
+	private function get_product_meta($product_id, $meta_key, $single = true) {
+		if ($this->is_hpos_enabled()) {
+			$product = wc_get_product($product_id);
+			if ($product) {
+				return $product->get_meta($meta_key, $single);
+			}
+			return '';
+		} else {
+			return get_post_meta($product_id, $meta_key, $single);
+		}
+	}
+	
+	private function update_product_meta($product_id, $meta_key, $meta_value) {
+		if ($this->is_hpos_enabled()) {
+			$product = wc_get_product($product_id);
+			if ($product) {
+				$product->update_meta_data($meta_key, $meta_value);
+				$product->save();
+			}
+		} else {
+			update_post_meta($product_id, $meta_key, esc_attr($meta_value));
+		}
+	}
+	
 	public function __construct(){
 		add_filter( 'woocommerce_product_data_tabs', array($this,'qb_product_data_tab') );
 		add_action( 'admin_head', array($this,'qpdt_style') );
@@ -48,7 +78,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Ext extends MyWorks_WC_QBO_Sync_QBO_Lib{
 	
 	public function qpdt_style(){		
 		$cnt = '"\f183"';
-		echo '<style type="text/css">#woocommerce-product-data ul.wc-tabs li.mwqbos-custom-tab_options a:before { content: '.$cnt.'; }</style>';		
+		echo '<style type="text/css">#woocommerce-product-data ul.wc-tabs li.mwqbos-custom-tab_options a:before { content: ' . esc_attr($cnt) . '; }</style>';		
 	}
 	
 	public function qb_product_data_fields() {
@@ -69,7 +99,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Ext extends MyWorks_WC_QBO_Sync_QBO_Lib{
 			$is_vendor_field = true;
 			$qbo_vendor_options = $this->get_key_value_options_from_table(true,$v_tbl,'qbo_vendorid','dname','','dname ASC','');
 			
-			$qb_p_vendor = get_post_meta( $post->ID, 'qb_p_vendor', true );
+			$qb_p_vendor = $this->get_product_meta( $post->ID, 'qb_p_vendor', true );
 			if( empty( $qb_p_vendor ) ) $qb_p_vendor = '';
 		}
 		
@@ -96,13 +126,13 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Ext extends MyWorks_WC_QBO_Sync_QBO_Lib{
 		
 		//
 		if(empty($qb_mapped_product)){
-			$qb_income_account = get_post_meta( $post->ID, 'qb_income_account', true );
+			$qb_income_account = $this->get_product_meta( $post->ID, 'qb_income_account', true );
 			if( empty( $qb_income_account ) ) $qb_income_account = '';
 			
-			$qb_cogs_account = get_post_meta( $post->ID, 'qb_cogs_account', true );
+			$qb_cogs_account = $this->get_product_meta( $post->ID, 'qb_cogs_account', true );
 			if( empty( $qb_cogs_account ) ) $qb_cogs_account = '';
 			
-			$qb_ia_account = get_post_meta( $post->ID, 'qb_ia_account', true );
+			$qb_ia_account = $this->get_product_meta( $post->ID, 'qb_ia_account', true );
 			if( empty( $qb_ia_account ) ) $qb_ia_account = '';		
 			
 			if($this->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection') && !$this->is_connected()){
@@ -116,11 +146,9 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Ext extends MyWorks_WC_QBO_Sync_QBO_Lib{
 				$qbo_category_options = $this->get_qb_category_option_arr(true);
 			}
 
-			$qb_p_category = get_post_meta( $post->ID, 'qb_p_category', true );
+			$qb_p_category = $this->get_product_meta( $post->ID, 'qb_p_category', true );
 			if( empty( $qb_p_category ) ) $qb_p_category = '';
 
-			$qb_p_cost = get_post_meta( $post->ID, 'qb_p_cost', true );
-			if( empty( $qb_p_cost ) ) $qb_p_cost = '';
 		}
 		
 		echo '<div id = "mwqbos_custom_product_data" class = "panel woocommerce_options_panel">';
@@ -211,23 +239,12 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Ext extends MyWorks_WC_QBO_Sync_QBO_Lib{
 				)
 			 );
 			
-			woocommerce_wp_text_input(
-				array(
-				'id' => 'qb_p_cost', 
-				'label' => sprintf( __('QuickBooks Cost (%s)', 'woocommerce'), get_woocommerce_currency_symbol() ),
-				'placeholder' => '0.00', 
-				'desc_tip' => 'true', 
-				'description' => __('QuickBooks Cost: Field for the cost of the product in QuickBooks, which if entered, would set this as the cost of the product when we create it in QuickBooks.', 'woocommerce'), 
-				'type' => 'text',
-				'class' => 'mwqboscpd_bb',
-				)
-			);
 		}
 		
 		echo '</div>';
 		echo '</div>';
 		$MWQS_OF = new MyWorks_WC_QBO_Sync_Oth_Funcs();
-		echo $MWQS_OF->get_select2_js('.mwqbos_cpd_s2','qbo_product','yes');
+		echo $MWQS_OF->get_select2_js('.mwqbos_cpd_s2','qbo_product','yes'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized in get_select2_js function
 	}
 	
 	public function qb_product_data_save_fields($post_id){
@@ -256,34 +273,29 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Ext extends MyWorks_WC_QBO_Sync_QBO_Lib{
 		
 		if(isset($_POST['qb_income_account'])){
 			$qb_income_account = $this->var_p('qb_income_account');
-			update_post_meta($post_id, 'qb_income_account', esc_attr($qb_income_account));
+			$this->update_product_meta($post_id, 'qb_income_account', $qb_income_account);
 		}
 
 		if(isset($_POST['qb_cogs_account'])){
 			$qb_cogs_account = $this->var_p('qb_cogs_account');
-			update_post_meta($post_id, 'qb_cogs_account', esc_attr($qb_cogs_account));
+			$this->update_product_meta($post_id, 'qb_cogs_account', $qb_cogs_account);
 		}
 		
 		if(isset($_POST['qb_ia_account'])){
 			$qb_ia_account = $this->var_p('qb_ia_account');
-			update_post_meta($post_id, 'qb_ia_account', esc_attr($qb_ia_account));
+			$this->update_product_meta($post_id, 'qb_ia_account', $qb_ia_account);
 		}
 		
 		if(isset($_POST['qb_p_vendor'])){
 			$qb_p_vendor = $this->var_p('qb_p_vendor');
-			update_post_meta($post_id, 'qb_p_vendor', esc_attr($qb_p_vendor));
+			$this->update_product_meta($post_id, 'qb_p_vendor', $qb_p_vendor);
 		}
 
 		if(isset($_POST['qb_p_category'])){
 			$qb_p_category = $this->var_p('qb_p_category');
-			update_post_meta($post_id, 'qb_p_category', esc_attr($qb_p_category));
+			$this->update_product_meta($post_id, 'qb_p_category', $qb_p_category);
 		}
 
-		if(isset($_POST['qb_p_cost'])){
-			$qb_p_cost = $this->var_p('qb_p_cost');
-			$qb_p_cost = floatval($qb_p_cost);
-			update_post_meta($post_id, 'qb_p_cost', esc_attr($qb_p_cost));
-		}	
 	}
 	
 	public function qb_variation_data_fields( $loop, $variation_data, $variation ) {
@@ -298,7 +310,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Ext extends MyWorks_WC_QBO_Sync_QBO_Lib{
 			$is_vendor_field = true;
 			$qbo_vendor_options = $this->get_key_value_options_from_table(true,$v_tbl,'qbo_vendorid','dname','','dname ASC','');
 			
-			$qb_p_vendor = get_post_meta( $variation->ID, 'qb_p_vendor', true );
+			$qb_p_vendor = $this->get_product_meta( $variation->ID, 'qb_p_vendor', true );
 			if( empty( $qb_p_vendor ) ) $qb_p_vendor = '';
 		}
 		
@@ -325,13 +337,13 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Ext extends MyWorks_WC_QBO_Sync_QBO_Lib{
 		
 		//
 		if(empty($qb_mapped_product)){
-			$qb_income_account = get_post_meta( $variation->ID, 'qb_income_account', true );
+			$qb_income_account = $this->get_product_meta( $variation->ID, 'qb_income_account', true );
 			if( empty( $qb_income_account ) ) $qb_income_account = '';
 			
-			$qb_cogs_account = get_post_meta( $variation->ID, 'qb_cogs_account', true );
+			$qb_cogs_account = $this->get_product_meta( $variation->ID, 'qb_cogs_account', true );
 			if( empty( $qb_cogs_account ) ) $qb_cogs_account = '';
 			
-			$qb_ia_account = get_post_meta( $variation->ID, 'qb_ia_account', true );
+			$qb_ia_account = $this->get_product_meta( $variation->ID, 'qb_ia_account', true );
 			if( empty( $qb_ia_account ) ) $qb_ia_account = '';
 			
 			if($this->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection') && !$this->is_connected()){
@@ -417,7 +429,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Ext extends MyWorks_WC_QBO_Sync_QBO_Lib{
 		/**/		
 		if(!$this->get_session_val('mw_qvdf_s2_js',false,true)){
 			$MWQS_OF = new MyWorks_WC_QBO_Sync_Oth_Funcs();
-			echo $MWQS_OF->get_select2_js('.mwqbos_cpd_s2','qbo_product','yes');
+			echo $MWQS_OF->get_select2_js('.mwqbos_cpd_s2','qbo_product','yes'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}		
 		$this->set_session_val('mw_qvdf_s2_js',true);
 	}
@@ -428,7 +440,7 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Ext extends MyWorks_WC_QBO_Sync_QBO_Lib{
 			global $wpdb;
 			$pm_tbl = $wpdb->prefix.'mw_wc_qbo_sync_variation_pairs';
 			
-			$qb_mapped_product = $this->sanitize($_POST['qb_mapped_product'][ $post_id ]);
+			$qb_mapped_product = $this->sanitize(sanitize_text_field(wp_unslash($_POST['qb_mapped_product'][ $post_id ])));
 			//update_post_meta($post_id, 'qb_mapped_product', esc_attr($qb_mapped_product));
 			
 			$save_data = array();
@@ -445,23 +457,23 @@ class MyWorks_WC_QBO_Sync_QBO_Lib_Ext extends MyWorks_WC_QBO_Sync_QBO_Lib{
 		}
 		
 		if(isset($_POST['qb_income_account'][ $post_id ])){
-			$qb_income_account = $this->sanitize($_POST['qb_income_account'][ $post_id ]);
-			update_post_meta($post_id, 'qb_income_account', esc_attr($qb_income_account));
+			$qb_income_account = $this->sanitize(sanitize_text_field(wp_unslash($_POST['qb_income_account'][ $post_id ])));
+			$this->update_product_meta($post_id, 'qb_income_account', $qb_income_account);
 		}
 		
 		if(isset($_POST['qb_cogs_account'][ $post_id ])){
-			$qb_cogs_account = $this->sanitize($_POST['qb_cogs_account'][ $post_id ]);
-			update_post_meta($post_id, 'qb_cogs_account', esc_attr($qb_cogs_account));
+			$qb_cogs_account = $this->sanitize(sanitize_text_field(wp_unslash($_POST['qb_cogs_account'][ $post_id ])));
+			$this->update_product_meta($post_id, 'qb_cogs_account', $qb_cogs_account);
 		}
 		
 		if(isset($_POST['qb_ia_account'][ $post_id ])){
-			$qb_ia_account = $this->sanitize($_POST['qb_ia_account'][ $post_id ]);
-			update_post_meta($post_id, 'qb_ia_account', esc_attr($qb_ia_account));
+			$qb_ia_account = $this->sanitize(sanitize_text_field(wp_unslash($_POST['qb_ia_account'][ $post_id ])));
+			$this->update_product_meta($post_id, 'qb_ia_account', $qb_ia_account);
 		}
 		
 		if(isset($_POST['qb_p_vendor'][ $post_id ])){
-			$qb_p_vendor = $this->sanitize($_POST['qb_p_vendor'][ $post_id ]);
-			update_post_meta($post_id, 'qb_p_vendor', esc_attr($qb_p_vendor));
+			$qb_p_vendor = $this->sanitize(sanitize_text_field(wp_unslash($_POST['qb_p_vendor'][ $post_id ])));
+			$this->update_product_meta($post_id, 'qb_p_vendor', $qb_p_vendor);
 		}		
 		
 	}

@@ -205,7 +205,7 @@ class QuickBooks_SQL_Schema
 	 */
 	static protected function _transform($curpath, $node, &$tables)
 	{
-		print('' . $curpath . '   node: ' . $node->name() . "\n");
+		echo esc_html('' . $curpath . '   node: ' . $node->name() . "\n");
 		
 		$table = '';
 		$field = '';
@@ -222,8 +222,8 @@ class QuickBooks_SQL_Schema
 			/*
 			if (!$sql[0] or !$sql[1])
 			{
-				print('		table for node: ' . $sql[0] . "\n");
-				print('		field for node: ' . $sql[1] . "\n");
+				echo esc_html('		table for node: ' . $sql[0] . "\n");
+				echo esc_html('		field for node: ' . $sql[1] . "\n");
 			}
 			else
 			{

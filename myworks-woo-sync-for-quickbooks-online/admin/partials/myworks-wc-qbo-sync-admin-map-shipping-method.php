@@ -6,14 +6,23 @@ global $MWQS_OF;
 global $MSQS_QL;
 global $wpdb;
 
+/*
 if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
 	$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true);	
 }
+*/
 
 $page_url = 'admin.php?page=myworks-wc-qbo-map&tab=shipping-method';
 
 $wc_sh_methods = WC()->shipping->load_shipping_methods();
 //$MSQS_QL->_p($wc_sh_methods);
+
+# New
+if($MSQS_QL->use_new_qbo_local_data('class') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_classes_data_fetched') != 'true'){
+	# Fetch and save new QBO classes into DB
+	$MSQS_QL->save_all_classes();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_classes_data_fetched','true',false);
+}
 
 if (! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_shipping_method', 'map_wc_qbo_shipping_method' ) ) {
 	$item_ids = array();
@@ -31,7 +40,7 @@ if (! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_sh
 		foreach ($item_ids as $key=>$value){
 			$save_data = array();			
 			$save_data['qbo_product_id'] = $value;
-			$save_data['class_id'] = (isset($_POST['class_map_shipping_method_'.$key]))?$_POST['class_map_shipping_method_'.$key]:'';
+			$save_data['class_id'] = (isset($_POST['class_map_shipping_method_'.$key])) ? sanitize_text_field($_POST['class_map_shipping_method_'.$key]) : '';
 			
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_shipping_product_map';
 			if($MSQS_QL->get_field_by_val($table,'id','wc_shippingmethod',$key)){
@@ -64,12 +73,12 @@ if(is_array($sm_map_data) && count($sm_map_data)){
 <?php require_once plugin_dir_path( __FILE__ ) . 'myworks-wc-qbo-sync-admin-map-nav.php' ?>
 
 <div class="container map-shipping-method-outer">
-	<div class="page_title"><h4><?php _e( 'Shipping Method Mappings', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Shipping Method Mappings', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card">
 		<div class="card-content">
 			<div class="row">
 			<?php if(is_array($wc_sh_methods) && count($wc_sh_methods)):?>
-				<form method="POST" class="col s12 m12 l12" action="<?php echo $page_url;?>">
+				<form method="POST" class="col s12 m12 l12" action="<?php echo esc_url($page_url);?>">
 					<div class="row">
 						<div class="col s12 m12 l12">
 							<div class="myworks-wc-qbo-sync-table-responsive">
@@ -80,27 +89,27 @@ if(is_array($sm_map_data) && count($sm_map_data)){
 	                                            Woocommerce Shipping Method								    	
 	                                        </th>
 	                                        <th width="25%" class="title-description">
-	                                            Quickbooks Product								    	
+	                                            QuickBooks Product								    	
 	                                        </th>
 	                                        <th width="25%" class="title-description">
-	                                            Quickbooks Class
+	                                            QuickBooks Class
 	                                        </th>
 	                                    </tr>
 	                                 </thead>   
 									<?php foreach($wc_sh_methods as $sm_key => $sm_val):?>
 									<tr>
 										<td>
-										<b><?php echo $sm_val->method_title;?></b> (<?php echo $sm_key;?>)
-										<p><?php echo stripslashes(strip_tags($sm_val->method_description));?></p>
+										<b><?php echo esc_html($sm_val->method_title);?></b> (<?php echo esc_html($sm_key);?>)
+										<p><?php echo esc_html(stripslashes(strip_tags($sm_val->method_description)));?></p>
 										</td>
 										<td>
-											<select name="map_shipping_method_<?php echo $sm_key?>" id="map_shipping_method_<?php echo $sm_key?>">
-												<?php echo $qbo_product_options;?>
+											<select name="map_shipping_method_<?php echo esc_attr($sm_key)?>" id="map_shipping_method_<?php echo esc_attr($sm_key)?>"
+												<?php echo wp_kses($qbo_product_options, array('option' => array('value' => array(), 'selected' => array())));?>
 											</select>
 										</td>
 										<td>
-											<select name="class_map_shipping_method_<?php echo $sm_key?>" id="class_map_shipping_method_<?php echo $sm_key?>">
-												<?php echo $qbo_class_options;?>
+											<select name="class_map_shipping_method_<?php echo esc_attr($sm_key)?>" id="class_map_shipping_method_<?php echo esc_attr($sm_key)?>"
+												<?php echo wp_kses($qbo_class_options, array('option' => array('value' => array(), 'selected' => array())));?>
 											</select>
 										</td>
 									</tr>
@@ -121,7 +130,7 @@ if(is_array($sm_map_data) && count($sm_map_data)){
 			<?php else:?>
 				
 				<h4 class="mw_mlp_ndf">
-					<?php _e( 'No available shipping methods to display.', 'mw_wc_qbo_sync' );?>
+					<?php esc_html_e( 'No available shipping methods to display.', 'mw_wc_qbo_sync' );?>
 				</h4>
 			<?php endif;?>
 			</div>
@@ -131,8 +140,8 @@ if(is_array($sm_map_data) && count($sm_map_data)){
 <?php if($selected_options_script!=''):?>
 <script type="text/javascript">
 jQuery(document).ready(function(){
-	<?php echo $selected_options_script;?>
+	<?php echo wp_kses($selected_options_script, array('script' => array()));?>
 });
 </script>
 <?php endif;?>
-<?php echo $MWQS_OF->get_select2_js();?>
+<?php echo $MWQS_OF->get_select2_js(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized in get_select2_js function?>

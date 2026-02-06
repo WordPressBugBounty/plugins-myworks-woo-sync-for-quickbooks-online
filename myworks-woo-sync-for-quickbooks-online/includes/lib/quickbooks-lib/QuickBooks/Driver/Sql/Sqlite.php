@@ -307,7 +307,7 @@ class QuickBooks_Driver_Sql_Sqlite extends QuickBooks_Driver_Sql
      */
     protected function _connect($host, $port, $user, $pass, $db, $new_link, $client_flags)
     {
-        $this->_conn = sqlite_open($db) or die('db: ' . $db . '');
+        $this->_conn = sqlite_open($db) or die('db: ' . esc_html($db) . '');
 
         return true;
     }
@@ -358,7 +358,7 @@ class QuickBooks_Driver_Sql_Sqlite extends QuickBooks_Driver_Sql
 
             //print($sql);
 
-            trigger_error('Error Num.: ' . $errnum . "\n" . 'Error Msg.:' . $errmsg . "\n" . 'SQL: ' . $sql, E_USER_ERROR);
+            trigger_error('Error Num.: ' . esc_html($errnum) . "\n" . 'Error Msg.:' . esc_html($errmsg) . "\n" . 'SQL: ' . esc_html($sql), E_USER_ERROR);
             return false;
         }
 

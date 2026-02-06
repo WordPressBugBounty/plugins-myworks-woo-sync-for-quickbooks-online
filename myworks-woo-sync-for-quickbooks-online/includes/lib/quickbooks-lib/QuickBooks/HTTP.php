@@ -397,7 +397,8 @@ class QuickBooks_HTTP
 
 		if ($this->_debug)
 		{
-			print($message . QUICKBOOKS_CRLF);
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- QUICKBOOKS_CRLF is a safe constant for line endings
+			print(esc_html($message) . QUICKBOOKS_CRLF);
 		}
 
 		//
@@ -443,7 +444,8 @@ class QuickBooks_HTTP
 
 		if (!function_exists('curl_init'))
 		{
-			die('You must have the PHP cURL extension (php.net/curl) enabled to use this (' . QUICKBOOKS_PACKAGE_NAME . ' v' . QUICKBOOKS_PACKAGE_VERSION . ').');
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- QUICKBOOKS_PACKAGE_NAME and QUICKBOOKS_PACKAGE_VERSION are safe constants from third-party library
+		die('You must have the PHP cURL extension (php.net/curl) enabled to use this (' . QUICKBOOKS_PACKAGE_NAME . ' v' . QUICKBOOKS_PACKAGE_VERSION . ').');
 		}
 
 		$this->_log('Using CURL to send request!', QUICKBOOKS_LOG_DEVELOP);

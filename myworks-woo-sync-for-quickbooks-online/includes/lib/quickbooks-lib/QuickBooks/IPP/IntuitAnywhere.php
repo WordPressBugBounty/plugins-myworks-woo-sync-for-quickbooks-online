@@ -413,29 +413,38 @@ class QuickBooks_IPP_IntuitAnywhere
 		}
 		else
 		{
-			error_log(print_r($_REQUEST, true));
+			// Debug log (sanitized for security)
+			$sanitized_request = array();
+			foreach ($_REQUEST as $key => $value) {
+				$sanitized_request[sanitize_text_field($key)] = sanitize_text_field($value);
+			}
+			error_log(print_r($sanitized_request, true));
 
 			if ($this->_oauth_version == self::OAUTH_V1 and
 				isset($_GET['oauth_token']))
 			{
 				// We're in the middle of an OAuth v1 token session
+				$oauth_token = sanitize_text_field($_GET['oauth_token']);
 
-				if ($arr = $this->_driver->oauthRequestResolveV1($_GET['oauth_token']))
+				if ($arr = $this->_driver->oauthRequestResolveV1($oauth_token))
 				{
+					$oauth_verifier = isset($_GET['oauth_verifier']) ? sanitize_text_field($_GET['oauth_verifier']) : '';
 					$info = $this->_getAccessToken(
 						$arr['oauth_request_token'],
 						$arr['oauth_request_token_secret'],
-						$_GET['oauth_verifier']);
+						$oauth_verifier);
 
 					if ($info)
 					{
+						$realm_id = isset($_GET['realmId']) ? sanitize_text_field($_GET['realmId']) : '';
+						$data_source = isset($_GET['dataSource']) ? sanitize_text_field($_GET['dataSource']) : '';
 						$this->_driver->oauthAccessWriteV1(
 							$this->_key,
 							$arr['oauth_request_token'],
 							$info['oauth_token'],
 							$info['oauth_token_secret'],
-							$_GET['realmId'],
-							$_GET['dataSource']);
+							$realm_id,
+							$data_source);
 
 						header('Location: ' . $this->_that_url);
 						exit;
@@ -453,8 +462,11 @@ class QuickBooks_IPP_IntuitAnywhere
 			}
 			else if ($this->_oauth_version == self::OAUTH_V2 and
 				!empty($_GET['code']) and
-				!empty($_GET['state']) and
-				$info = $this->_driver->oauthRequestResolveV2($_GET['state']))
+				!empty($_GET['state']))
+			{
+				$code = sanitize_text_field($_GET['code']);
+				$state = sanitize_text_field($_GET['state']);
+				if ($info = $this->_driver->oauthRequestResolveV2($state))
 			{
 				// Try to get an access/refresh token here
 
@@ -463,7 +475,7 @@ class QuickBooks_IPP_IntuitAnywhere
 					$ch = curl_init($discover['token_endpoint']);
 
 					curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(array(
-						'code' => $_GET['code'],
+						'code' => $code,
 						'redirect_uri' => $this->_this_url,
 						'grant_type' => 'authorization_code',
 						)));
@@ -479,14 +491,15 @@ class QuickBooks_IPP_IntuitAnywhere
 					{
 						$json = json_decode($retr, true);
 
+						$realm_id_v2 = isset($_GET['realmId']) ? sanitize_text_field($_GET['realmId']) : '';
 						$this->_driver->oauthAccessWriteV2(
 							$this->_key,
-							$_GET['state'],
+							$state,
 							$json['access_token'],
 							$json['refresh_token'],
 							date('Y-m-d H:i:s', time() + (int) $json['expires_in']),
 							date('Y-m-d H:i:s', time() + (int) $json['x_refresh_token_expires_in']),
-							$_GET['realmId']);
+							$realm_id_v2);
 
 						header('Location: ' . $this->_that_url);
 						exit;
@@ -497,7 +510,7 @@ class QuickBooks_IPP_IntuitAnywhere
 						return false;
 					}
 				}
-
+			}
 			}
 			else
 			{

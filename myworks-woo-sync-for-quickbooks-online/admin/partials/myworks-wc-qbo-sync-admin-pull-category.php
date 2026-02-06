@@ -48,7 +48,7 @@ if(is_array($qbo_category_list) && count($qbo_category_list)){
 }
 ?>
 <div class="container">
-	<div class="page_title"><h4><?php _e( 'Category Pull', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Category Pull', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="card pull-block-responsive">
 		<div class="card-content">
 
@@ -58,11 +58,11 @@ if(is_array($qbo_category_list) && count($qbo_category_list)){
 									<div class="mw_wc_filter">
 									 <span class="search_text">Search</span>
 									  &nbsp;
-									  <input placeholder="<?php echo __('Name','mw_wc_qbo_sync')?>" type="text" id="category_pull_search" value="<?php echo esc_attr($category_pull_search);?>">
+									  <input placeholder="<?php echo esc_html__('Name','mw_wc_qbo_sync')?>" type="text" id="category_pull_search" value="<?php echo esc_attr($category_pull_search);?>">
 									  &nbsp;
-									  <input class="mwqs_datepicker" placeholder="<?php echo __('Created from yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="category_pull_date_from" value="<?php echo esc_attr($category_pull_date_from);?>">
+									  <input class="mwqs_datepicker" placeholder="<?php echo esc_html__('Created from yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="category_pull_date_from" value="<?php echo esc_attr($category_pull_date_from);?>">
 									  &nbsp;
-									  <input class="mwqs_datepicker" placeholder="<?php echo __('Created to yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="category_pull_date_to" value="<?php echo esc_attr($category_pull_date_to);?>">
+									  <input class="mwqs_datepicker" placeholder="<?php echo esc_html__('Created to yyyy-mm-dd','mw_wc_qbo_sync')?>" type="text" id="category_pull_date_to" value="<?php echo esc_attr($category_pull_date_to);?>">
 									  &nbsp;									  
 									  <button onclick="javascript:search_item();" class="btn btn-info">Filter</button>
 									  &nbsp;
@@ -70,16 +70,16 @@ if(is_array($qbo_category_list) && count($qbo_category_list)){
 									  <span class="filter-right-sec">
 										  <span class="entries">Show entries</span>
 										  &nbsp;
-										  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url($page_url);?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-											<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+										  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_attr($MSQS_QL->per_page_keyword);?>='+this.value;">
+											<?php echo wp_kses($MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 										 </select>
 									 </span>
 									 </div>
 									 <br />
 									 <div class="row">						
 										<div class="input-field col s12 m12 14">
-											<button id="pull_selected_category_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo __('Pull Selected Categories','mw_wc_qbo_sync')?></button>
-											<button style="display:none;" disabled="disabled" id="pull_all_category_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo __('Pull All Categories','mw_wc_qbo_sync')?></button>
+											<button id="pull_selected_category_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo esc_html__('Pull Selected Categories','mw_wc_qbo_sync')?></button>
+											<button style="display:none;" disabled="disabled" id="pull_all_category_btn" class="waves-effect waves-light btn save-btn mw-qbo-sync-green"><?php echo esc_html__('Pull All Categories','mw_wc_qbo_sync')?></button>
 											
 										</div>
 									</div>
@@ -97,11 +97,11 @@ if(is_array($qbo_category_list) && count($qbo_category_list)){
 														<input type="checkbox" onclick="javascript:mw_qbo_sync_check_all(this,'category_pull_')">
 													</th>
 													<th width="5%">Id</th>													
-													<th width="30%"><?php _e( 'Name', 'mw_wc_qbo_sync' ) ?></th>
-													<th width="28%"><?php _e( 'Parent', 'mw_wc_qbo_sync' ) ?></th>
-													<th width="10%"><?php _e( 'Active', 'mw_wc_qbo_sync' ) ?></th>											
-													<th title="CreateTime" width="20%"><?php _e( 'Created', 'mw_wc_qbo_sync' ) ?></th>
-													<th width="5%">Sync</br>Status</th>
+													<th width="30%"><?php esc_html_e( 'Name', 'mw_wc_qbo_sync' ) ?></th>
+													<th width="28%"><?php esc_html_e( 'Parent', 'mw_wc_qbo_sync' ) ?></th>
+													<th width="10%"><?php esc_html_e( 'Active', 'mw_wc_qbo_sync' ) ?></th>										
+													<th title="CreateTime" width="20%"><?php esc_html_e( 'Created', 'mw_wc_qbo_sync' ) ?></th>
+													<th width="5%"><?php echo wp_kses( __( 'Sync<br>Status', 'mw_wc_qbo_sync' ), array( 'br' => array() ) ); ?></th>
 												</tr>
 											</thead>
 											
@@ -113,29 +113,29 @@ if(is_array($qbo_category_list) && count($qbo_category_list)){
 													<tr>
 														<td><input type="checkbox" id="category_pull_<?php echo (int) $category_id?>"></td>
 														<td><?php echo (int) $category_id?></td>														
-														<td><?php echo $MSQS_QL->escape($category->getName());?></td>
+														<td><?php echo esc_html($MSQS_QL->escape($category->getName()));?></td>
 														<td>
 														<?php 
 															if($category->countSubItem() && $category->getSubItem()=='true'){
 																$ParentRef_name = $category->getParentRef_name();
-																echo $MSQS_QL->escape($ParentRef_name.' (#'.$MSQS_QL->qbo_clear_braces($category->getParentRef()).')');
+																echo esc_html($MSQS_QL->escape($ParentRef_name.' (#'.$MSQS_QL->qbo_clear_braces($category->getParentRef()).')'));
 															}
 														?>
 														</td>
-														<td><?php echo $MSQS_QL->escape($category->getActive());?></td>		
-														<td><?php echo $MSQS_QL->escape($MSQS_QL->view_date($category->getMetaData()->getCreateTime(),'Y-m-d H:i:s'));?></td>
-														<td class="ph_cat_ss" id="ph_cat_ss_<?php echo md5(base64_encode($category->getName()));?>"></td>
+														<td><?php echo esc_html($MSQS_QL->escape($category->getActive()));?></td>		
+														<td><?php echo esc_html($MSQS_QL->escape($MSQS_QL->view_date($category->getMetaData()->getCreateTime(),'Y-m-d H:i:s')));?></td>
+														<td class="ph_cat_ss" id="ph_cat_ss_<?php echo esc_attr(md5(base64_encode($category->getName())));?>"></td>
 													</tr>
 												<?php endforeach;?>
 											 </tbody>
 										</table>
 										</div>
 									</div>
-									<?php echo $pagination_links?>
+									<?php echo $pagination_links; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 									<?php else:?>
 									
 									<h4 class="mw_mlp_ndf">
-										<?php _e( 'No available categories to display.', 'mw_wc_qbo_sync' );?>
+										<?php esc_html_e( 'No available categories to display.', 'mw_wc_qbo_sync' );?>
 									</h4>
 									<?php endif;?>
 								
@@ -161,14 +161,14 @@ if(is_array($qbo_category_list) && count($qbo_category_list)){
 		category_pull_date_to = jQuery.trim(category_pull_date_to);
 		
 		if(category_pull_search!='' || category_pull_date_from!='' || category_pull_date_to!=''){		
-			window.location = '<?php echo $page_url;?>&category_pull_search='+category_pull_search+'&category_pull_date_from='+category_pull_date_from+'&category_pull_date_to='+category_pull_date_to;
+			window.location = '<?php echo esc_url_raw($page_url);?>&category_pull_search='+category_pull_search+'&category_pull_date_from='+category_pull_date_from+'&category_pull_date_to='+category_pull_date_to;
 		}else{
-			alert('<?php echo __('Please enter search keyword or dates.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_html__('Please enter search keyword or dates.','mw_wc_qbo_sync')?>');
 		}
 	}
 
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&category_pull_search=&category_pull_date_from=&category_pull_date_to=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&category_pull_search=&category_pull_date_from=&category_pull_date_to=';
 	}
 	
 	jQuery(document).ready(function($) {
@@ -179,8 +179,8 @@ if(is_array($qbo_category_list) && count($qbo_category_list)){
 		 <?php
 			$sync_status_html = '<i title="WooCommerce Product Category Id #'.$pmd['Id'].'" class="fa fa-check-circle" style="color:green"></i>';			
 		 ?>
-		 list_ids.push("<?php echo $pmd['Name']?>");		 
-		 jQuery('#ph_cat_ss_<?php echo $pmd['Name']?>').html('<?php echo $sync_status_html?>');
+		 list_ids.push("<?php echo esc_js($pmd['Name']);?>");		 
+		 jQuery('#ph_cat_ss_<?php echo esc_js($pmd['Name']);?>').html('<?php echo $sync_status_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>');
 		 <?php endforeach;?>
 		 <?php endif;?>
 		 <?php unset($pull_map_data_arr);?>
@@ -213,16 +213,16 @@ if(is_array($qbo_category_list) && count($qbo_category_list)){
 			}
 			
 			if(item_checked==0){
-				alert('<?php echo __('Please select at least one item.','mw_wc_qbo_sync');?>');
+				alert('<?php echo esc_html__('Please select at least one item.','mw_wc_qbo_sync');?>');
 				return false;
 			}
 			
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=pull&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_category_pull',0,0,650,350);
+			popUpWindow('<?php echo esc_url_raw($sync_window_url);?>&sync_type=pull&item_ids='+item_ids+'&item_type='+item_type,'mw_qs_category_pull',0,0,650,350);
 			return false;
 		});
 		
 		$('#pull_all_category_btn').click(function(){
-			popUpWindow('<?php echo $sync_window_url;?>&sync_type=pull&sync_all=1&item_type='+item_type,'mw_qs_category_pull',0,0,650,350);
+			popUpWindow('<?php echo esc_url_raw($sync_window_url);?>&sync_type=pull&sync_all=1&item_type='+item_type,'mw_qs_category_pull',0,0,650,350);
 			return false;
 		});	
 		
@@ -240,4 +240,4 @@ if(is_array($qbo_category_list) && count($qbo_category_list)){
 		);
 	  } );
  </script>
- <?php echo $MWQS_OF->get_tablesorter_js('#mwqs_category_pull_table');?>
+ <?php echo wp_kses( $MWQS_OF->get_tablesorter_js('#mwqs_category_pull_table'), array('script' => array('src' => array(), 'type' => array(), 'crossorigin' => array(), 'onerror' => array()), 'style' => array()) );?>

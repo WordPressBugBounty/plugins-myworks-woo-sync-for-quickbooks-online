@@ -9,7 +9,7 @@ if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
 
 MyWorks_WC_QBO_Sync_Admin::is_trial_version_check();
 MyWorks_WC_QBO_Sync_Admin::get_settings_assets(1);
-$tab = isset($_GET['tab']) ? $_GET['tab'] : '';
+$tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : '';
 
 global $wpdb;
 $wc_tot_tax_rates = (int) $wpdb->get_var("SELECT COUNT(*) FROM `".$wpdb->prefix."woocommerce_tax_rates` WHERE `tax_rate_id` >0 ");

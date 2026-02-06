@@ -91,12 +91,12 @@ if($qb_customer_id > 0 && ($qrts == 'Invoice' || $qrts == 'Invoice_SalesReceipt'
 
 	<script type='text/javascript' src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.js"></script>
 	<script type='text/javascript' src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
-	<link rel='stylesheet' href='<?php echo dirname(plugin_dir_url( __FILE__ ));?>/css/myworks-wc-qbo-sync-public.css' type='text/css' media='all' />
+	<link rel='stylesheet' href='<?php echo esc_url(dirname(plugin_dir_url( __FILE__ )));?>/css/myworks-wc-qbo-sync-public.css' type='text/css' media='all' />
 </head>
 <body>
 	<div class="invoice_container mw_wsfqo_p_ic">
 	   <h2 class="mw_wsfqo_cbh2">
-	   		Balance: <span id="mw_wsfqo_cbh2_sp"><?php echo $qb_cus_cur;?><?php echo number_format($qb_cus_bl,2);?></span>
+	   		Balance: <span id="mw_wsfqo_cbh2_sp"><?php echo esc_html($qb_cus_cur);?><?php echo esc_html(number_format($qb_cus_bl,2));?></span>
 	   </h2>
 	  <h2 class="mw_wsfqo_mih2">Manage Invoices</h2>   
 	  <?php if(is_array($qbo_invoice_list) && count($qbo_invoice_list)):?>
@@ -119,7 +119,7 @@ if($qb_customer_id > 0 && ($qrts == 'Invoice' || $qrts == 'Invoice_SalesReceipt'
 		
 		/**/
 		$qbo_inv_currency = str_replace(array('{','-','}'),array('','',''),$Invoice->getCurrencyRef());
-		$qbo_inv_currency_symbol = get_woocommerce_currency_symbol($qbo_inv_currency);
+		$qbo_inv_currency_symbol = esc_html(get_woocommerce_currency_symbol($qbo_inv_currency));
 		
 		$Balance = (float) $Invoice->getBalance();
 		$TotalAmt = (float) $Invoice->getTotalAmt();
@@ -162,24 +162,24 @@ if($qb_customer_id > 0 && ($qrts == 'Invoice' || $qrts == 'Invoice_SalesReceipt'
 		
 		?>
 	      <tr>
-	        <td>#<?php echo $Invoice->getDocNumber();?></td>
-	        <td><?php echo $TxnDate;?></td>
-	        <td><?php echo $DueDate;?></td>
-			<td><?php echo $qbo_inv_currency_symbol;?><?php echo number_format($Invoice->getBalance(),2);?></td>
-	        <td><?php echo $qbo_inv_currency_symbol;?><?php echo number_format($Invoice->getTotalAmt(),2);?></td>
-			<td><?php echo $qb_inv_status;?></td>
+	        <td>#<?php echo esc_html($Invoice->getDocNumber());?></td>
+	        <td><?php echo esc_html($TxnDate);?></td>
+	        <td><?php echo esc_html($DueDate);?></td>
+			<td><?php echo esc_html($qbo_inv_currency_symbol);?><?php echo esc_html(number_format($Invoice->getBalance(),2));?></td>
+	        <td><?php echo esc_html($qbo_inv_currency_symbol);?><?php echo esc_html(number_format($Invoice->getTotalAmt(),2));?></td>
+			<td><?php echo esc_html($qb_inv_status);?></td>
 	        <td>
-				<a target="_blank" href="<?php echo $pdf_url.$qbo_id;?>"><button type="button" class="btn btn-pdf">VIEW<!--PDF--></button></a>
+				<a target="_blank" href="<?php echo esc_url($pdf_url.$qbo_id);?>"><button type="button" class="btn btn-pdf">VIEW<!--PDF--></button></a>
 				<?php if(!empty($qbo_href)):?>
 				&nbsp;
-				<a href="<?php echo $qbo_href?>" target="_blank"><button type="button" class="btn btn-pay">Pay</button></a>
+				<a href="<?php echo esc_url($qbo_href);?>" target="_blank"><button type="button" class="btn btn-pay">Pay</button></a>
 				<?php endif;?>
 			</td>
 	      </tr>
 		  <?php endforeach;?>
 	    </tbody>
 	  </table>
-	  <?php echo $pagination_links?>
+	  <?php echo wp_kses_post($pagination_links);?>
 	  
 	 <?php else:?>
 		 <?php if($qb_customer_id < 1): ?>

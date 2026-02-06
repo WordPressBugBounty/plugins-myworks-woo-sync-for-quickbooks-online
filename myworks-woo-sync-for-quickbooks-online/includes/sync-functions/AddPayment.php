@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) )
 exit;
 
 /**
- * Add Payment Into Quickbooks Online.
+ * Add Payment Into QuickBooks Online.
  *
  * @since    1.0.0
  * Last Updated: 2019-01-25

@@ -50,6 +50,7 @@ class QuickBooks_QBXML_Schema_Generator
 			
 			foreach ($children as $Action)
 			{
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Third-party QuickBooks library debug output
 				print('Action name is: ' . $Action->name() . "\n");
 				
 				//if ($Action->name() != 'VendorAddRq')
@@ -77,6 +78,7 @@ class QuickBooks_QBXML_Schema_Generator
 					{
 						$wrapper = $first->name();
 						
+						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Third-party QuickBooks library debug output
 						print('	WRAPPER NODE IS: ' . $wrapper . "\n");
 					}
 				}
@@ -139,6 +141,7 @@ class QuickBooks_QBXML_Schema_Generator
 				//print(var_export($paths_isrepeatable));
 				//print(var_export($paths_reorder));
 				
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Third-party QuickBooks library template system
 				$contents = file_get_contents('/home/asdg/QuickBooks/QBXML/Schema/Object/Template.php');
 				
 				$contents = str_replace('Template', $Action->name(), $contents);
@@ -150,8 +153,11 @@ class QuickBooks_QBXML_Schema_Generator
 				$contents = str_replace('\'_isRepeatablePaths\'', var_export($paths_isrepeatable, true), $contents);
 				$contents = str_replace('\'_reorderPaths\'', var_export($paths_reorder, true), $contents);
 				
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fopen -- Third-party QuickBooks library template system
 				$fp = fopen('/home/adg/QuickBooks/tmp/' . $Action->name() . '.php', 'w+');
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite -- Third-party QuickBooks library template system
 				fwrite($fp, $contents);
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose -- Third-party QuickBooks library template system
 				fclose($fp);
 				
 				print("\n\n");

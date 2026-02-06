@@ -137,20 +137,20 @@ if ( ! defined( 'ABSPATH' ) )
 <?php if($MWQS_OF->is_valid_license($mw_wc_qbo_sync_license,$mw_wc_qbo_sync_localkey)):?>
 <div class="mwqs_conection_options">
 	<h4>
-	Step 1:	<?php echo __('Enter License Key','mw_wc_qbo_sync');?>
+	Step 1:	<?php echo esc_html__('Enter License Key','mw_wc_qbo_sync');?>
 	</h4>
 	
-	<form method="post" action="<?php echo $page_url;?>">
+	<form method="post" action="<?php echo esc_url($page_url);?>">
 		<div class="myworks-wc-qbo-sync-table-responsive">
 			<table class="widefat fixed">
 				<tr>
 					<td width="20%"><label for="mw_wc_qbo_sync_license_update" class="mw_wc_qbo_sync_label">License Key:</label></td>
 					<td  width="50%">
-					<input class="mw_wc_qbo_sync_input" type="text" name="mw_wc_qbo_sync_license_update" id="mw_wc_qbo_sync_license_update" value="<?php echo $mw_wc_qbo_sync_license; ?>" required="required" disabled="disabled"/>
+					<input class="mw_wc_qbo_sync_input" type="text" name="mw_wc_qbo_sync_license_update" id="mw_wc_qbo_sync_license_update" value="<?php echo esc_attr($mw_wc_qbo_sync_license); ?>" required="required" disabled="disabled"/>
 					&nbsp;<span class="mw_wc_qbo_sync_span"></span>
 					
 					&nbsp;
-					<a id="mwqs_dllk" title="<?php echo __('Refresh your license information','mw_wc_qbo_sync');?>" href="javascript:void(0)" onclick="">
+					<a id="mwqs_dllk" title="<?php echo esc_html__('Refresh your license information','mw_wc_qbo_sync');?>" href="javascript:void(0)" onclick="">
 						<i class="fa fa-refresh"></i> Refresh
 					</a>
 					<?php wp_nonce_field( 'myworks_wc_qbo_sync_del_license_local_key', 'del_license_local_key' );?>
@@ -159,7 +159,7 @@ if ( ! defined( 'ABSPATH' ) )
 					<td  width="30%">
 						<p class="mw_wc_qbo_sync_paragraph">
 						<?php 
-						echo __('To update your license key, deactivate and re-activate the plugin. All your settings and mappings will be saved.','mw_wc_qbo_sync');
+						echo esc_html__('To update your license key, deactivate and re-activate the plugin. All your settings and mappings will be saved.','mw_wc_qbo_sync');
 						?>
 						</p>
 					</td>
@@ -170,12 +170,12 @@ if ( ! defined( 'ABSPATH' ) )
 					<td><label for="mw_wc_qbo_sync_connection_number" class="mw_wc_qbo_sync_label">Connection Number:</label></td>
 					<td>
 					<select class="mw_wc_qbo_sync_input" name="mw_wc_qbo_sync_connection_number" id="mw_wc_qbo_sync_connection_number">
-					<?php echo $MSQS_QL->only_option($mw_wc_qbo_sync_connection_number,$MSQS_QL->wc_connection_num());?>
+					<?php echo wp_kses($MSQS_QL->only_option($mw_wc_qbo_sync_connection_number,$MSQS_QL->wc_connection_num()) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 					</select>
 					</td>
 					<td>
 					<p class="mw_wc_qbo_sync_paragraph">
-					<?php echo __('The default connection is 1, so only change this if you have more than one license/site connecting to the same QuickBooks company.','mw_wc_qbo_sync');?>
+					<?php echo esc_html__('The default connection is 1, so only change this if you have more than one license/site connecting to the same QuickBooks company.','mw_wc_qbo_sync');?>
 					</p>
 					</td>
 				</tr>
@@ -188,7 +188,7 @@ if ( ! defined( 'ABSPATH' ) )
 					</td>
 					<td>
 					<p class="mw_wc_qbo_sync_paragraph">
-					<?php echo __('Select this box to accept webhooks (real-time sync) from this QuickBooks Online company as well as Connection #1.', 'mw_wc_qbo_sync');?>
+					<?php echo esc_html__('Select this box to accept webhooks (real-time sync) from this QuickBooks Online company as well as Connection #1.', 'mw_wc_qbo_sync');?>
 					</p>
 					</td>
 				</tr>
@@ -200,12 +200,12 @@ if ( ! defined( 'ABSPATH' ) )
 					<td><label for="mw_wc_qbo_sync_sandbox_mode" class="mw_wc_qbo_sync_label">Sandbox Mode:</label></td>
 					<td>
 					<select class="mw_wc_qbo_sync_input" name="mw_wc_qbo_sync_sandbox_mode" id="mw_wc_qbo_sync_sandbox_mode">
-					<?php echo $MSQS_QL->only_option($mw_wc_qbo_sync_sandbox_mode,$MSQS_QL->no_yes);?>
+					<?php echo wp_kses($MSQS_QL->only_option($mw_wc_qbo_sync_sandbox_mode,$MSQS_QL->no_yes) ?: '', array('option' => array('value' => array(), 'selected' => array())));?>
 					</select>
 					</td>
 					<td>
 					<p class="mw_wc_qbo_sync_paragraph">
-					<?php echo __('We recommend you set this to NO, unless you have a developer account and are using sandbox.qbo.intuit.com','mw_wc_qbo_sync');?>
+					<?php echo esc_html__('We recommend you set this to NO, unless you have a developer account and are using sandbox.qbo.intuit.com','mw_wc_qbo_sync');?>
 					</p>
 					</td>
 				</tr>			
@@ -288,14 +288,14 @@ jQuery(document).ready(function($){
 
 <div class="mwqs_conection_frame_cont">
 	<h4>
-	Step 2:	<?php echo __('Connect to QuickBooks Online','mw_wc_qbo_sync');?>
+	Step 2:	<?php echo esc_html__('Connect to QuickBooks Online','mw_wc_qbo_sync');?>
 	</h4>
 	<?php if(!$disable_section):?>
-	<iframe src="<?php echo $MSQS_QL->get_quickbooks_connection_dashboard_url();?>/wc-qbo-connection.php?iframe=1&connection=<?php echo (int) $mw_wc_qbo_sync_connection_number;?>&wp_plugin_api_url=<?php echo $wp_plugin_api_url;?>&wp_plugin_qbo_webhook_url=<?php echo $wp_plugin_qbo_webhook_url;?>&enable_webhook=<?php echo $enable_webhook;?><?php echo $sandbox;?><?php echo $extra_connection_params;?>&deposit_data=<?php echo $deposit_ser_cron_data;?>&conn_url=<?php echo $conn_url;?>" height="900" width="100%"></iframe>
+	<iframe src="<?php echo esc_url($MSQS_QL->get_quickbooks_connection_dashboard_url());?>/wc-qbo-connection.php?iframe=1&connection=<?php echo (int) $mw_wc_qbo_sync_connection_number;?>&wp_plugin_api_url=<?php echo esc_url_raw($wp_plugin_api_url);?>&wp_plugin_qbo_webhook_url=<?php echo esc_url_raw($wp_plugin_qbo_webhook_url);?>&enable_webhook=<?php echo esc_attr($enable_webhook);?><?php echo esc_attr($sandbox);?><?php echo esc_attr($extra_connection_params);?>&deposit_data=<?php echo esc_attr($deposit_ser_cron_data);?>&conn_url=<?php echo esc_url_raw($conn_url);?>" height="900" width="100%"></iframe>
 	
 	</br></br>
 	<?php endif;?>
-	<a target="_blank" href="<?php echo $MSQS_QL->get_quickbooks_connection_dashboard_url();?>/clientarea.php?action=productdetails&id=<?php  MyWorks_WC_QBO_Sync_Admin::mw_wc_qbo_get_service_id(); ?>">
+	<a target="_blank" href="<?php echo esc_url($MSQS_QL->get_quickbooks_connection_dashboard_url());?>/clientarea.php?action=productdetails&id=<?php echo (int) MyWorks_WC_QBO_Sync_Admin::mw_wc_qbo_get_service_id(); ?>">
 		<input type="submit" style="text-align:center" class="button button-primary button-large mw_wc_qbo_sync_submit" value="Connect" />
 	</a>	
 </div>
@@ -303,20 +303,20 @@ jQuery(document).ready(function($){
 
 <div class="mwqs_at_cont">
 	<h4>
-	Step 3:	<?php echo __('Enter Access Token','mw_wc_qbo_sync');?>
+	Step 3:	<?php echo esc_html__('Enter Access Token','mw_wc_qbo_sync');?>
 	</h4>
 	
-	<form method="post" action="<?php echo $page_url;?>">
+	<form method="post" action="<?php echo esc_url($page_url);?>">
 	<table class="widefat fixed">
 		<tr>
 			<td><label for="mw_wc_qbo_sync_access_token" class="mw_wc_qbo_sync_label">Access Token:</label></td>
 			<td>
-			<input class="mw_wc_qbo_sync_input" type="text" name="mw_wc_qbo_sync_access_token" id="mw_wc_qbo_sync_access_token" value="<?php echo $mw_wc_qbo_sync_access_token; ?>" required="required"/>
+			<input class="mw_wc_qbo_sync_input" type="text" name="mw_wc_qbo_sync_access_token" id="mw_wc_qbo_sync_access_token" value="<?php echo esc_attr($mw_wc_qbo_sync_access_token); ?>" required="required"/>
 			&nbsp;<span class="mw_wc_qbo_sync_span"></span>
 			</td>
 			<td>
 				<p class="mw_wc_qbo_sync_paragraph">
-					<?php echo __('Enter the access token found inside your account with us after connecting to QuickBooks.','mw_wc_qbo_sync');?>
+					<?php echo esc_html__('Enter the access token found inside your account with us after connecting to QuickBooks.','mw_wc_qbo_sync');?>
 				</p>
 			</td>
 		</tr>
@@ -333,26 +333,26 @@ jQuery(document).ready(function($){
 
 <div class="mwqs_conection_local_info">
 	<h4>	
-	<?php echo __('QuickBooks Online Connection Status','mw_wc_qbo_sync');?>
+	<?php echo esc_html__('QuickBooks Online Connection Status','mw_wc_qbo_sync');?>
 	</h4>
 	
 	<div class="cnctin-infrmtionarea">	
-	<?php echo $local_connection_status_txt;?>
+	<?php echo $local_connection_status_txt; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	
 	<br/>
-	<a id="mwqs_dqcclk" title="<?php echo __('Refresh QuickBooks Connection Status','mw_wc_qbo_sync');?>" href="javascript:void(0)" onclick="">
+	<a id="mwqs_dqcclk" title="<?php echo esc_html__('Refresh QuickBooks Connection Status','mw_wc_qbo_sync');?>" href="javascript:void(0)" onclick="">
 		<i class="fa fa-refresh"></i> Refresh
 	</a>
 	<?php wp_nonce_field( 'myworks_wc_qbo_sync_del_conn_cred_local_key', 'del_conn_cred_local_key' );?>
 	
 	<div class="com-add">
 	<?php  if($MSQS_QL->is_connected()):?>
-	<p>Realm: <?php print($realm); ?></p>
+	<p>Realm: <?php echo esc_html($realm); ?></p>
 	<?php  if(isset($quickbooks_CompanyInfo) && $quickbooks_CompanyInfo):?>
 	<p>Company: 
 	<?php
 	if($quickbooks_CompanyInfo->countCompanyName()){
-		print($quickbooks_CompanyInfo->getCompanyName());
+		echo esc_html($quickbooks_CompanyInfo->getCompanyName());
 	}	 
 	?>
 	</p>
@@ -360,7 +360,7 @@ jQuery(document).ready(function($){
 	<?php
 	if($quickbooks_CompanyInfo->countEmail()){		
 		if(is_object($quickbooks_CompanyInfo->getEmail()) && $quickbooks_CompanyInfo->getEmail()->countAddress()){
-			print($quickbooks_CompanyInfo->getEmail()->getAddress());
+			echo esc_html($quickbooks_CompanyInfo->getEmail()->getAddress());
 		}
 	}	
 	?>
@@ -368,12 +368,12 @@ jQuery(document).ready(function($){
 	<p>Country: 
 	<?php
 	if($quickbooks_CompanyInfo->countCountry()){
-		print($quickbooks_CompanyInfo->getCountry());
+		echo esc_html($quickbooks_CompanyInfo->getCountry());
 	}	 
 	?>
 	</p>
 	<?php else:?>
-	<p style="color:red;"><?php echo __('QuickBooks online company info not found.','mw_wc_qbo_sync');?></p>
+	<p style="color:red;"><?php echo esc_html__('QuickBooks online company info not found.','mw_wc_qbo_sync');?></p>
 	<?php endif;?>
 	
 	<?php endif;?>
@@ -381,7 +381,7 @@ jQuery(document).ready(function($){
 
 	<br />
 	<b style="font-size:16px;">
-	<?php echo __('Click Refresh above to check the latest connection status.','mw_wc_qbo_sync');?>
+	<?php echo esc_html__('Click Refresh above to check the latest connection status.','mw_wc_qbo_sync');?>
 	</b>
 	
 	</div>
@@ -389,18 +389,18 @@ jQuery(document).ready(function($){
 </div>
 
 <?php elseif($MWQS_OF->get_license_status()=='Invalid'):?>
-<div class="qbd_input_license"><p><?php echo __('Please enter a valid license key in order to continue.
+<div class="qbd_input_license"><p><?php echo esc_html__('Please enter a valid license key in order to continue.
 </br></br>
 <strong>Installing for the first time?</strong> Great! Simply enter your key below.
 </br>
 <strong>Moving sites?</strong> Don\'t forget to re-issue your license with us in your account.
 </br></br>','mw_wc_qbo_sync');?></p>
 <?php elseif($MWQS_OF->get_license_status()=='Expired'):?>
-<div class="qbd_input_license"><p><?php echo __('Your license key is <strong>expired</strong>. Please renew your license with us or enter a valid license key in order to continue to use the plugin.','mw_wc_qbo_sync');?></p>
+<div class="qbd_input_license"><p><?php echo esc_html__('Your license key is <strong>expired</strong>. Please renew your license with us or enter a valid license key in order to continue to use the plugin.','mw_wc_qbo_sync');?></p>
 <?php elseif($MWQS_OF->get_license_status()=='Suspended'):?>
-<div class="qbd_input_license"><p><?php echo __('Your license key is <strong>suspended</strong>. Please either upgrade to a paid license by clicking the <strong>Upgrade Now</strong> button above, or enter a valid license key in order to continue.','mw_wc_qbo_sync');?></p>
+<div class="qbd_input_license"><p><?php echo esc_html__('Your license key is <strong>suspended</strong>. Please either upgrade to a paid license by clicking the <strong>Upgrade Now</strong> button above, or enter a valid license key in order to continue.','mw_wc_qbo_sync');?></p>
 <?php else:?>
-<div class="qbd_input_license"><p><?php echo __('Please enter a valid license key to continue. <a href="https://myworks.software/integrations/sync-woocommerce-quickbooks-online?utm_source=plugin_link&utm_medium=link&utm_campaign=plugin_link">Need one? Sign up for an account here.</a>','mw_wc_qbo_sync');?></br></br></p>
+<div class="qbd_input_license"><p><?php echo esc_html__('Please enter a valid license key to continue. <a href="https://myworks.software/integrations/sync-woocommerce-quickbooks-online?utm_source=plugin_link&utm_medium=link&utm_campaign=plugin_link">Need one? Sign up for an account here.</a>','mw_wc_qbo_sync');?></br></br></p>
 <?php endif;?>
 
 <?php if($MWQS_OF->get_license_status()!='Active'):?>
@@ -408,7 +408,7 @@ jQuery(document).ready(function($){
 <div class="mwqs_conection_license_check">
 <form method="post" id="myworks_wc_qbo_sync_check_license">
 	<label for ="mw_wc_qbo_sync_license">License Key: </label>
-	<input type="text" placeholder = "QBOSync-000000000000000000" name="mw_wc_qbo_sync_license" id="mw_wc_qbo_sync_license" value="<?php echo $mw_wc_qbo_sync_license;?>">
+	<input type="text" placeholder = "QBOSync-000000000000000000" name="mw_wc_qbo_sync_license" id="mw_wc_qbo_sync_license" value="<?php echo esc_attr($mw_wc_qbo_sync_license);?>">
 	 <?php wp_nonce_field( 'myworks_wc_qbo_sync_check_license', 'check_plugin_license' ); ?>
 	<input size="30" type="submit" value="Enter" class="button button-primary">
 	<span id="mwqs_license_chk_loader" style="visibility:hidden;">

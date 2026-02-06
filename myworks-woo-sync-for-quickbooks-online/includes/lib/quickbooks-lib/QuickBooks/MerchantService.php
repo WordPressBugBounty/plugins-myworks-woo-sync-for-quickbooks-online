@@ -1837,6 +1837,7 @@ class QuickBooks_MerchantService
 		
 		if ($this->_debug)
 		{
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Third-party QuickBooks library debug output
 			print($message . QUICKBOOKS_CRLF);
 		}
 		

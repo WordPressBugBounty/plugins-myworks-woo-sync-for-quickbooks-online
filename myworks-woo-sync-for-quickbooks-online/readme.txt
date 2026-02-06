@@ -1,11 +1,11 @@
 === MyWorks Sync for WooCommerce & QuickBooks Online ===
 Contributors: myworksdesign
 Donate link: https://myworks.software
-Tags: quickbooks, quickbooks online, quickbooks desktop, woocommerce quickbooks, quickbooks integration
+Tags: quickbooks, quickbooks online, quickbooks desktop, woocommerce quickbooks, woocommerce quickbooks sync
 Requires at least: 5.3
-Stable tag: 2.9.3
+Stable tag: 3.0.3
 Requires PHP: 7.3
-Tested up to: 6.8
+Tested up to: 6.9
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -154,36 +154,29 @@ A: There sure are! We support over 25+ popular WooCommerce extensions - all incl
 6. Advanced payment syncing, including transaction fees & multicurrency support.
 
 == Changelog ==
-
-= 2025-07-15 version 2.9.3 =
-* Updated plugin name to resolve WooCommerce trademark overlap
-
-= 2025-04-10 version 2.9.2 =
-* Updated compatibility with ATUM Inventory plugin to resolve a minor XSS conflict, reproducible only when logged in as an administrator user
-
-= 2025-02-24 version 2.9.1 =
-* Added support for PHP 8.3
-* Updated MyWorks connection process
-* Improved reliability when syncing products, pricing and payments from QuickBooks to WooCommerce
-* Improved QuickBooks API connection efficiency
-* Resolved minor bugs
+= 2025-12-19 version 3.0.3 =
+* Improved order date handling for stores not yet running HPOS
+* Improved view of PDF in WooCommerce order widget
 
 
-= 2024-02-06 version 2.9.0 =
-* Added support for PHP 8.1 and 8.2
-* Added initial support for HPOS (requires compatibility mode enabled)
-* Added support for KWD and IQD currency
-* Added "Setup Tour" to assist with a walkthrough to easily set up initial sync settings
-* Added "Support" widget in the lower right of all sync pages for more easy access to support
-* Updated: Custom Field Mapping will show automatically for users with the correct plan
-* Updated: Product and Variation menus are now separated in our Map and Push tabs
-* Updated: Setup dialog will now only show if QuickBooks is not connected
-* Updated: Customer setting will not be on by default in Settings > Automatic Sync
-* Improved handling for refunds to use our default product setting instead of failing to sync if product not present in refund
-* Improved handling for deactivate/reactivate to ensure that sync settings aren't changed
-* Improved handling for transaction fees from third party plugins
-* Improved handling for batch support for scenarios with custom order numbers
-* Improved handling for syncing order updates - will now sync a payment to QuickBooks when updating an order if the payment doesn't already exist in QuickBooks
-* Improved setting to email invoice to customers from QuickBooks: this will only occur for unpaid orders with an open invoice (and no payment) in QuickBooks
-* Improved ability to search by SKU in Pull > Products tab
-* Removed the "Queue Sync" setting in Settings > Misc, as it's already the default
+= 2025-12-18 version 3.0.2 =
+* Improved order data handling for stores not yet running HPOS
+* Improved handling for syncing fee line items, with the ability to disable if desired
+* Improved compatibility with PHP 8.3 and 8.4
+
+= 2025-12-11 version 3.0.1 =
+* Improved handling for order notes and order dates in stores not yet running HPOS
+* Improved compatibility with PHP 8.3 and 8.4
+
+= 2025-11-30 version 3.0.0 =
+* Added support for PHP 8.4
+* Added full support for stores using HPOS
+* Added support to sync Cost with new WooCommerce Product COGS field
+* Improved efficiency interacting with the QuickBooks Online API 
+* Improved support for WordPress users in multiple roles
+* Improved support to prevent orders being synced more than once together in rare cases
+* Improved handling for shipping tax in orders containing inclusive tax
+* Improved handling for emailing invoices from QuickBooks when order is synced
+* Resolved issue causing products to become unmapped if multiple products are matched to the same QuickBooks item while syncing pricing
+* Removed wp-cron warning message
+* Removed the deletion of our database tables when plugin is deleted from site

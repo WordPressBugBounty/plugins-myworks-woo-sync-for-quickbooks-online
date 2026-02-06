@@ -217,7 +217,7 @@ class QB_Online_Admin_Setup_Wizard {
 	}
 
 	public function qb_online_setup_enqueue_scripts() {
-		$page = isset($_GET['page']) ? $_GET['page'] : '';
+		$page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
 
 		if(!empty($page) && $page=='qb-online-setup') {
 		// Whether or not there is a pending background install of Jetpack.
@@ -331,26 +331,26 @@ $get_account_dropdown_list = $MSQS_QL->get_account_dropdown_list('',true);
 				}else{
 				$dd_options.=$mw_qbo_product_list;
 				}
-				echo $dd_options;
+				echo wp_kses($dd_options, array('option' => array('value' => array(), 'selected' => array()))); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				?>
 				</select>
 
 				<label for="qb_sales_new_products" class="location-prompt"><?php esc_html_e( 'QuickBooks Sales Account for New Products', 'woocommerce' ); ?></label>
 				<select id="qb_sales_new_products" name="qb_sales_new_products" required data-placeholder="<?php esc_attr_e( 'Choose a product&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Product', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
 				<option value=""></option>
-				<?php echo $get_account_dropdown_list; ?>
+				<?php echo wp_kses($get_account_dropdown_list, array('option' => array('value' => array(), 'selected' => array()))); ?>
 				</select>
 
 				<label for="qb_inventory_new_products" class="location-prompt"><?php esc_html_e( 'QuickBooks Inventory Asset Account for New Products', 'woocommerce' ); ?></label>
 				<select id="qb_inventory_new_products" name="qb_inventory_new_products" required data-placeholder="<?php esc_attr_e( 'Choose a product&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Product', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
 				<option value=""></option>
-				<?php echo $get_account_dropdown_list; ?>
+				<?php echo wp_kses($get_account_dropdown_list, array('option' => array('value' => array(), 'selected' => array()))); ?>
 				</select>
 
 				<label for="qb_cogs_new_products" class="location-prompt"><?php esc_html_e( 'QuickBooks COGS Account for New Products', 'woocommerce' ); ?></label>
 				<select id="qb_cogs_new_products" name="qb_cogs_new_products" required data-placeholder="<?php esc_attr_e( 'Choose a product&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Product', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
 					<option value=""></option>
-					<?php echo $get_account_dropdown_list; ?>
+					<?php echo wp_kses($get_account_dropdown_list, array('option' => array('value' => array(), 'selected' => array()))); ?>
 				</select>
 				
 				<label for="qb_sales_new_products" class="location-prompt"><?php esc_html_e( 'Sync WooCommerce Orders as', 'woocommerce' ); ?></label>
@@ -384,7 +384,7 @@ function sync_qb_settings_setup() {
 <ul class="wc-wizard-services manual" style="margin-top: 15px;">
 	<li class="wc-wizard-services-list-toggle">
 		<div class="wc-wizard-service-name">
-			<img src="<?php echo $this->plugin_url() . '/assets/admin/images/WOOtoQB.png'; ?>" >
+			<img src="<?php echo esc_url($this->plugin_url() . '/assets/admin/images/WOOtoQB.png'); ?>" >
 			<?php //esc_html_e( 'WooCommerce to QuickBooks Online', 'woocommerce' ); ?>
 		</div>
 		<div class="wc-wizard-service-description">
@@ -477,7 +477,7 @@ function sync_qb_settings_setup() {
 							</div>
 			<div class="wc-wizard-service-description">
 				<p>Sync manual inventory updates from WooCommerce to QuickBooks.</p>
-				<p>Note: This is off by default, because inventory changes made by WooCommerce orders are always reflected in QB once we sync the order to QuickBooks.</p>
+				<p>Note: This is off by default, because inventory changes made by WooCommerce orders are always reflected in QuickBooks once we sync the order to QuickBooks.</p>
 							</div>
 			<div class="wc-wizard-service-enable">
 				<span class="wc-wizard-service-toggle ">
@@ -494,7 +494,7 @@ function sync_qb_settings_setup() {
 <ul class="wc-wizard-services manual">
 	<li class="wc-wizard-services-list-toggle">
 		<div class="wc-wizard-service-name">
-			<img src="<?php echo $this->plugin_url() . '/assets/admin/images/QBtoWOO.png'; ?>" >
+			<img src="<?php echo esc_url($this->plugin_url() . '/assets/admin/images/QBtoWOO.png'); ?>" >
 			<?php //esc_html_e( 'QuickBooks Online to WooCommerce', 'woocommerce' ); ?>
 		</div>
 		<div class="wc-wizard-service-description">
@@ -579,14 +579,14 @@ if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
 	<label class="location-prompt" for="automap_customers_woo_field"><?php esc_html_e( 'Woocommerce Field', 'woocommerce' ); ?></label>
 	<select id="automap_customers_woo_field" name="automap_customers_woo_field" data-placeholder="<?php esc_attr_e( 'Choose a field&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Field', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
 	<option value=""></option>
-	<?php echo $MSQS_QL->only_option('',$MSQS_QL->get_n_cam_wf_list());?>		
+	<?php echo wp_kses($MSQS_QL->only_option('',$MSQS_QL->get_n_cam_wf_list()), array('option' => array('value' => array(), 'selected' => array())));?>		
 	</select>
 </div>
 <div>
-	<label class="location-prompt" for="automap_customers_qb_field"><?php esc_html_e( 'Quickbooks Field', 'woocommerce' ); ?></label>
+	<label class="location-prompt" for="automap_customers_qb_field"><?php esc_html_e( 'QuickBooks Field', 'woocommerce' ); ?></label>
 	<select id="automap_customers_qb_field" name="automap_customers_qb_field" data-placeholder="<?php esc_attr_e( 'Choose a field&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Field', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
 	<option value=""></option>
-	<?php echo $MSQS_QL->only_option('',$MSQS_QL->get_n_cam_qf_list());?>		
+	<?php echo wp_kses($MSQS_QL->only_option('',$MSQS_QL->get_n_cam_qf_list()), array('option' => array('value' => array(), 'selected' => array())));?>		
 	</select>
 </div>
 </div>
@@ -599,14 +599,14 @@ if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
 	<label class="location-prompt" for="automap_products_woo_field"><?php esc_html_e( 'Woocommerce Field', 'woocommerce' ); ?></label>
 	<select id="automap_products_woo_field" name="automap_products_woo_field" data-placeholder="<?php esc_attr_e( 'Choose a field&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Field', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
 	<option value=""></option>
-	<?php echo $MSQS_QL->only_option('',$MSQS_QL->get_n_pam_wf_list());?>
+	<?php echo wp_kses($MSQS_QL->only_option('',$MSQS_QL->get_n_pam_wf_list()), array('option' => array('value' => array(), 'selected' => array())));?>
 	</select>
 </div>
 <div>
-	<label class="location-prompt" for="automap_products_qb_field"><?php esc_html_e( 'Quickbooks Field', 'woocommerce' ); ?></label>
+	<label class="location-prompt" for="automap_products_qb_field"><?php esc_html_e( 'QuickBooks Field', 'woocommerce' ); ?></label>
 	<select id="automap_products_qb_field" name="automap_products_qb_field" data-placeholder="<?php esc_attr_e( 'Choose a field&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Field', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
 	<option value=""></option>
-	<?php echo $MSQS_QL->only_option('',$MSQS_QL->get_n_pam_qf_list());?>
+	<?php echo wp_kses($MSQS_QL->only_option('',$MSQS_QL->get_n_pam_qf_list()), array('option' => array('value' => array(), 'selected' => array())));?>
 	</select>
 </div>
 </div>
@@ -627,13 +627,13 @@ $qbo_payment_method_options.= $MSQS_QL->get_payment_method_dropdown_list();
 <div>
 	<label class="location-prompt" for="bacs_qb_online_payment_method"><?php esc_html_e( 'QuickBooks Online Payment Method', 'woocommerce' ); ?></label>
 	<select id="bacs_qb_online_payment_method" name="bacs_qb_online_payment_method" data-placeholder="<?php esc_attr_e( 'Choose a method&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Method', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
-	<?php echo $qbo_payment_method_options;?>
+	<?php echo wp_kses($qbo_payment_method_options, array('option' => array('value' => array(), 'selected' => array())));?>
 	</select>
 </div>
 <div>
 	<label class="location-prompt" for="bacs_qb_online_bank_account"><?php esc_html_e( 'QuickBooks Online Bank Account', 'woocommerce' ); ?></label>
 	<select id="bacs_qb_online_bank_account" name="bacs_qb_online_bank_account" data-placeholder="<?php esc_attr_e( 'Choose account&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Account', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
-	<?php echo $qbo_account_options;?>
+	<?php echo wp_kses($qbo_account_options, array('option' => array('value' => array(), 'selected' => array())));?>
 	</select>
 </div>
 </div>
@@ -646,13 +646,13 @@ $qbo_payment_method_options.= $MSQS_QL->get_payment_method_dropdown_list();
 <div>
 	<label class="location-prompt" for="cheque_qb_online_payment_method"><?php esc_html_e( 'QuickBooks Online Payment Method', 'woocommerce' ); ?></label>
 	<select id="cheque_qb_online_payment_method" name="cheque_qb_online_payment_method" data-placeholder="<?php esc_attr_e( 'Choose a method&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Method', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
-	<?php echo $qbo_payment_method_options;?>
+	<?php echo wp_kses($qbo_payment_method_options, array('option' => array('value' => array(), 'selected' => array())));?>
 	</select>
 </div>
 <div>
 	<label class="location-prompt" for="cheque_qb_online_bank_account"><?php esc_html_e( 'QuickBooks Online Bank Account', 'woocommerce' ); ?></label>
 	<select id="cheque_qb_online_bank_account" name="cheque_qb_online_bank_account" data-placeholder="<?php esc_attr_e( 'Choose account&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Account', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">	
-	<?php echo $qbo_account_options;?>
+	<?php echo wp_kses($qbo_account_options, array('option' => array('value' => array(), 'selected' => array())));?>
 	</select>
 </div>
 </div>
@@ -665,13 +665,13 @@ $qbo_payment_method_options.= $MSQS_QL->get_payment_method_dropdown_list();
 <div>
 	<label class="location-prompt" for="cod_qb_online_payment_method"><?php esc_html_e( 'QuickBooks Online Payment Method', 'woocommerce' ); ?></label>
 	<select id="cod_qb_online_payment_method" name="cod_qb_online_payment_method" data-placeholder="<?php esc_attr_e( 'Choose a method&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Method', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
-	<?php echo $qbo_payment_method_options;?>
+	<?php echo wp_kses($qbo_payment_method_options, array('option' => array('value' => array(), 'selected' => array())));?>
 	</select>
 </div>
 <div>
 	<label class="location-prompt" for="cod_qb_online_bank_account"><?php esc_html_e( 'QuickBooks Online Bank Account', 'woocommerce' ); ?></label>
 	<select id="cod_qb_online_bank_account" name="cod_qb_online_bank_account" data-placeholder="<?php esc_attr_e( 'Choose account&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Account', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
-	<?php echo $qbo_account_options;?>
+	<?php echo wp_kses($qbo_account_options, array('option' => array('value' => array(), 'selected' => array())));?>
 	</select>
 </div>
 </div>
@@ -684,13 +684,13 @@ $qbo_payment_method_options.= $MSQS_QL->get_payment_method_dropdown_list();
 <div>
 	<label class="location-prompt" for="paypal_qb_online_payment_method"><?php esc_html_e( 'QuickBooks Online Payment Method', 'woocommerce' ); ?></label>
 	<select id="paypal_qb_online_payment_method" name="paypal_qb_online_payment_method" data-placeholder="<?php esc_attr_e( 'Choose a method&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Method', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
-	<?php echo $qbo_payment_method_options;?>
+	<?php echo wp_kses($qbo_payment_method_options, array('option' => array('value' => array(), 'selected' => array())));?>
 	</select>
 </div>
 <div>
 	<label class="location-prompt" for="paypal_qb_online_bank_account"><?php esc_html_e( 'QuickBooks Online Bank Account', 'woocommerce' ); ?></label>
 	<select id="paypal_qb_online_bank_account" name="paypal_qb_online_bank_account" data-placeholder="<?php esc_attr_e( 'Choose account&hellip;', 'woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Account', 'woocommerce' ); ?>" class="location-input wc-enhanced-select dropdown">
-	<?php echo $qbo_account_options;?>
+	<?php echo wp_kses($qbo_account_options, array('option' => array('value' => array(), 'selected' => array())));?>
 	</select>
 </div>
 </div>

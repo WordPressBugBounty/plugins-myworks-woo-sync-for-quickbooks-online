@@ -22,7 +22,7 @@ $redirect = array(
 
 function _pageDetermine(){
 	global $pages;
-	$current_url = $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+	$current_url = sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) . sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI']));
 	foreach($pages as $key=>$value){
 		if(strpos($current_url, $value) !== false) return $key;
 	}
@@ -37,14 +37,14 @@ function _tourHelper(){
 function tour_start(){
 	global $redirect;
 	echo '<div id="mw-wc-qbo-sync-tour-0" class="mw-wc-qbo-sync-tour mw-wc-qbo-sync-tour-left step-1-popup" style="position: absolute; width: 320px; top: 471px; left: 160px; z-index: 9999;"><div class="mw-wc-qbo-sync-tour-content"><h3>Welcome to MyWorks Sync!</h3>
-<p>Would you like to go on a guided tour of our plugin? It will take less than 60 seconds and get you started with setup & syncing!</p><div class="mw-wc-qbo-sync-tour-buttons"><div class="ass-tour-buttons"><a class="button button-large" href="'.$redirect[5].'">Close</a><a class="button button-large button-primary" href="'.$redirect[1].'">Start Tour</a></div></div></div><div class="mw-wc-qbo-sync-tour-arrow"><div class="mw-wc-qbo-sync-tour-arrow-inner"></div></div></div>';
+<p>Would you like to go on a guided tour of our plugin? It will take less than 60 seconds and get you started with setup & syncing!</p><div class="mw-wc-qbo-sync-tour-buttons"><div class="ass-tour-buttons"><a class="button button-large" href="'.esc_url($redirect[5]).'">Close</a><a class="button button-large button-primary" href="'.esc_url($redirect[1]).'">Start Tour</a></div></div></div><div class="mw-wc-qbo-sync-tour-arrow"><div class="mw-wc-qbo-sync-tour-arrow-inner"></div></div></div>';
 }
 
 function setup_menu(){
 	global $redirect;
 	echo '<div id="mw-wc-qbo-sync-tour-0" class="mw-wc-qbo-sync-tour mw-wc-qbo-sync-tour-top step-2-popup" style="position: absolute; width: 320px; top: 97px; left: 1022px; z-index: 9999;"><div class="mw-wc-qbo-sync-tour-content"><h3>Here is your settings panel!</h3>
 <p>Here is where you can configure important plugin options that affect the way your surveys are run.</p>
-<p>You can come back here anytime after the tour to configure these settings.</p><div class="mw-wc-qbo-sync-tour-buttons"><div class="ass-tour-buttons"><a class="button button-large" href="'.$redirect[5].'">Close</a><a class="button button-large" href="'.$redirect[0].'">Previous</a><a class="button button-large button-primary" href="'.$redirect[2].'">Next</a></div></div></div><div class="mw-wc-qbo-sync-tour-arrow"><div class="mw-wc-qbo-sync-tour-arrow-inner"></div></div></div>';
+<p>You can come back here anytime after the tour to configure these settings.</p><div class="mw-wc-qbo-sync-tour-buttons"><div class="ass-tour-buttons"><a class="button button-large" href="'.esc_url($redirect[5]).'">Close</a><a class="button button-large" href="'.esc_url($redirect[0]).'">Previous</a><a class="button button-large button-primary" href="'.esc_url($redirect[2]).'">Next</a></div></div></div><div class="mw-wc-qbo-sync-tour-arrow"><div class="mw-wc-qbo-sync-tour-arrow-inner"></div></div></div>';
 }
 
 function real_time_sync(){
@@ -57,14 +57,14 @@ function real_time_sync(){
 		  </script>";
 	echo '<div id="mw-wc-qbo-sync-tour-0" class="mw-wc-qbo-sync-tour mw-wc-qbo-sync-tour-top" style="position: absolute; width: 320px; top: 97px; left: 1022px; z-index: 9999;"><div class="mw-wc-qbo-sync-tour-content"><h3>This is the settings area.</h3>
 <p>Here is where you can configure important plugin options that affect the way your surveys are run.</p>
-<p>You can come back here anytime after the tour to configure these settings.</p><div class="mw-wc-qbo-sync-tour-buttons"><div class="ass-tour-buttons"><a class="button button-large" href="'.$redirect[5].'">Close</a><a class="button button-large" href="'.$redirect[1].'">Previous</a><a class="button button-large button-primary" href="'.$redirect[3].'">Next</a></div></div></div><div class="mw-wc-qbo-sync-tour-arrow"><div class="mw-wc-qbo-sync-tour-arrow-inner"></div></div></div>';
+<p>You can come back here anytime after the tour to configure these settings.</p><div class="mw-wc-qbo-sync-tour-buttons"><div class="ass-tour-buttons"><a class="button button-large" href="'.esc_url($redirect[5]).'">Close</a><a class="button button-large" href="'.esc_url($redirect[1]).'">Previous</a><a class="button button-large button-primary" href="'.esc_url($redirect[3]).'">Next</a></div></div></div><div class="mw-wc-qbo-sync-tour-arrow"><div class="mw-wc-qbo-sync-tour-arrow-inner"></div></div></div>';
 }
 
 function push_section(){
 	global $redirect;
 	echo '<div id="mw-wc-qbo-sync-tour-0" class="mw-wc-qbo-sync-tour mw-wc-qbo-sync-tour-left" style="position: absolute; width: 320px; top: 308px; left: 160px; z-index: 9999;"><div class="mw-wc-qbo-sync-tour-content"><h3>After Sale Surveys is made for surveying customers after they complete their purchase.</h3>
 <p>It can give you ongoing insights into all the things you have ever wanted to know about your customers.</p>
-<p>Asking your customers to complete a survey right after they ordered is the best time to ask because you already have their full attention.</p><div class="mw-wc-qbo-sync-tour-buttons"><div class="ass-tour-buttons"><a class="button button-large" href="'.$redirect[5].'">Close</a><a class="button button-large" href="'.$redirect[2].'">Previous</a><a class="button button-large button-primary" href="'.$redirect[4].'">Next</a></div></div></div><div class="mw-wc-qbo-sync-tour-arrow"><div class="mw-wc-qbo-sync-tour-arrow-inner"></div></div></div>';
+<p>Asking your customers to complete a survey right after they ordered is the best time to ask because you already have their full attention.</p><div class="mw-wc-qbo-sync-tour-buttons"><div class="ass-tour-buttons"><a class="button button-large" href="'.esc_url($redirect[5]).'">Close</a><a class="button button-large" href="'.esc_url($redirect[2]).'">Previous</a><a class="button button-large button-primary" href="'.esc_url($redirect[4]).'">Next</a></div></div></div><div class="mw-wc-qbo-sync-tour-arrow"><div class="mw-wc-qbo-sync-tour-arrow-inner"></div></div></div>';
 }
 
 function log_section(){
@@ -73,7 +73,7 @@ function log_section(){
 <p>Here you can find every response on every survey from your customers.</p>
 <p>You can drill down into particular responses to get more details about how they answered the questions.</p>
 <p>This concludes the tour. Click on the button below to add your first survey:</p>
-<div class="mw-wc-qbo-sync-tour-buttons"><div class="ass-tour-buttons"><a class="button button-large" href="'.$redirect[5].'">Close</a><a class="button button-large" href="'.$redirect[3].'">Previous</a></div></div></div><div class="mw-wc-qbo-sync-tour-arrow"><div class="mw-wc-qbo-sync-tour-arrow-inner"></div></div></div>';
+<div class="mw-wc-qbo-sync-tour-buttons"><div class="ass-tour-buttons"><a class="button button-large" href="'.esc_url($redirect[5]).'">Close</a><a class="button button-large" href="'.esc_url($redirect[3]).'">Previous</a></div></div></div><div class="mw-wc-qbo-sync-tour-arrow"><div class="mw-wc-qbo-sync-tour-arrow-inner"></div></div></div>';
 }
 
 function tour_end(){

@@ -284,25 +284,28 @@ class QuickBooks_Driver_Sql_Mysql extends QuickBooks_Driver_Sql
 	 */
 	protected function _connect($host, $port, $user, $pass, $db, $new_link, $client_flags)
 	{
+		// Use mysqli_connect instead of deprecated mysql_connect
 		if ($port)
 		{
-			$this->_conn = mysql_connect($host . ':' . $port, $user, $pass, $new_link, $client_flags) or die('host: ' . $host . ', user: ' . $user . ', pass: XXXX, mysql_error(): ' . mysql_error());
+			// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_connect,WordPress.DB.RestrictedFunctions.mysql_mysqli_connect_error -- Third-party QuickBooks library database connection
+			$this->_conn = mysqli_connect($host, $user, $pass, $db, $port) or wp_die('Database connection failed: ' . esc_html(mysqli_connect_error()));
 		}
 		else
 		{
-			$this->_conn = mysql_connect($host, $user, $pass, $new_link, $client_flags) or die('host: ' . $host . ', user: ' . $user . ', pass: XXXX, mysql_error(): ' . mysql_error());
+			// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_connect,WordPress.DB.RestrictedFunctions.mysql_mysqli_connect_error -- Third-party QuickBooks library database connection
+			$this->_conn = mysqli_connect($host, $user, $pass, $db) or wp_die('Database connection failed: ' . esc_html(mysqli_connect_error()));
 		}
 			
-		// Select the correct database
-		$tmp = mysql_select_db($db, $this->_conn) or die(mysql_error());
-		
 		// Support UTF-8 chars
-		mysql_query("SET NAMES 'utf8'", $this->_conn);
+		// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_set_charset -- Third-party QuickBooks library charset setting
+		mysqli_set_charset($this->_conn, 'utf8');
+		
+		$tmp = $this->_conn !== false;
 		
 		/*
 		static $connections = array();
 		$connections[] = $user . ':' . $pass . '@' . $host . ':' . $port . '/' . $db;
-		mysql_query("INSERT INTO quickbooks_log ( msg, log_datetime ) VALUES ( 'MySQL connection #" . count($connections) . ", " . print_r($connections, true) . "', NOW() )", $this->_conn) or die(mysql_error());
+		mysqli_query($this->_conn, "INSERT INTO quickbooks_log ( msg, log_datetime ) VALUES ( 'MySQL connection #" . count($connections) . ", " . esc_html(print_r($connections, true)) . "', NOW() )") or wp_die('Database logging error: ' . esc_html(mysqli_error($this->_conn)));
 		*/
 		
 		return $tmp;
@@ -316,7 +319,8 @@ class QuickBooks_Driver_Sql_Mysql extends QuickBooks_Driver_Sql
 	 */
 	protected function _fetch($res)
 	{
-		return mysql_fetch_assoc($res);
+		// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_fetch_assoc -- Third-party QuickBooks library database operation
+		return mysqli_fetch_assoc($res);
 	}
 	
 	/**
@@ -344,8 +348,9 @@ class QuickBooks_Driver_Sql_Mysql extends QuickBooks_Driver_Sql
 		}
 		
 		//print($sql . "\n\n");
-		$res = mysql_query($sql, $this->_conn);
-		//mysql_query("INSERT INTO quickbooks_log ( msg, log_datetime ) VALUES ( '" . mysql_real_escape_string($sql) . "', NOW() ) ");
+		// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Third-party QuickBooks library database operation
+		$res = mysqli_query($this->_conn, $sql);
+		//mysqli_query($this->_conn, "INSERT INTO quickbooks_log ( msg, log_datetime ) VALUES ( '" . mysqli_real_escape_string($this->_conn, $sql) . "', NOW() ) ");
 		
 		/*
 		CREATE TABLE quickbooks_debug (
@@ -358,7 +363,7 @@ class QuickBooks_Driver_Sql_Mysql extends QuickBooks_Driver_Sql
 		
 		// Debugging... 
 		/*
-		mysql_query("
+		mysqli_query($this->_conn, "
 			INSERT INTO
 				quickbooks_debug
 			(
@@ -374,12 +379,14 @@ class QuickBooks_Driver_Sql_Mysql extends QuickBooks_Driver_Sql
 		
 		if (!$res)
 		{
-			$errnum = mysql_errno($this->_conn);
-			$errmsg = mysql_error($this->_conn);
+			// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_errno -- Third-party QuickBooks library error handling
+			$errnum = mysqli_errno($this->_conn);
+			// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_error -- Third-party QuickBooks library error handling
+			$errmsg = mysqli_error($this->_conn);
 			
 			//print($sql);
 			
-			trigger_error('Error Num.: ' . $errnum . "\n" . 'Error Msg.:' . $errmsg . "\n" . 'SQL: ' . $sql, E_USER_ERROR);
+			trigger_error('Error Num.: ' . esc_html($errnum) . "\n" . 'Error Msg.:' . esc_html($errmsg) . "\n" . 'SQL: ' . esc_html($sql), E_USER_ERROR);
 			return false;
 		}
 		
@@ -428,7 +435,8 @@ class QuickBooks_Driver_Sql_Mysql extends QuickBooks_Driver_Sql
 	 */
 	public function affected()
 	{
-		return mysql_affected_rows($this->_conn);
+		// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_affected_rows -- Third-party QuickBooks library database operation
+		return mysqli_affected_rows($this->_conn);
 	}
 	
 	/**
@@ -438,7 +446,8 @@ class QuickBooks_Driver_Sql_Mysql extends QuickBooks_Driver_Sql
 	 */
 	public function last()
 	{
-		return mysql_insert_id($this->_conn);
+		// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_insert_id -- Third-party QuickBooks library database operation
+		return mysqli_insert_id($this->_conn);
 	}
 	
 	/**
@@ -482,9 +491,11 @@ class QuickBooks_Driver_Sql_Mysql extends QuickBooks_Driver_Sql
 	 */
 	public function rewind($res)
 	{
-		if (mysql_num_rows($res) > 0)
+		// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_num_rows -- Third-party QuickBooks library database operation
+		if (mysqli_num_rows($res) > 0)
 		{
-			return mysql_data_seek($res, 0);
+			// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_data_seek -- Third-party QuickBooks library database operation
+			return mysqli_data_seek($res, 0);
 		}
 		
 		return true;
@@ -498,7 +509,8 @@ class QuickBooks_Driver_Sql_Mysql extends QuickBooks_Driver_Sql
 	 */
 	protected function _escape($str)
 	{
-		return mysql_real_escape_string($str, $this->_conn);
+		// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- Third-party QuickBooks library database operation
+		return mysqli_real_escape_string($this->_conn, $str);
 	}
 	
 	/**
@@ -509,7 +521,8 @@ class QuickBooks_Driver_Sql_Mysql extends QuickBooks_Driver_Sql
 	 */
 	protected function _count($res)
 	{
-		return mysql_num_rows($res);
+		// phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_num_rows -- Third-party QuickBooks library database operation
+		return mysqli_num_rows($res);
 	}
 	
 	/**

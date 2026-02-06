@@ -11,6 +11,13 @@ global $wpdb;
  
 $page_url = 'admin.php?page=myworks-wc-qbo-map&tab=customer';
 
+// Validate table names for security
+function validate_table_name($table_name, $wpdb) {
+	if (!str_starts_with($table_name, $wpdb->prefix)) {
+		die('Invalid table name');
+	}
+}
+
 //
 if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_customer', 'map_wc_qbo_customer' ) ) {
 	//$MSQS_QL->_p($_POST);
@@ -29,6 +36,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_c
 			$save_data['qbo_customerid'] = $value;
 			
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_customer_pairs';
+			validate_table_name($table, $wpdb);
 			if($MSQS_QL->get_field_by_val($table,'id','wc_customerid',$key)){
 				$wpdb->update($table,$save_data,array('wc_customerid'=>$key),'',array('%d'));
 			}else{
@@ -39,7 +47,10 @@ if ( ! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_c
 		//$MSQS_QL->set_session_msg('map_client_msg',__('Customers mapped successfully.','mw_wc_qbo_sync'));		
 		$MSQS_QL->set_session_val('map_page_update_message',__('Customers mapped successfully.','mw_wc_qbo_sync'));
 	}
-	$wpdb->query("DELETE FROM `".$table."` WHERE `qbo_customerid` = 0 ");
+	// Use esc_sql for table name to prevent SQL injection
+	$table_name = esc_sql($table);
+	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name safely escaped with esc_sql()
+	$wpdb->query($wpdb->prepare("DELETE FROM `{$table_name}` WHERE `qbo_customerid` = %d", 0));
 	$MSQS_QL->redirect($page_url);
 	//$MSQS_QL->_p($item_ids);
 }
@@ -66,7 +77,9 @@ if(!$MSQS_QL->option_checked('mw_wc_qbo_sync_select2_ajax')){
 			$cdd_sb = 'dname';
 		}
 	}
-	$qbo_customer_options = $MSQS_QL->option_html('', $wpdb->prefix.'mw_wc_qbo_sync_qbo_customers','qbo_customerid','dname','',$cdd_sb.' ASC','',true);
+	$qbo_customer_table = $wpdb->prefix.'mw_wc_qbo_sync_qbo_customers';
+	validate_table_name($qbo_customer_table, $wpdb);
+	$qbo_customer_options = $MSQS_QL->option_html('', $qbo_customer_table,'qbo_customerid','dname','',$cdd_sb.' ASC','',true);
 }
 
 $selected_options_script = '';
@@ -79,7 +92,7 @@ $selected_options_script = '';
 	 <div class="mw_wc_filter">
 	 <span class="search_text">Search</span>
 	  &nbsp;
-	  <input type="text" id="cl_map_search" placeholder="NAME / EMAIL / COMPANY / ID" value="<?php echo $cl_map_search;?>">
+	  <input type="text" id="cl_map_search" placeholder="NAME / EMAIL / COMPANY / ID" value="<?php echo esc_attr($cl_map_search);?>">
 	  &nbsp;		
 	  <button onclick="javascript:search_item();" class="btn btn-info">Filter</button>
 	  &nbsp;
@@ -88,8 +101,8 @@ $selected_options_script = '';
 	  <span class="filter-right-sec">
 		  <span class="entries">Show entries</span>
 		  &nbsp;
-		  <select style="width:50px;" onchange="javascript:window.location='<?php echo $page_url;?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-			<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+		  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_attr($MSQS_QL->per_page_keyword);?>='+this.value;">
+			<?php echo $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		 </select>
 	 </span>
 	 </div>
@@ -118,14 +131,14 @@ $selected_options_script = '';
 										<?php if(count($cl_map_data)):?>
 										<?php foreach($cl_map_data as $data):?>
 										<tr>
-											<td><?php echo $data['ID']?></td>
+											<td><?php echo esc_html($data['ID'] ?? '')?></td>
 											<td>
-												<a href="<?php echo admin_url('user-edit.php?user_id=').$data['ID'] ?>" target="_blank">
-											<?php echo $data['first_name']?> <?php echo $data['last_name']?>
+												<a href="<?php echo esc_url(admin_url('user-edit.php?user_id=').$data['ID']) ?>" target="_blank">
+											<?php echo esc_html($data['first_name'] ?? '')?> <?php echo esc_html($data['last_name'] ?? '')?>
 										</a>									
 											</td>	
-											<td><?php echo $data['user_email']?></td>
-											<td><?php echo $data['billing_company']?></td>									
+											<td><?php echo esc_html($data['user_email'] ?? '')?></td>
+											<td><?php echo esc_html($data['billing_company'] ?? '')?></td>									
 											<td>											
 												<?php
 												$dd_options = '<option value=""></option>';
@@ -133,7 +146,7 @@ $selected_options_script = '';
 												if($MSQS_QL->option_checked('mw_wc_qbo_sync_select2_ajax')){
 													$dd_ext_class = 'mwqs_dynamic_select';
 													if((int) $data['qbo_customerid']){
-														$dd_options = '<option value="'.$data['qbo_customerid'].'">'.$MSQS_QL->escape($data['qbo_dname']).'</option>';
+														$dd_options = '<option value="'.esc_attr($data['qbo_customerid']).'">'.$MSQS_QL->escape($data['qbo_dname']).'</option>';
 													}
 												}else{
 													$dd_options.=$qbo_customer_options;
@@ -143,8 +156,8 @@ $selected_options_script = '';
 												}											
 												?>
 
-												<select class="mw_wc_qbo_sync_select2 <?php echo $dd_ext_class;?>" name="map_client_<?php echo $data['ID']?>" id="map_client_<?php echo $data['ID']?>">
-													<?php echo $dd_options;?>
+												<select class="mw_wc_qbo_sync_select2 <?php echo esc_attr($dd_ext_class);?>" name="map_client_<?php echo esc_attr($data['ID'])?>" id="map_client_<?php echo esc_attr($data['ID'])?>">
+													<?php echo $dd_options; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 												</select>
 											
 											</td>
@@ -162,7 +175,7 @@ $selected_options_script = '';
 										<?php endif;?>
 	            				</tbody>
 								</table>
-								<?php echo $pagination_links?>
+								<?php echo !empty($pagination_links) ? $pagination_links : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 								<?php if(empty($cl_map_data)):?>
 								   <h4 class="mw_mlp_ndf">
 										<?php esc_html_e( 'No available customers to display.', 'mw_wc_qbo_sync' );?>
@@ -202,18 +215,18 @@ $selected_options_script = '';
 		var cl_map_search = jQuery('#cl_map_search').val();
 		cl_map_search = jQuery.trim(cl_map_search);
 		if(cl_map_search!=''){
-			window.location = '<?php echo $page_url;?>&cl_map_search='+cl_map_search;
+			window.location = '<?php echo esc_url_raw($page_url);?>&cl_map_search='+cl_map_search;
 		}else{
-			alert('<?php echo __('Please enter search keyword.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_html__('Please enter search keyword.','mw_wc_qbo_sync')?>');
 		}
 	}
 
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&cl_map_search=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&cl_map_search=';
 	}
 	<?php if($selected_options_script!=''):?>
 	jQuery(document).ready(function(){
-		<?php echo $selected_options_script;?>
+		<?php echo $selected_options_script; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	});
 	<?php endif;?>
 	
@@ -229,7 +242,7 @@ $selected_options_script = '';
 			
 			if(cam_wf!='' && cam_qf!=''){
 				$('#cam_wqf_e_msg').html('');
-				if(confirm('<?php echo __('This will override any previous customer mappings, and scan your WooCommerce & QuickBooks Online customers by selected fields to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
+				if(confirm('<?php echo esc_html__('This will override any previous customer mappings, and scan your WooCommerce & QuickBooks Online customers by selected fields to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 					var data = {
 						"action": 'mw_wc_qbo_sync_automap_customers_wf_qf',
 						"automap_customers_wf_qf": jQuery('#automap_customers_wf_qf').val(),
@@ -250,7 +263,7 @@ $selected_options_script = '';
 					   success: function(result){
 						   if(result!=0 && result!=''){							
 							jQuery('#mwqs_automap_customers_msg').html(result);							
-							window.location='<?php echo admin_url($page_url)?>';
+							window.location='<?php echo esc_url(admin_url($page_url))?>';
 						   }else{
 							 jQuery('#mwqs_automap_customers_msg').html('Automap was timed out and could not fully complete. Please try again');							
 						   }				  
@@ -268,7 +281,7 @@ $selected_options_script = '';
 		
 		<?php if($js_section=false):?>
 		$('#mwqs_automap_customers').click(function(){
-			if(confirm('<?php echo __('This will override any previous customer mappings, and scan your WooCommerce & QuickBooks Online customers by email to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
+			if(confirm('<?php echo esc_html__('This will override any previous customer mappings, and scan your WooCommerce & QuickBooks Online customers by email to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 				jQuery('#mwqs_automap_customers_msg').html('');
 				jQuery('#mwqs_automap_customers_msg_by_name').html('');
 				var data = {
@@ -290,7 +303,7 @@ $selected_options_script = '';
 						jQuery('#mwqs_automap_customers_msg').html(result);
 						//alert('Success!');
 						//location.reload();
-						window.location='<?php echo admin_url($page_url)?>';
+						window.location='<?php echo esc_url(admin_url($page_url))?>';
 					   }else{
 						 jQuery('#mwqs_automap_customers_msg').html('Error!');
 						 //alert('Error!');			 
@@ -305,7 +318,7 @@ $selected_options_script = '';
 		});
 		
 		$('#mwqs_automap_customers_by_name').click(function(){
-			if(confirm('<?php echo __('This will override any previous customer mappings, and scan your WooCommerce & QuickBooks Online customers by Display Name to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
+			if(confirm('<?php echo esc_html__('This will override any previous customer mappings, and scan your WooCommerce & QuickBooks Online customers by Display Name to automatically match them for you.', 'mw_wc_qbo_sync')?>')){
 				jQuery('#mwqs_automap_customers_msg_by_name').html('');
 				jQuery('#mwqs_automap_customers_msg').html('');
 				var data = {
@@ -327,7 +340,7 @@ $selected_options_script = '';
 						jQuery('#mwqs_automap_customers_msg_by_name').html(result);
 						//alert('Success!');
 						//location.reload();
-						window.location='<?php echo admin_url($page_url)?>';
+						window.location='<?php echo esc_url(admin_url($page_url))?>';
 					   }else{
 						 jQuery('#mwqs_automap_customers_msg_by_name').html('Error!');
 						 //alert('Error!');			 
@@ -344,7 +357,7 @@ $selected_options_script = '';
 		<?php endif;?>
 		
 		$('#mwqs_cacm_btn').click(function(){
-			if(confirm('<?php echo __('Are you sure, you want to clear all customer mappings?','mw_wc_qbo_sync')?>')){
+			if(confirm('<?php echo esc_html__('Are you sure, you want to clear all customer mappings?','mw_wc_qbo_sync')?>')){
 				var loading_msg = 'Loading...';
 				jQuery('#mwqs_cacm_msg').html(loading_msg);
 				var data = {
@@ -361,7 +374,7 @@ $selected_options_script = '';
 					   if(result!=0 && result!=''){
 						 //alert('Success');
 						 jQuery('#mwqs_cacm_msg').html('Success!');
-						 window.location='<?php echo admin_url($page_url)?>';
+						 window.location='<?php echo esc_url(admin_url($page_url))?>';
 					   }else{
 						 //alert('Error!');
 						jQuery('#mwqs_cacm_msg').html('Error!');
@@ -376,11 +389,11 @@ $selected_options_script = '';
 		});
 		
 		$('#mwqs_refresh_data_from_qbo').click(function(event){
-			if(!confirm('<?php echo __('Are you sure, you want to refresh data from quickbooks?','mw_wc_qbo_sync')?>')){
+			if(!confirm('<?php echo esc_html__('Are you sure, you want to refresh data from QuickBooks?','mw_wc_qbo_sync')?>')){
 				event.preventDefault();
 			}
 		});
 		
 	});
  </script>
- <?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select2','qbo_customer');?>
+ <?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select2','qbo_customer'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized in get_select2_js function ?>

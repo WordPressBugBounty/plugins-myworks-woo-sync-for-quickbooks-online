@@ -53,8 +53,8 @@ $return['message'] = 'Not Authorized';
 
 // && $dashboard_domain===$req_host
 if($Remote_LicenseKey!='' && $mw_wc_qbo_sync_license===$Remote_LicenseKey && $extra_validate){	
-	$AccessToken = (isset($_POST['AccessToken']))?trim($_POST['AccessToken']):'';
-	$Update_Token =  (isset($_POST['Update_Token']))?(int) trim($_POST['Update_Token']):0;
+	$AccessToken = (isset($_POST['AccessToken']))?trim(sanitize_text_field($_POST['AccessToken'])):'';
+	$Update_Token =  (isset($_POST['Update_Token']))?(int) trim(sanitize_text_field($_POST['Update_Token'])):0;
 	//echo '<pre>';print_r($_POST);echo '</pre>';
 	$AccessToken   = $MSQS_QL->sanitize( $AccessToken );	
 	

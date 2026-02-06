@@ -69,6 +69,206 @@ class MyWorks_WC_QBO_Sync_Admin {
 		require_once plugin_dir_path( __FILE__ ).'myworks-wc-qbo-sync-ajax-actions.php';
 	}
 	
+	/**
+	 * Check if WooCommerce High Performance Order Storage (HPOS) is enabled
+	 * 
+	 * @return bool True if HPOS is enabled, false otherwise
+	 */
+	private function is_hpos_enabled() {
+		return class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+	}
+
+	/**
+	 * Generate a legacy meta-style associative array for a given HPOS order.
+	 * Uses WooCommerce's internal mapping for long-term compatibility.
+	 *
+	 * @param WC_Order $order WooCommerce order object (HPOS or legacy).
+	 * @return array Legacy-style meta key => value array.
+	 */
+	public function get_hpos_order_legacy_meta_array($order)
+	{
+		$legacy_meta = array();
+
+		if (! $order) {
+			return $legacy_meta;
+		}
+
+		if ($order instanceof WC_Order_Refund) {
+			$refund = $order;
+			$refund_meta_key_to_props = array(
+				'_refund_amount'    => 'amount',
+				'_refunded_by'      => 'refunded_by',
+				'_refunded_payment' => 'refunded_payment',
+				'_refund_reason'    => 'reason',
+			);
+			foreach ($refund_meta_key_to_props as $meta_key => $prop) {
+				$value = $refund->{"get_$prop"}('edit');
+				$legacy_meta[ $meta_key ] = $value;
+			}
+			$order_id = $order->get_parent_id();
+			$order = wc_get_order($order_id);
+		}
+
+		// Native WooCommerce property mappings from WC_Order_Data_Store_CPT
+		$meta_key_to_props = array(
+			'_order_key'                    => 'order_key',
+			'_customer_user'                => 'customer_id',
+			'_payment_method'               => 'payment_method',
+			'_payment_method_title'         => 'payment_method_title',
+			'_transaction_id'               => 'transaction_id',
+			'_customer_ip_address'          => 'customer_ip_address',
+			'_customer_user_agent'          => 'customer_user_agent',
+			'_created_via'                  => 'created_via',
+			'_date_completed'               => 'date_completed',
+			'_date_paid'                    => 'date_paid',
+			'_cart_hash'                    => 'cart_hash',
+			'_download_permissions_granted' => 'download_permissions_granted',
+			'_recorded_sales'               => 'recorded_sales',
+			'_recorded_coupon_usage_counts' => 'recorded_coupon_usage_counts',
+			'_new_order_email_sent'         => 'new_order_email_sent',
+			'_order_stock_reduced'          => 'order_stock_reduced',
+		);
+
+		$address_props = array(
+			'billing'  => array(
+				'_billing_first_name' => 'billing_first_name',
+				'_billing_last_name'  => 'billing_last_name',
+				'_billing_company'    => 'billing_company',
+				'_billing_address_1'  => 'billing_address_1',
+				'_billing_address_2'  => 'billing_address_2',
+				'_billing_city'       => 'billing_city',
+				'_billing_state'      => 'billing_state',
+				'_billing_postcode'   => 'billing_postcode',
+				'_billing_country'    => 'billing_country',
+				'_billing_email'      => 'billing_email',
+				'_billing_phone'      => 'billing_phone',
+			),
+			'shipping' => array(
+				'_shipping_first_name' => 'shipping_first_name',
+				'_shipping_last_name'  => 'shipping_last_name',
+				'_shipping_company'    => 'shipping_company',
+				'_shipping_address_1'  => 'shipping_address_1',
+				'_shipping_address_2'  => 'shipping_address_2',
+				'_shipping_city'       => 'shipping_city',
+				'_shipping_state'      => 'shipping_state',
+				'_shipping_postcode'   => 'shipping_postcode',
+				'_shipping_country'    => 'shipping_country',
+				'_shipping_phone'      => 'shipping_phone',
+			),
+		);
+
+		$legacy_meta_key_to_props = array(
+			'_order_currency'     => 'currency',
+			'_cart_discount'      => 'discount_total',
+			'_cart_discount_tax'  => 'discount_tax',
+			'_order_shipping'     => 'shipping_total',
+			'_order_shipping_tax' => 'shipping_tax',
+			'_order_tax'          => 'cart_tax',
+			'_order_total'        => 'total',
+			'_order_version'      => 'version',
+			'_prices_include_tax' => 'prices_include_tax',
+		);
+
+		// Convert core props.
+		foreach ($meta_key_to_props as $meta_key => $prop) {
+			$value = $order->{"get_$prop"}('edit');
+			switch ($prop) {
+				case 'date_paid':
+				case 'date_completed':
+					$value = ! is_null($value) ? $value->getTimestamp() : '';
+					break;
+				case 'download_permissions_granted':
+				case 'recorded_sales':
+				case 'recorded_coupon_usage_counts':
+				case 'order_stock_reduced':
+					$value = is_bool($value) ? wc_bool_to_string($value) : $value;
+					break;
+				case 'new_order_email_sent':
+					if (! empty($value)) {
+						$value = wc_bool_to_string((bool) $value);
+						$value = 'yes' === $value ? 'true' : 'false';
+					}
+					break;
+				default:
+					$value = is_string($value) ? wp_unslash($value) : $value;
+			}
+			$legacy_meta[ $meta_key ] = $value;
+		}
+
+		// Add billing and shipping props.
+		foreach ($address_props as $group => $props) {
+			foreach ($props as $meta_key => $prop) {
+				$value = $order->{"get_$prop"}('edit');
+				$legacy_meta[ $meta_key ] = is_string($value) ? wp_unslash($value) : $value;
+			}
+		}
+
+		foreach ($legacy_meta_key_to_props as $meta_key => $prop) {
+			$value = $order->{"get_$prop"}('edit');
+			$value = is_string($value) ? wp_slash($value) : $value;
+
+			if ('prices_include_tax' === $prop) {
+				$value = $value ? 'yes' : 'no';
+			}
+
+			$legacy_meta[ $meta_key ] = $value;
+		}
+
+		$legacy_meta['_shipping_email'] = $order->get_billing_email();
+
+		//Legacy compatibility fields
+		$legacy_meta['_paid_date']      = $order->get_date_paid() ? $order->get_date_paid()->date('Y-m-d H:i:s') : null;
+		$legacy_meta['_completed_date'] = $order->get_date_completed() ? $order->get_date_completed()->date('Y-m-d H:i:s') : null;
+
+		return $legacy_meta;
+	}
+
+	/**
+	 * HPOS-compatible function to get all order meta
+	 * @param int $order_id
+	 * @return array
+	 */
+	private function get_all_order_meta_hpos($order_id) {
+		if ($this->is_hpos_enabled()) {
+			$order = wc_get_order($order_id);
+
+			if (! $order) {
+				return array();
+			}
+
+			$meta_data = $order->get_meta_data();
+			$all_meta  = array();
+
+			foreach ($meta_data as $meta) {
+				$key   = $meta->key;
+				$value = $meta->value;
+
+				if (! isset($all_meta[ $key ])) {
+					$all_meta[ $key ] = array();
+				}
+
+				$all_meta[ $key ][] = $value;
+			}
+
+			$legacy_meta = $this->get_hpos_order_legacy_meta_array($order);
+
+			foreach ($legacy_meta as $key => $value) {
+				if ($value === '' || $value === null) {
+					continue;
+				}
+				if (! isset($all_meta[ $key ])) {
+					$all_meta[ $key ] = array();
+				}
+				if (! in_array($value, $all_meta[ $key ], true)) {
+					$all_meta[ $key ][] = $value;
+				}
+			}
+
+			return $all_meta;
+		}
+		return get_post_meta($order_id);
+	}
+	
 	public function mw_wc_qbo_admin_init(){
 		# Admin Head
 		add_action('admin_head', array($this,'mwqbos_admin_head'));
@@ -90,7 +290,11 @@ class MyWorks_WC_QBO_Sync_Admin {
 		  	add_action( 'admin_notices', array($this,'qbo_after_activate_admin_notice') );
 		}
 
-		if(isset($_GET['qbo_after_activate_admin_notice']) && $_GET['qbo_after_activate_admin_notice']=='false'){
+		if(isset($_GET['qbo_after_activate_admin_notice']) && sanitize_text_field(wp_unslash($_GET['qbo_after_activate_admin_notice']))=='false'){
+			// Verify nonce for admin notice dismissal
+			if(!isset($_GET['_wpnonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'qbo_dismiss_notice')){
+				wp_die(esc_html__('Security check failed', 'myworks-wc-qbo-sync'));
+			}
 			update_option('qbo_after_activate_admin_notice', 'false');
 			wp_safe_redirect(admin_url('admin.php?page=myworks-wc-qbo-sync-connection'));
 			exit();
@@ -102,7 +306,11 @@ class MyWorks_WC_QBO_Sync_Admin {
 		  	add_action( 'admin_notices', array($this,'qbo_after_admin_init_setup_notice') );
 		}
 
-		if(isset($_GET['qbo_after_admin_init_setup_notice']) && $_GET['qbo_after_admin_init_setup_notice']=='false'){
+		if(isset($_GET['qbo_after_admin_init_setup_notice']) && sanitize_text_field(wp_unslash($_GET['qbo_after_admin_init_setup_notice']))=='false'){
+			// Verify nonce for admin notice dismissal
+			if(!isset($_GET['_wpnonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'qbo_dismiss_setup_notice')){
+				wp_die(esc_html__('Security check failed', 'myworks-wc-qbo-sync'));
+			}
 			update_option( 'mw_wc_qbo_sync_fresh_install', 'false');
 			update_option('qbo_after_admin_init_setup_notice', 'false');
 			wp_safe_redirect(admin_url('admin.php?page=myworks-wc-qbo-push'));
@@ -129,8 +337,8 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if(get_option('mw_wc_qbo_sync_db_fix') !== null){
 			if(get_option('mw_wc_qbo_sync_db_fix') == 'true'){
 				//$this->mw_wc_qbo_sync_db_fix_db_manually();
-				if(isset($_GET['issue']) && $_GET['issue']!=''){
-					//$this->mw_wc_qbo_sync_db_fix_db_manually($_GET['issue']);
+				if(isset($_GET['issue']) && sanitize_text_field(wp_unslash($_GET['issue']))!=''){
+					//$this->mw_wc_qbo_sync_db_fix_db_manually(sanitize_text_field(wp_unslash($_GET['issue'])));
 				}
 			}
 		}
@@ -142,7 +350,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		
 		$this->wc_order_footer_script();
 		
-		$server_env = explode('/',$_SERVER['SERVER_SOFTWARE']);
+		$server_env = explode('/', sanitize_text_field(wp_unslash($_SERVER['SERVER_SOFTWARE'] ?? '')));
 		if(isset($server_env[0]) && $server_env[0] == 'nginx'){
 			MyWorks_WC_QBO_Sync_Admin::nginx_register_apache_request_headers();
 		}
@@ -167,7 +375,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		$isPluginAdminPage = false;
 		if(is_admin() && isset($_SERVER['QUERY_STRING']) && !empty($_SERVER['QUERY_STRING'])){
 			$qsc = 'myworks-wc-qbo-';
-			$queryString = explode('=',$MSQS_QL->sanitize($_SERVER['QUERY_STRING']));
+			$queryString = explode('=',$MSQS_QL->sanitize(sanitize_text_field(wp_unslash($_SERVER['QUERY_STRING']))));
 			if(is_array($queryString) && isset($queryString[1]) && !empty($queryString[1]) && $queryString[0] == 'page'){
 				$psa = [
 					'sync',
@@ -200,9 +408,9 @@ class MyWorks_WC_QBO_Sync_Admin {
 			    })(window,document,\'https://app.productfruits.com/static/script.js\');
 			</script>';
 
-			$userName = get_bloginfo('admin_email');
+			$userName = sanitize_email(get_bloginfo('admin_email'));
 			echo '<script type="text/javascript">		   
-			    $productFruits.push([\'init\', \'3wDQVCSYNjckZoDn\', \'en\', { username: \''.$userName.'\' }]);
+			    $productFruits.push([\'init\', \'3wDQVCSYNjckZoDn\', \'en\', { username: \'' . esc_js($userName) . '\' }]);
 			</script>';
 		}
 		
@@ -248,7 +456,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 	}
 	
 	public function qbo_init_check_admin_notice() {
-		echo '<div title="MyWorks QuickBooks Sync Setup Error" class="notice notice-error mwqs-setup-notice">'.__('MyWorks Woo Sync for QuickBooks Online has been deactivated! This plugin requires <a target="_blank" href="http://wordpress.org/extend/plugins/woocommerce/">WooCommerce</a> to be active!', 'mw_wc_qbo_sync').'</div>';
+		echo '<div title="MyWorks QuickBooks Sync Setup Error" class="notice notice-error mwqs-setup-notice">'.esc_html__('MyWorks Woo Sync for QuickBooks Online has been deactivated! This plugin requires WooCommerce to be active!', 'mw_wc_qbo_sync').' <a target="_blank" href="http://wordpress.org/extend/plugins/woocommerce/">WooCommerce</a></div>';
 	}
 	
 	public function qbo_after_activate_admin_notice() {
@@ -264,7 +472,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 	}
 	
 	public function qbo_after_admin_init_setup_notice() {
-		echo '<div id="message" class="updated notice notice-success is-dismissible"><p>'.__('Setup is now complete for <b>MyWorks Sync!</b> New activity will be now be automatically synced to QuickBooks. You may manually push any existing data (like products/orders) to QuickBooks by visiting <a href="'.admin_url('admin.php?page=myworks-wc-qbo-push').'">MyWorks Sync > Push</a>.', 'mw_wc_qbo_sync').'</p><a style="z-index:99; text-decoration: none;" class="notice-dismiss" href="'.admin_url('admin.php?page=myworks-wc-qbo-push&qbo_after_admin_init_setup_notice=false').'"><span class="screen-reader-text">Dismiss this notice.</span></a></div>';
+		echo '<div id="message" class="updated notice notice-success is-dismissible"><p>'.wp_kses_post(__('Setup is now complete for <b>MyWorks Sync!</b> New activity will be now be automatically synced to QuickBooks. You may manually push any existing data (like products/orders) to QuickBooks by visiting <a href="'.esc_url(admin_url('admin.php?page=myworks-wc-qbo-push')).'">MyWorks Sync > Push</a>.', 'mw_wc_qbo_sync')).'</p><a style="z-index:99; text-decoration: none;" class="notice-dismiss" href="'.esc_url(admin_url('admin.php?page=myworks-wc-qbo-push&qbo_after_admin_init_setup_notice=false')).'"><span class="screen-reader-text">Dismiss this notice.</span></a></div>';
 	}
 	
 	//
@@ -295,7 +503,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 			}else{
 				$interval_mins = 60;
 				#$now = new DateTime(null, new DateTimeZone('America/Los_Angeles'));
-				$now = new DateTime(null, new DateTimeZone('UTC'));
+				$now = new DateTime('now', new DateTimeZone('UTC'));
 				$datetime = $now->format('Y-m-d H:i:s');
 				$datetime = date('Y-m-d H:i:s',strtotime("-{$interval_mins} minutes",strtotime($datetime)));
 				
@@ -359,7 +567,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 			}else{
 				$interval_mins = 60;
 				#$now = new DateTime(null, new DateTimeZone('America/Los_Angeles'));
-				$now = new DateTime(null, new DateTimeZone('UTC'));
+				$now = new DateTime('now', new DateTimeZone('UTC'));
 				$datetime = $now->format('Y-m-d H:i:s');
 				$datetime = date('Y-m-d H:i:s',strtotime("-{$interval_mins} minutes",strtotime($datetime)));
 				
@@ -409,7 +617,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 			$Context = $MSQS_QL->getContext();
 			$realm = $MSQS_QL->getRealm();
 			
-			$now = new DateTime(null, new DateTimeZone('UTC')); #America/Los_Angeles
+			$now = new DateTime('now', new DateTimeZone('UTC')); #America/Los_Angeles
 			$datetime = $now->format('Y-m-d H:i:s');
 			
 			$last_timestamp = trim($MSQS_QL->get_option('mw_qbo_sync_iishc_cdc_last_product_impt_timestamp'));
@@ -483,7 +691,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 			$Context = $MSQS_QL->getContext();
 			$realm = $MSQS_QL->getRealm();
 
-			$now = new DateTime(null, new DateTimeZone('UTC')); #America/Los_Angeles
+			$now = new DateTime('now', new DateTimeZone('UTC')); #America/Los_Angeles
 			$datetime = $now->format('Y-m-d H:i:s');
 			
 			$last_timestamp = $MSQS_QL->get_option('mw_qbo_sync_iishc_cdc_last_payment_impt_timestamp');
@@ -611,15 +819,15 @@ class MyWorks_WC_QBO_Sync_Admin {
 		}		
 	}
 	
-	public function mw_qbo_sync_queue_cron_function_execute($is_forced=false){
+	public function mw_qbo_sync_queue_cron_function_execute_old($is_forced=false){
 		global $MSQS_QL;
-		
+
 		#New
 		$is_dqfr_p = $MSQS_QL->option_checked('mw_wc_qbo_sync_enable_d_o_q_add_p');
 		$lfp = MW_QBO_SYNC_LOG_DIR;
 		$lf = $lfp . 'ql.lock';
 		$fp = fopen($lf, "w");
-		if(flock($fp, LOCK_EX | LOCK_NB)){
+		if($fp && flock($fp, LOCK_EX | LOCK_NB)){
 			//
 		}else{
 			if($is_dqfr_p){
@@ -639,7 +847,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		}
 		
 		if(!$MSQS_QL->is_connected()){
-			flock($fp, LOCK_UN);
+			if($fp && is_resource($fp)) flock($fp, LOCK_UN);
 			return false;
 		}
 		
@@ -651,8 +859,9 @@ class MyWorks_WC_QBO_Sync_Admin {
 		global $wpdb;
 		$qq = "SELECT * FROM {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue WHERE `run` = 0 ORDER BY `added_date` ASC"; // id
 		//$qq = $wpdb->prepare()
-		$queue_data = $MSQS_QL->get_data($qq);		
+		$queue_data = $MSQS_QL->get_data($qq);
 		if(is_array($queue_data) && count($queue_data)){
+			//$MSQS_QL->add_wc_debug_log( $queue_data, true, true, true );
 			$dt_str = $MSQS_QL->now('Y-m-d H:i:s');
 			$dt_str = base64_encode($dt_str);
 			
@@ -679,7 +888,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 				if(!$is_oauth2_refreshed && $MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection') && $MSQS_QL->check_oauth2_refresh()){
 					$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true,true);					
 					if(!$MSQS_QL->is_connected()){
-						flock($fp, LOCK_UN);
+						if($fp && is_resource($fp)) flock($fp, LOCK_UN);
 						return false;
 					}
 					
@@ -885,7 +1094,10 @@ class MyWorks_WC_QBO_Sync_Admin {
 				$MSQS_QL->save_log('Queue Sync Run',$log_txt,'Queue',2);
 			}
 			
-			$wpdb->query("DELETE FROM `{$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue` WHERE `run` = 1 ");
+			// Validate table name before using it
+			if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_real_time_sync_queue', $wpdb->prefix) === 0) {
+				$wpdb->query($wpdb->prepare("DELETE FROM `{$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue` WHERE `run` = %d", 1));
+			}
 		}
 		
 		/**/
@@ -910,7 +1122,393 @@ class MyWorks_WC_QBO_Sync_Admin {
 		}
 		
 		//
-		flock($fp, LOCK_UN);
+		if($fp && is_resource($fp)) flock($fp, LOCK_UN);
+	}
+	
+	/**
+	 * Improved version of queue cron function with smart delays and better error handling
+	 * Includes dynamic delay adjustment and enhanced logging
+	 */
+	public function mw_qbo_sync_queue_cron_function_execute($is_forced=false){
+		global $MSQS_QL;
+
+		#New
+		$is_dqfr_p = $MSQS_QL->option_checked('mw_wc_qbo_sync_enable_d_o_q_add_p');
+		$lfp = MW_QBO_SYNC_LOG_DIR;
+		$lf = $lfp . 'ql.lock';
+		$fp = fopen($lf, "w");
+		if($fp && flock($fp, LOCK_EX | LOCK_NB)){
+			//
+		}else{
+			if($is_dqfr_p){
+				$MSQS_QL->save_log('Queue Sync Debug','Queue Function Already Running','Queue',2);
+				return false;
+			}			
+		}
+		
+		//
+		if($is_forced){
+			delete_option('mw_wc_qbo_sync_force_queue_run');
+		}		
+		
+		//$MSQS_QL->save_log('Queue Sync Run Test','Queue Function Executed','Queue',2);
+		if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
+			$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true);
+		}
+		
+		if(!$MSQS_QL->is_connected()){
+			if($fp && is_resource($fp)) flock($fp, LOCK_UN);
+			return false;
+		}
+		
+		$qoa_ids = array();
+		$qpa_ids = array();
+		$qca_ids = array();
+		$qov_ids = array();
+		
+		global $wpdb;
+		$qq = "SELECT * FROM {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue WHERE `run` = 0 ORDER BY `added_date` ASC"; // id
+		//$qq = $wpdb->prepare()
+		$queue_data = $MSQS_QL->get_data($qq);
+		if(is_array($queue_data) && count($queue_data)){
+			//$MSQS_QL->add_wc_debug_log( $queue_data, true, true, true );
+			$dt_str = $MSQS_QL->now('Y-m-d H:i:s');
+			$dt_str = base64_encode($dt_str);
+			
+			$log_txt = "Queue Sync Run Started\n";
+			
+			$ord_log_count = 0;
+			$cus_log_count = 0;
+			$pmt_log_count = 0;
+			$prd_log_count = 0;
+			$vrn_log_count = 0;
+			$prd_inv_log_count = 0;
+			$vrn_inv_log_count = 0;
+			$rfd_log_count = 0;
+			$cat_log_count = 0;
+			
+			$tot_queue_item = count($queue_data);
+			$processed_items = 0;
+			$is_oauth2_refreshed = false;
+			
+			// Dynamic delay adjustment based on queue size
+			$dynamic_delay = 2; // Base delay of 2 seconds
+			if($tot_queue_item > 100) {
+				$dynamic_delay = 4; // 4 seconds for large queues
+			} elseif($tot_queue_item > 50) {
+				$dynamic_delay = 3; // 3 seconds for medium queues
+			}
+			
+			if($is_dqfr_p){
+				$MSQS_QL->save_log('Queue Sync Debug', 
+					"Processing {$tot_queue_item} items with {$dynamic_delay}s delay", 
+					'Queue', 2);
+			}
+			
+			$pbos_id_arr = array();
+			foreach($queue_data as $q_dt){
+				$start_time = microtime(true);
+				
+				/*Queue Loop Oauth2 Refresh Connection Check*/
+				if(!$is_oauth2_refreshed && $MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection') && $MSQS_QL->check_oauth2_refresh()){
+					$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true,true);					
+					if(!$MSQS_QL->is_connected()){
+						if($fp && is_resource($fp)) flock($fp, LOCK_UN);
+						return false;
+					}
+					
+					$is_oauth2_refreshed = true;
+				}
+				
+				$log_type = '';
+				$row_id = $q_dt['id'];
+				$item_type = $q_dt['item_type'];				
+				$item_id = $q_dt['item_id'];
+				$item_action = $q_dt['item_action'];
+				$woocommerce_hook = $q_dt['woocommerce_hook'];
+				
+				$success = 0;
+				$run = 0;
+				$error_message = '';
+				
+				// Customer Processing
+				if($item_type=='Customer' && $item_action=='CustomerPush'){
+					if(!in_array($item_id,$qca_ids)){
+						$qca_ids[] = $item_id;
+						$log_type = 'Client';
+						$cus_log_count++;
+						$run = 1;
+						if($this->myworks_wc_qbo_sync_registration_realtime($item_id)){
+							$success = 1;
+						}
+					}
+					
+					$wpdb->query($wpdb->prepare("UPDATE {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue SET `run` = %d , `success` = %d WHERE `id` = %d",1,$success,$row_id));
+				}
+				
+				// Invoice/Order Processing
+				if($item_type=='Invoice' && $item_action=='OrderPush'){
+					if(!in_array($item_id,$qoa_ids)){
+						$qoa_ids[] = $item_id;
+						$log_type = 'Invoice';
+						$ord_log_count++;
+						$run = 1;
+						if($this->myworks_wc_qbo_sync_order_realtime(array('order_id'=>$item_id,'queue_side'=>true))){//ID->Array #21-06-2018
+							$success = 1;
+						}
+					}
+					
+					$wpdb->query($wpdb->prepare("UPDATE {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue SET `run` = %d , `success` = %d WHERE `id` = %d",1,$success,$row_id));
+					
+					#New - Payment before order sync issue
+					if(isset($pbos_id_arr[$item_id])){
+						$qpa_ids[] = $item_id;
+						$pmt_log_count++;
+						$success_p = 0;
+						if($this->mw_qbo_wc_order_payment($item_id)){
+							$success_p = 1;
+						}
+						
+						$wpdb->query($wpdb->prepare("UPDATE {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue SET `run` = %d , `success` = %d WHERE `id` = %d",1,$success_p,$pbos_id_arr[$item_id]));
+						
+						unset($pbos_id_arr[$item_id]);
+					}
+				}
+				
+				// Order Void Processing
+				if($item_type=='Invoice' && $item_action=='OrderVoid'){
+					if(!in_array($item_id,$qov_ids)){
+						$qov_ids[] = $item_id;
+						$log_type = 'Invoice';
+						$ord_log_count++;
+						$run = 1;
+						if($this->myworks_wc_qbo_order_cancelled($item_id)){
+							$success = 1;
+						}
+					}
+					
+					$wpdb->query($wpdb->prepare("UPDATE {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue SET `run` = %d , `success` = %d WHERE `id` = %d",1,$success,$row_id));
+				}
+				
+				// Payment Processing
+				if($item_type=='Payment' && $item_action=='PaymentPush'){
+					if(!in_array($item_id,$qpa_ids)){
+						#New - Payment before order sync issue
+						$pbosq = $wpdb->prepare("SELECT * FROM {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue WHERE `item_id` = %d AND `item_action` = 'OrderPush' AND `run` = 0 LIMIT 0,1",$item_id);
+						$pbosr = $MSQS_QL->get_row($pbosq);
+						if(is_array($pbosr) && !empty($pbosr)){
+							$pbos_id_arr[$item_id] = $row_id;
+							continue;
+						}						
+						
+						$qpa_ids[] = $item_id;
+						$log_type = 'Payment';
+						$pmt_log_count++;
+						$run = 1;
+						if($this->mw_qbo_wc_order_payment($item_id)){
+							$success = 1;
+						}
+					}
+					
+					$wpdb->query($wpdb->prepare("UPDATE {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue SET `run` = %d , `success` = %d WHERE `id` = %d",1,$success,$row_id));
+				}
+				
+				// Product Processing
+				if($item_type=='Product' && $item_action=='ProductPush'){
+					$log_type = 'Product';
+					$prd_log_count++;
+					$run = 1;
+					if($this->mw_qbo_wc_product_save($item_id,'Queue')){
+						$success = 1;
+					}
+					$wpdb->query($wpdb->prepare("UPDATE {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue SET `run` = %d , `success` = %d WHERE `id` = %d",1,$success,$row_id));
+				}
+				
+				// Variation Processing
+				if($item_type=='Variation' && $item_action=='VariationPush'){
+					$log_type = 'Variation';
+					$vrn_log_count++;
+					$run = 1;
+					if($this->mw_qbo_wc_variation_save($item_id)){
+						$success = 1;
+					}
+					$wpdb->query($wpdb->prepare("UPDATE {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue SET `run` = %d , `success` = %d WHERE `id` = %d",1,$success,$row_id));
+				}
+				
+				// Refund Processing
+				if($item_type=='Refund' && $item_action=='RefundPush'){
+					$log_type = 'Refund';
+					$rfd_log_count++;
+					$run = 1;
+					if($this->mw_wc_qbo_sync_woocommerce_order_refunded($item_id)){
+						$success = 1;
+					}
+					$wpdb->query($wpdb->prepare("UPDATE {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue SET `run` = %d , `success` = %d WHERE `id` = %d",1,$success,$row_id));
+				}				
+				
+				// Inventory Processing
+				if($item_type=='Inventory' && $item_action=='InventoryPush'){
+					$log_type = 'Inventory';
+					$prd_inv_log_count++;
+					$run = 1;
+					if($this->myworks_wc_qbo_sync_update_stock($item_id)){
+						$success = 1;
+					}
+					$wpdb->query($wpdb->prepare("UPDATE {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue SET `run` = %d , `success` = %d WHERE `id` = %d",1,$success,$row_id));
+				}
+				
+				// Variation Inventory Processing
+				if($item_type=='VariationInventory' && $item_action=='VariationInventoryPush'){
+					$log_type = 'Inventory';
+					$vrn_inv_log_count++;
+					$run = 1;
+					if($this->myworks_wc_qbo_sync_variation_update_stock($item_id)){
+						$success = 1;
+					}
+					$wpdb->query($wpdb->prepare("UPDATE {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue SET `run` = %d , `success` = %d WHERE `id` = %d",1,$success,$row_id));
+				}				
+				
+				// Category Processing
+				if($item_type=='Category' && $item_action=='CategoryPush'){
+					$log_type = 'Category';
+					$cat_log_count++;
+					$run = 1;
+					if($this->myworks_wc_qbo_sync_product_category_realtime($item_id)){
+						$success = 1;
+					}
+					$wpdb->query($wpdb->prepare("UPDATE {$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue SET `run` = %d , `success` = %d WHERE `id` = %d",1,$success,$row_id));
+				}
+				
+				// Add to history
+				$cud_dt = $MSQS_QL->now('Y-m-d H:i:s');
+				$s_history_data = array();
+				$s_history_data['item_type'] = $item_type;
+				$s_history_data['item_action'] = $item_action;
+				$s_history_data['woocommerce_hook'] = $woocommerce_hook;
+				$s_history_data['item_id'] = $item_id;
+				$s_history_data['run'] = $run;
+				$s_history_data['success'] = $success;
+				$s_history_data['added_date'] = $cud_dt;
+				$s_history_data['dt_str'] = $dt_str;
+				$wpdb->insert($wpdb->prefix.'mw_wc_qbo_sync_real_time_sync_history', $s_history_data);
+				
+				$processed_items++;
+				$processing_time = round((microtime(true) - $start_time) * 1000, 2); // in milliseconds
+				
+				// Smart delay system - only apply if delay setting is enabled
+				if($MSQS_QL->option_checked('mw_wc_qbo_sync_enable_d_o_q_add_p')) {
+					$item_delay = $dynamic_delay;
+					
+					// Adjust delay based on item type complexity
+					switch($item_type) {
+						case 'Invoice':
+							$item_delay = max($dynamic_delay, 3); // Minimum 3s for invoices (most complex)
+							break;
+						case 'Payment':
+						case 'Customer':
+							$item_delay = max($dynamic_delay, 2); // Minimum 2s for critical operations
+							break;
+						default:
+							$item_delay = $dynamic_delay; // Use base delay for others
+					}
+					
+					// Additional delay if processing took longer than expected (possible API slowness)
+					if($processing_time > 2000) { // If processing took more than 2 seconds
+						$item_delay = min($item_delay + 1, 8); // Add 1s delay, max 8s total
+					}
+					
+					// Apply the calculated delay
+					if($item_delay > 0) {
+						sleep($item_delay);
+					}
+				}
+				
+				// Debug logging for delay tracking
+				if($is_dqfr_p && $processed_items % 10 == 0) { // Log every 10th item
+					$MSQS_QL->save_log('Queue Sync Progress', 
+						"Processed {$processed_items}/{$tot_queue_item} items. Last item: {$item_type}/{$item_action} (ID: {$item_id}) took {$processing_time}ms with {$item_delay}s delay", 
+						'Queue', 2);
+				}
+			}
+			
+			// Final logging
+			if($cus_log_count){$log_txt.="Total Customer Sync Run: $cus_log_count\n";}
+			if($ord_log_count){$log_txt.="Total Order Sync Run: $ord_log_count\n";}
+			if($pmt_log_count){$log_txt.="Total Payment Sync Run: $pmt_log_count\n";}
+			if($rfd_log_count){$log_txt.="Total Refund Sync Run: $rfd_log_count\n";}
+			if($prd_log_count){$log_txt.="Total Product Sync Run: $prd_log_count\n";}
+			if($vrn_log_count){$log_txt.="Total Variation Sync Run: $vrn_log_count\n";}
+			if($prd_inv_log_count){$log_txt.="Total Product Inventory Sync Run: $prd_inv_log_count\n";}
+			if($vrn_inv_log_count){$log_txt.="Total Variation Inventory Sync Run: $vrn_inv_log_count\n";}
+			if($cat_log_count){$log_txt.="Total Category Sync Run: $cat_log_count\n";}
+			
+			$log_txt.="Total Items in Queue: $tot_queue_item\n";
+			$log_txt.="Total Items Processed: $processed_items\n";
+			$log_txt.="Queue Sync Run Ended";
+			
+			$is_s_queue_log = false;
+			if($cus_log_count>0 || $ord_log_count>0 || $pmt_log_count>0 || $rfd_log_count>0 || $prd_log_count>0 || $vrn_log_count>0 || $prd_inv_log_count>0 || $vrn_inv_log_count>0 || $cat_log_count>0 ){
+				$is_s_queue_log = true;
+			}
+			
+			if($is_forced){
+				$is_s_queue_log = false;
+			}
+			
+			if($is_s_queue_log){
+				$MSQS_QL->save_log('Queue Sync Run',$log_txt,'Queue',2);
+			}
+			
+			// Validate table name before using it
+			if (strpos($wpdb->prefix . 'mw_wc_qbo_sync_real_time_sync_queue', $wpdb->prefix) === 0) {
+				$wpdb->query($wpdb->prepare("DELETE FROM `{$wpdb->prefix}mw_wc_qbo_sync_real_time_sync_queue` WHERE `run` = %d", 1));
+			}
+		}
+		
+		/*Catch-all queue processing (unchanged)*/
+		if($MSQS_QL->option_checked('mw_wc_qbo_sync_ca_ruso_dqs')){
+			$ord_list = $MSQS_QL->get_qs_catch_all_order_ids();
+			if(is_array($ord_list) && !empty($ord_list)){
+				foreach($ord_list as $ol){
+					$is_q_caos_run = false;
+					if($ol['order_id'] > 0 && !in_array($ol['order_id'],$qoa_ids)){
+						try {
+							if($this->myworks_wc_qbo_sync_order_realtime(array('order_id'=>$ol['order_id'],'queue_side'=>true,'catch_all_q'=>true))){
+								$is_q_caos_run = true;
+							}
+						} catch (Exception $e) {
+							if($is_dqfr_p){
+								$MSQS_QL->save_log('Catch-All Queue Error', 
+									"Order {$ol['order_id']} sync failed: {$e->getMessage()}", 
+									'Queue', 1);
+							}
+						}
+					}
+					
+					if($is_q_caos_run && $ol['payment_id'] > 0 && !in_array($ol['payment_id'],$qpa_ids)){
+						try {
+							if($this->mw_qbo_wc_order_payment(array('payment_id'=>$ol['payment_id'],'queue_side'=>true))){
+								//
+							}
+						} catch (Exception $e) {
+							if($is_dqfr_p){
+								$MSQS_QL->save_log('Catch-All Queue Payment Error', 
+									"Payment {$ol['payment_id']} sync failed: {$e->getMessage()}", 
+									'Queue', 1);
+							}
+						}
+					}
+					
+					// Apply delay for catch-all items too - only if delay setting is enabled
+					if($MSQS_QL->option_checked('mw_wc_qbo_sync_enable_d_o_q_add_p')) {
+						sleep(max(1, $dynamic_delay - 1));
+					}
+				}
+			}
+		}
+		
+		//
+		if($fp && is_resource($fp)) flock($fp, LOCK_UN);
 	}
 	
 	public function mw_wc_qbo_cron_schedules($schedules){
@@ -1099,7 +1697,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		}
 		
 		if($is_opuci){
-			update_option($ipit_on,$ipit);
+			update_option('mw_wc_qbo_sync_ivnt_pull_interval_time',$ipit);
 			//
 			wp_clear_scheduled_hook($mwqb_iis_hk);
 			wp_schedule_event(time(), $ipit, $mwqb_iis_hk);
@@ -1145,7 +1743,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		}
 		
 		if($is_opuci){
-			update_option($ppit_on,$ppit);
+			update_option('mw_wc_qbo_sync_prc_pull_interval_time',$ppit);
 			//
 			wp_clear_scheduled_hook($mwqb_ppis_hk);
 			wp_schedule_event(time(), $ppit, $mwqb_ppis_hk);
@@ -1191,7 +1789,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		}
 		
 		if($is_opuci){
-			update_option($ppit_on,$ppit);
+			update_option('mw_wc_qbo_sync_prc_pull_interval_time',$ppit);
 			//
 			wp_clear_scheduled_hook($mwqb_ppis_hk);
 			wp_schedule_event(time(), $ppit, $mwqb_ppis_hk);
@@ -1241,7 +1839,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		}
 		
 		if($is_opuci){
-			update_option($ppit_on,$ppit);
+			update_option('mw_wc_qbo_sync_prc_pull_interval_time',$ppit);
 			//
 			wp_clear_scheduled_hook($mwqb_ppis_hk);
 			wp_schedule_event(time(), $ppit, $mwqb_ppis_hk);
@@ -1290,7 +1888,8 @@ class MyWorks_WC_QBO_Sync_Admin {
 		
 		/**/
 		if(session_id()){
-			$is_wlv = (isset($_POST['action']) && $_POST['action'] == 'woocommerce_load_variations')?true:false;
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checking for WooCommerce core action, no sensitive operations
+			$is_wlv = (isset($_POST['action']) && sanitize_text_field(wp_unslash($_POST['action'])) == 'woocommerce_load_variations')?true:false;
 			if(!$is_wlv){
 				$MSQS_QL->unset_session('mw_qvdf_s2_js');			
 			}
@@ -1440,7 +2039,10 @@ class MyWorks_WC_QBO_Sync_Admin {
 			//
 			$dbfix['inv_due_date_days'] = "ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `inv_due_date_days` INT(3) NOT NULL AFTER `deposit_cron_utc`;";
 			
-			if(isset($dbfix[$dbfixid])){
+			// Validate that the dbfixid exists in our predefined array to prevent SQL injection
+			if(isset($dbfix[$dbfixid]) && array_key_exists($dbfixid, $dbfix)){
+				// These are predefined DDL statements for schema management
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Executing predefined DDL statements from validated array
 				$wpdb->query($dbfix[$dbfixid]);
 			}
 		}
@@ -1456,12 +2058,12 @@ class MyWorks_WC_QBO_Sync_Admin {
 		#$MSQS_QL->_p($wco_ids);
 		$hide_qbo_sc = false;
 		if(is_array($wco_ids) && !empty($wco_ids) && count($wco_ids) <= 200){
-			$json_woil = json_encode($wco_ids);
+			$json_woil = wp_json_encode($wco_ids);
 			wp_nonce_field( 'myworks_wc_qbo_sync_odpage_syncstatus', 'odpage_syncstatus' );
 			echo '
 			<script type="text/javascript">
 				jQuery(document).ready(function(e){					
-					var ord_ids = '.$json_woil.';
+					var ord_ids = ' . esc_js($json_woil) . ';
 					var data = {
 						"action": \'mw_wc_qbo_sync_odpage_sync_status\',
 						"ord_ids": ord_ids,
@@ -1570,14 +2172,14 @@ class MyWorks_WC_QBO_Sync_Admin {
 					}
 					$sync_status_html = '<a style="color:white;" target="_blank" href="'.$qbo_href.'">'.$sync_status_html.'</a>';
 					
-					echo 'if($.inArray(\''.$c_doc_no.'\', list_ids) == -1){';
-					echo 'list_ids.push("'.$c_doc_no.'");';
-					echo "jQuery('#ph_inv_ss_".$c_doc_no."').html('{$sync_status_html}').addClass('mw_qbo_sync_status_paid');";
+					echo 'if($.inArray(\''.esc_js($c_doc_no).'\', list_ids) == -1){';
+					echo 'list_ids.push("'.esc_js($c_doc_no).'");';
+					echo "jQuery('#ph_inv_ss_".esc_js($c_doc_no)."').html('".wp_kses($sync_status_html, array('a' => array('style' => array(), 'target' => array(), 'href' => array()), 'span' => array('title' => array())))."').addClass('mw_qbo_sync_status_paid');";
 					echo '}';
 					
 					echo 'else{';
-					echo 'var ss_title = jQuery(\'#ph_inv_ss_'.$c_doc_no.'\').children(\'span\').attr(\'title\');';
-					echo "jQuery('#ph_inv_ss_".$c_doc_no."').children('span').attr('title',ss_title+', #".$pmd['Id']."');";
+					echo 'var ss_title = jQuery(\'#ph_inv_ss_'.esc_js($c_doc_no).'\').children(\'span\').attr(\'title\');';
+					echo "jQuery('#ph_inv_ss_".esc_js($c_doc_no)."').children('span').attr('title',ss_title+', #".esc_js($pmd['Id'])."');";
 					echo '}';
 				}
 			}				
@@ -1616,7 +2218,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 
 		wp_enqueue_style( $this->plugin_name.'-widget', plugin_dir_url( __FILE__ ) . 'css/wc-widget-css.css', array(), $this->version, 'all' );
 		
-		$query_string = explode('=',$_SERVER['QUERY_STRING']);
+		$query_string = explode('=', sanitize_text_field(wp_unslash($_SERVER['QUERY_STRING'] ?? '')));
 		//echo '<pre>';print_r($query_string);echo '</pre>';
 		if(isset($query_string[1])){
 			if( strpos( $query_string[1], "myworks-wc-qbo" ) !== false ) {				
@@ -1833,13 +2435,20 @@ class MyWorks_WC_QBO_Sync_Admin {
 	}
 	
 	public function mw_qbo_sync_add_qbo_status_column(){
-
-		add_filter( 'manage_edit-shop_order_columns', array($this,'custom_shop_order_column'),11);
-		add_action( 'manage_shop_order_posts_custom_column' , array($this,'custom_orders_list_column_content'), 10, 2 );		
+		// HPOS compatible admin column hooks
+		if ($this->is_hpos_enabled()) {
+			// HPOS enabled - use WooCommerce's HPOS-compatible hooks
+			add_filter( 'manage_woocommerce_page_wc-orders_columns', array($this,'custom_shop_order_column'), 11);
+			add_action( 'manage_woocommerce_page_wc-orders_custom_column', array($this,'custom_orders_list_column_content_hpos'), 10, 2 );
+		} else {
+			// Legacy - traditional post-based orders
+			add_filter( 'manage_edit-shop_order_columns', array($this,'custom_shop_order_column'),11);
+			add_action( 'manage_shop_order_posts_custom_column' , array($this,'custom_orders_list_column_content'), 10, 2 );
+		}
 	}
 	
 	public function custom_shop_order_column($columns){
-		$columns['mw_qbo_sync_inv_status'] = __( 'QBO Status','mw_wc_qbo_sync');
+		$columns['mw_qbo_sync_inv_status'] = __( 'QuickBooks Status','mw_wc_qbo_sync');
 		return $columns;
 	}
 	
@@ -1849,8 +2458,16 @@ class MyWorks_WC_QBO_Sync_Admin {
 		
 		$order_id = 0;
 		if(is_object($post) && !empty($post)){
-			if(isset($post->ID) && isset($post->post_type) && $post->post_type == 'shop_order'){
-				$order_id = (int) $post->ID;
+			// HPOS compatible order detection for column content
+			if(isset($post->ID)){
+				// Check if this is an order using HPOS-compatible method
+				$order = wc_get_order($post->ID);
+				if($order && $order->get_type() === 'shop_order'){
+					$order_id = (int) $post->ID;
+				} elseif(isset($post->post_type) && $post->post_type == 'shop_order') {
+					// Fallback for legacy post-based orders
+					$order_id = (int) $post->ID;
+				}
 			}
 		}
 		
@@ -1860,7 +2477,12 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if($MSQS_QL->option_checked('mw_wc_qbo_sync_use_qb_next_ord_num_iowon') && !$MSQS_QL->get_qbo_company_setting('is_custom_txn_num_allowed')){
 			$is_qb_next_ord_num = true;
 			if($order_id){
-				$ord_no = get_post_meta($order_id,'_mw_qbo_sync_ord_doc_no',true);
+				if ($this->is_hpos_enabled()) {
+					$order = wc_get_order($order_id);
+					$ord_no = $order ? $order->get_meta('_mw_qbo_sync_ord_doc_no') : '';
+				} else {
+					$ord_no = get_post_meta($order_id,'_mw_qbo_sync_ord_doc_no',true);
+				}
 				$ord_no = trim($ord_no);					
 			}				
 		}
@@ -1881,14 +2503,74 @@ class MyWorks_WC_QBO_Sync_Admin {
 					$e_woil[] = $order_id;
 					$MSQS_QL->set_session_val('wc_order_id_list',$e_woil);
 					
-					$l_img = plugins_url('myworks-woo-sync-for-quickbooks-online/assets/loading.gif');
+					$l_img = esc_url(plugins_url('myworks-woo-sync-for-quickbooks-online/assets/loading.gif'));
 					echo '
-					<span id="ph_inv_ss_'.md5($ord_no).'" class="ph_inv_ss mw_qbo_sync_status_span mqsss">
-						<img src="'.$l_img.'" alt="">
+					<span id="ph_inv_ss_'.esc_attr(md5($ord_no)).'" class="ph_inv_ss mw_qbo_sync_status_span mqsss">
+						<img src="'.esc_url($l_img).'" alt=""
 					</span>
 					';
 				}
 				
+				break;
+		}
+	}
+	
+	/**
+	 * HPOS compatible version of custom_orders_list_column_content
+	 */
+	public function custom_orders_list_column_content_hpos( $column, $order ){
+		global $MSQS_QL;
+		
+		// For HPOS, the second parameter can be either an Order object or order ID
+		if ( is_object( $order ) && method_exists( $order, 'get_id' ) ) {
+			// It's an Order object
+			$order_id = $order->get_id();
+		} else {
+			// It's an order ID
+			$order_id = (int) $order;
+			$order = wc_get_order( $order_id );
+		}
+		
+		if ( ! $order_id || ! $order ) {
+			return;
+		}
+		
+		$ord_no = $order_id;
+		
+		// Check if using QB next order number
+		$is_qb_next_ord_num = false;
+		if($MSQS_QL->option_checked('mw_wc_qbo_sync_use_qb_next_ord_num_iowon') && !$MSQS_QL->get_qbo_company_setting('is_custom_txn_num_allowed')){
+			$is_qb_next_ord_num = true;
+			if($order_id && $order){
+				// Use order object to get meta directly
+				$ord_no = $order->get_meta('_mw_qbo_sync_ord_doc_no');
+				$ord_no = trim($ord_no);
+			}
+		}
+		
+		// Get WooCommerce order number if not using QB next number
+		if(!$is_qb_next_ord_num){
+			$wc_inv_no = $MSQS_QL->get_woo_ord_number_from_order($order_id);
+			if(!empty($wc_inv_no)){
+				$ord_no = $wc_inv_no;
+			}
+		}
+		
+		switch ( $column ){
+			case 'mw_qbo_sync_inv_status' :
+				if($order_id){
+					// Add order ID to session for batch processing
+					$e_woil = (array) $MSQS_QL->get_session_val('wc_order_id_list',array());
+					$e_woil[] = $order_id;
+					$MSQS_QL->set_session_val('wc_order_id_list',$e_woil);
+					
+					$l_img = esc_url(plugins_url('myworks-woo-sync-for-quickbooks-online/assets/loading.gif'));
+					echo '
+					<span id="ph_inv_ss_'.esc_attr(md5($ord_no)).'" class="ph_inv_ss mw_qbo_sync_status_span mqsss">
+						<img src="'.esc_url($l_img).'" alt=""
+					</span>
+					';
+				}
 				break;
 		}
 	}
@@ -1918,7 +2600,12 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if($MSQS_QL->option_checked('mw_wc_qbo_sync_use_qb_next_ord_num_iowon') && !$MSQS_QL->get_qbo_company_setting('is_custom_txn_num_allowed')){
 			$is_qb_next_ord_num = true;
 			if($order_id){
-				$order_id = get_post_meta($order_id,'_mw_qbo_sync_ord_doc_no',true);
+				if ($this->is_hpos_enabled()) {
+					$order = wc_get_order($order_id);
+					$order_id = $order ? $order->get_meta('_mw_qbo_sync_ord_doc_no') : '';
+				} else {
+					$order_id = get_post_meta($order_id,'_mw_qbo_sync_ord_doc_no',true);
+				}
 				$order_id = trim($order_id);					
 			}				
 		}
@@ -1941,23 +2628,23 @@ class MyWorks_WC_QBO_Sync_Admin {
 					}
 				}
 				
-				echo '<span id="ph_inv_ss_'.md5($order_id).'" class="ph_inv_ss mw_qbo_sync_status_span"></span>';
+				echo '<span id="ph_inv_ss_'.esc_attr(md5($order_id)).'" class="ph_inv_ss mw_qbo_sync_status_span"></span>';
 				break;
 		}
 	}
 	
 	public function mw_qbo_sync_add_qbo_status_widget(){
-		add_action( 'add_meta_boxes', array($this,'mw_add_meta_boxes') );		
+		add_action( 'add_meta_boxes', array($this,'mw_add_meta_boxes') );
 	}
 	
 	public  function mw_add_meta_boxes(){
-		global $woocommerce, $order, $post;
+        // HPOS and non-HPOS use different hooks.
+        add_meta_box('qbo_invoice_info', __('QuickBooks Status', 'mw_wc_qbo_sync'), array($this,'qbo_invoice_info_fn'), 'woocommerce_page_wc-orders', 'side', 'core');
 		add_meta_box( 'qbo_invoice_info', __('QuickBooks Status','mw_wc_qbo_sync'), array($this,'qbo_invoice_info_fn'), 'shop_order', 'side', 'core' );
 	}
 	
-	public function qbo_invoice_info_fn(){
-		global $woocommerce,$post;
-		global $MSQS_QL;
+	public function qbo_invoice_info_fn($post){
+		global $MSQS_QL, $theorder;
 		
 		if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
 			$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true);	
@@ -1967,9 +2654,15 @@ class MyWorks_WC_QBO_Sync_Admin {
 			echo '<p>QuickBooks Not Connected</p>';
 			return;
 		}
+
+		if ($this->is_hpos_enabled()) {
+			\Automattic\WooCommerce\Utilities\OrderUtil::init_theorder_object( $post );
+		}
+
+		$order = $theorder;
 		
 		//30-05-2017
-		$order_id = $post->ID;
+		$order_id = $order->get_id();
 		$is_qbosa_sr = $MSQS_QL->is_order_sync_as_sales_receipt($order_id);
 		$is_qbosa_est = $MSQS_QL->is_order_sync_as_estimate($order_id);
 		
@@ -1981,7 +2674,12 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if($MSQS_QL->option_checked('mw_wc_qbo_sync_use_qb_next_ord_num_iowon') && !$MSQS_QL->get_qbo_company_setting('is_custom_txn_num_allowed')){
 			$is_qb_next_ord_num = true;
 			if($order_id){
-				$order_id = get_post_meta($order_id,'_mw_qbo_sync_ord_doc_no',true);
+				if ($this->is_hpos_enabled()) {
+					$order = wc_get_order($order_id);
+					$order_id = $order ? $order->get_meta('_mw_qbo_sync_ord_doc_no') : '';
+				} else {
+					$order_id = get_post_meta($order_id,'_mw_qbo_sync_ord_doc_no',true);
+				}
 				$order_id = trim($order_id);
 			}
 		}
@@ -2025,13 +2723,13 @@ class MyWorks_WC_QBO_Sync_Admin {
 			</p>
 			<p class="mw_qbo_sync_number_p">
 			<strong>Number:</strong>
-			<span class="mw_qbo_sync_status_span mw_qbo_sync_status_info">'.$wco_map_data_arr[0]['DocNumber'].'</span>
+			<span class="mw_qbo_sync_status_span mw_qbo_sync_status_info">'.esc_html($wco_map_data_arr[0]['DocNumber']).'</span>
 			</p>';
 			if($MSQS_QL->is_plugin_active('split-order-custom-po-for-myworks-qbo-sync')){
 				if(isset($wco_map_data_arr[1]) && is_array($wco_map_data_arr[1]) && count($wco_map_data_arr[1])){
 					echo '
 					<p class="mw_qbo_sync_number_p">
-						<strong>Number:</strong> <span class="mw_qbo_sync_status_span mw_qbo_sync_status_info">'.$wco_map_data_arr[1]['DocNumber'].'</span>
+						<strong>Number:</strong> <span class="mw_qbo_sync_status_span mw_qbo_sync_status_info">'.esc_html($wco_map_data_arr[1]['DocNumber']).'</span>
 					</p>';
 				}
 			}			
@@ -2047,7 +2745,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 			
 			echo '<p>';
 			echo '
-			<a target="_blank" href="'.$qbo_href.'" title="'.$ie_title.'"><button class="button" type="button">View</button></a>
+			<a target="_blank" href="'.esc_url($qbo_href).'" title="'.esc_attr($ie_title).'"><button class="button" type="button">View</button></a>
 			';
 			
 			if($is_inv_sr){
@@ -2059,7 +2757,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 				
 				$pdf_title = 'View/Save as PDF';
 				echo '
-				<a target="_blank" href="'.$pdf_href.'" title="'.$pdf_title.'"><button class="button" type="button">PDF</button></a>
+				<a target="_blank" href="'.esc_url($pdf_href).'" title="'.esc_attr($pdf_title).'"><button class="button" type="button">PDF</button></a>
 				</p>';
 			}
 			echo '</p>';
@@ -2327,7 +3025,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 			}elseif($save_status=='red lighten-2'){
 				echo '<script>swal("Oops!", "Hmmmm something went wrong.", "error")</script>';
 			}elseif($save_status!='admin-success-green' && $save_status!='red lighten-2' && $save_status!='error'){
-				echo '<script>swal("Rock On!", "'.$save_status.'", "success")</script>';
+				echo '<script>swal("Rock On!", "' . esc_js($save_status) . '", "success")</script>';
 			}else{
 				echo '<script>swal("Oops!", "Hmmmm something went wrong.", "error")</script>';
 			}
@@ -2354,7 +3052,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		echo '<script type="text/javascript" src="'.esc_url( plugins_url( "admin/js/sweetalert-dev.js", dirname(__FILE__) ) ).'"></script>';
 		
 		//Checkbox Switch
-		echo MyWorks_WC_QBO_Sync_Admin::get_checkbox_switch_assets();
+		echo MyWorks_WC_QBO_Sync_Admin::get_checkbox_switch_assets(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		
 		//
 		echo '<link href="'.esc_url( plugins_url( "admin/css/toggle-switch.css", dirname(__FILE__) ) ).'" rel="stylesheet" type="text/css">';
@@ -2377,26 +3075,35 @@ class MyWorks_WC_QBO_Sync_Admin {
 		}
 		
 		if($crn_msg_co && isset($_GET['disable_qbo_setup_admin_cron_notice'])){
-			if($_GET['disable_qbo_setup_admin_cron_notice'] == 'true'){
+			if(sanitize_text_field(wp_unslash($_GET['disable_qbo_setup_admin_cron_notice'])) == 'true'){
+				// Verify nonce for notice dismissal
+				if(!isset($_GET['_wpnonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'qbo_dismiss_cron_notice')){
+					return; // Silent fail for notice dismissal
+				}
 				update_option('mw_wc_qbo_sync_cron_notice_status','true');
 			}			
 		}
 		
 		if(isset($_GET['disable_qbo_setup_admin_d_paypal_notice'])){
-			if($_GET['disable_qbo_setup_admin_d_paypal_notice'] == 'true'){
+			if(sanitize_text_field(wp_unslash($_GET['disable_qbo_setup_admin_d_paypal_notice'])) == 'true'){
+				// Verify nonce for notice dismissal
+				if(!isset($_GET['_wpnonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'qbo_dismiss_paypal_notice')){
+					return; // Silent fail for notice dismissal
+				}
 				update_option('mw_wc_qbo_sync_d_paypal_notice_status','true');
 			}			
 		}
 		
 		//if(!defined('DISABLE_WP_CRON')){define('DISABLE_WP_CRON',true);} //For Testing
 		
-		if(defined('DISABLE_WP_CRON')){
-			if( DISABLE_WP_CRON ){
-				if($crn_msg_co &&  $MSQS_QL->get_option('mw_wc_qbo_sync_cron_notice_status') != 'true'){
-					add_action( 'admin_notices', array($this,'qbo_setup_admin_notice_wp_cron') );
-				}				
-			}
-		}		
+		// Disable wp-cron detection warning
+		// if(defined('DISABLE_WP_CRON')){
+		// 	if( DISABLE_WP_CRON ){
+		// 		if($crn_msg_co &&  $MSQS_QL->get_option('mw_wc_qbo_sync_cron_notice_status') != 'true'){
+		// 			add_action( 'admin_notices', array($this,'qbo_setup_admin_notice_wp_cron') );
+		// 		}				
+		// 	}
+		// }		
 		
 		$allow_cron = true;
 		if ($MSQS_QL->option_checked('mw_wc_qbo_sync_email_log') || $MSQS_QL->option_checked('mw_wc_qbo_sync_auto_refresh') || $allow_cron){
@@ -2429,7 +3136,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		$a_style = '';
 		
 		$query = 'disable_qbo_setup_admin_d_paypal_notice=true';
-		$current_page = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+		$current_page = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . (isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : 'localhost') . (isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '');
 		$parsedUrl = parse_url($current_page);
 		if ($parsedUrl['path'] == null) {
 			$current_page .= '/';
@@ -2437,7 +3144,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		$separator = isset($parsedUrl['query']) ? '&' : '?';
 		$current_page .= $separator . $query;
 		
-		echo '<div title="MyWorks QuickBooks Sync Error" class="notice cross-relative-icon notice-error mwqs-setup-notice">'.__("<p>MyWorks Sync: We notice you're using the built-in PayPal payments gateway to process payments for your orders! We recommend NOT using this gateway and instead installing one of the many free PayPal gateway plugins available in Plugins > Add New on your site. This built-in PayPal gateway doesn't consistently notify our sync of new orders, resulting in these orders not being automatically synced as they should be.</p>", 'mw_wc_qbo_sync').'<a '.$a_style.' href="'.$current_page.'" class="cross_icon"></a></div>';
+		echo '<div title="MyWorks QuickBooks Sync Error" class="notice cross-relative-icon notice-error mwqs-setup-notice">'.wp_kses_post(__("<p>MyWorks Sync: We notice you're using the built-in PayPal payments gateway to process payments for your orders! We recommend NOT using this gateway and instead installing one of the many free PayPal gateway plugins available in Plugins > Add New on your site. This built-in PayPal gateway doesn't consistently notify our sync of new orders, resulting in these orders not being automatically synced as they should be.</p>", 'mw_wc_qbo_sync')).'<a ' . esc_attr($a_style) . ' href="' . esc_url($current_page) . '" class="cross_icon"></a></div>';
 	}
 	
 	public function qbo_setup_admin_notice_wp_cron(){
@@ -2445,7 +3152,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		$a_style = '';
 		if($crn_msg_co){
 			$query = 'disable_qbo_setup_admin_cron_notice=true';
-			$current_page = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+			$current_page = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . (isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : 'localhost') . (isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '');
 			$parsedUrl = parse_url($current_page);
 			if ($parsedUrl['path'] == null) {
 				$current_page .= '/';
@@ -2457,7 +3164,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 			$current_page = 'javascript:void(0);';
 		}
 		
-		echo '<div title="MyWorks QuickBooks Sync Error" class="notice cross-relative-icon notice-error mwqs-setup-notice">'.__("<p>MyWorks Sync: There seems to be an issue with wp-cron not correctly running on your site. WP-cron is a built-in Wordpress scheduling functionality - which powers all scheduled events on your site, including our queue sync, so if not correctly running, orders will simply build up in the queue. Your website developer can typically assist with ensuring WP-cron is correctly running on your site.</p>", 'mw_wc_qbo_sync').'<a '.$a_style.' href="'.$current_page.'" class="cross_icon"></a></div>';
+		echo '<div title="MyWorks QuickBooks Sync Error" class="notice cross-relative-icon notice-error mwqs-setup-notice">'.wp_kses_post(__("<p>MyWorks Sync: There seems to be an issue with wp-cron not correctly running on your site. WP-cron is a built-in Wordpress scheduling functionality - which powers all scheduled events on your site, including our queue sync, so if not correctly running, orders will simply build up in the queue. Your website developer can typically assist with ensuring WP-cron is correctly running on your site.</p>", 'mw_wc_qbo_sync')).'<a ' . esc_attr($a_style) . ' href="' . esc_url($current_page) . '" class="cross_icon"></a></div>';
 	}
 	
 	public function mw_qbo_sync_logging_callback() {
@@ -2493,15 +3200,16 @@ class MyWorks_WC_QBO_Sync_Admin {
 	
 	public function mw_wc_qbo_enable_big_select_join(){
 		global $wpdb;
+		// These are system configuration queries that don't involve user input
 		$wpdb->query('SET SESSION SQL_BIG_SELECTS = 1');
 		$wpdb->query("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
 	}
 	
-	public function mw_wc_qbo_get_service_id(){
+	public static function mw_wc_qbo_get_service_id(){
 		global $MSQS_QL;
 		$mw_wc_qbo_service_id = $MSQS_QL->get_option('mw_wc_qbo_sync_service_id');
 		
-		echo $mw_wc_qbo_service_id;
+		echo esc_html($mw_wc_qbo_service_id);
 	}
 	
 	public static function is_trial_version_check(){
@@ -2509,7 +3217,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		
 		$sts_tpc = false;
 		if($MSQS_QL->option_checked('mw_wc_qbo_sync_trial_license') || $MSQS_QL->is_plg_lc_p_l()){
-			$query_string = explode('=',$_SERVER['QUERY_STRING']);
+			$query_string = explode('=', sanitize_text_field(wp_unslash($_SERVER['QUERY_STRING'] ?? '')));
 			if(is_array($query_string) && isset($query_string[1])){
 				if( strpos( $query_string[1], "myworks-wc-qbo" ) !== false ) {
 					$sts_tpc = true;
@@ -2531,9 +3239,9 @@ class MyWorks_WC_QBO_Sync_Admin {
 
 			echo '
 			<div class="text-btn mwqb_tlmb" style="position: relative;">
-				<img width="25"  alt="MyWorks Sync" title="MyWorks Sync" src="'.$image.'">&nbsp;
-				<h3><b>'.(int) $MSQS_QL->get_option('mw_wc_qbo_sync_trial_days_left').'</b> &nbsp;DAYS LEFT ON YOUR FREE TRIAL</h3>
-				<a target="_blank" href="'.$plan_upgrade_url.'" class="btn btn-info" role="button">UPGRADE NOW!
+				<img width="25"  alt="MyWorks Sync" title="MyWorks Sync" src="' . esc_url($image) . '">&nbsp;
+				<h3><b>' . esc_html((int) $MSQS_QL->get_option('mw_wc_qbo_sync_trial_days_left')) . '</b> &nbsp;DAYS LEFT ON YOUR FREE TRIAL</h3>
+				<a target="_blank" href="' . esc_url($plan_upgrade_url) . '" class="btn btn-info" role="button">UPGRADE NOW!
 				</a></br>
 				&nbsp;
 				<a id="mwqs_tl_chk_again" style="font-size:12px;text-align: center;" href="javascript:void(0);">Check Again...</a>
@@ -2583,7 +3291,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 			<div class="text-btn mwqb_lpmb" style="position: relative;">
 				
 				<h3>YOU\'RE ON OUR FREE PLAN! WANT MORE?</h3>
-				<a target="_blank" href="'.$plan_upgrade_url.'" class="btn btn-info" role="button">UPGRADE NOW!
+				<a target="_blank" href="' . esc_url($plan_upgrade_url) . '" class="btn btn-info" role="button">UPGRADE NOW!
 				</a></br>
 				&nbsp;
 				<small>Unlimited sync, 2-Way sync, Intelligent bank deposits and more!</small>
@@ -2612,12 +3320,13 @@ class MyWorks_WC_QBO_Sync_Admin {
 	public function get_customer_meta_from_order_meta($order_id,$manual=false){
 		$customer_data = array();
 		global $MSQS_QL;
-		
-		$order_meta = get_post_meta((int) $order_id);
+		$order_id = (int) $order_id;
+		$order_meta = $this->get_all_order_meta_hpos($order_id);
+
 		//$MSQS_QL->_p($order_meta);
 		$_customer_user = (isset($order_meta['_customer_user'][0]))?(int) $order_meta['_customer_user'][0]:0;
 		$customer_data['wc_customerid'] = $_customer_user;
-		$customer_data['wc_cus_id '] = $_customer_user;		
+		$customer_data['wc_cus_id '] = $_customer_user;
 		
 		if(is_array($order_meta) && count($order_meta)){
 			foreach ($order_meta as $key => $value){				
@@ -2729,14 +3438,20 @@ class MyWorks_WC_QBO_Sync_Admin {
 			/**/
 			$order_id = (int) $order_id;
 			if($order_id > 0){
-				$customer_data['firstname'] = get_post_meta($order_id,'_billing_first_name',true);
-				$customer_data['lastname'] = get_post_meta($order_id,'_billing_last_name',true);
-				
-				$customer_data['currency'] = get_post_meta($order_id,'_order_currency',true);
+				if ($this->is_hpos_enabled()) {
+					$order = wc_get_order($order_id);
+					$customer_data['firstname'] = $order ? $order->get_billing_first_name() : '';
+					$customer_data['lastname'] = $order ? $order->get_billing_last_name() : '';
+					$customer_data['currency'] = $order ? $order->get_currency() : '';
+				} else {
+					$customer_data['firstname'] = get_post_meta($order_id,'_billing_first_name',true);
+					$customer_data['lastname'] = get_post_meta($order_id,'_billing_last_name',true);
+					$customer_data['currency'] = get_post_meta($order_id,'_order_currency',true);
+				}
 				
 				# New
 				if($MSQS_QL->option_checked('mw_wc_qbo_sync_customer_qbo_check_ship_addr') || $MSQS_QL->option_checked('mw_wc_qbo_sync_customer_qbo_check_billing_company') || $MSQS_QL->option_checked('mw_wc_qbo_sync_customer_qbo_check_billing_f_l_name')){
-					$order_meta = get_post_meta((int) $order_id);
+					$order_meta = $this->get_all_order_meta_hpos($order_id);
 					if(is_array($order_meta) && count($order_meta)){
 						foreach ($order_meta as $key => $value){				
 							if($MSQS_QL->start_with($key,'_billing_') || $MSQS_QL->start_with($key,'_shipping_')){
@@ -3031,7 +3746,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if(isset($mwqs_admin_msg) && is_array($mwqs_admin_msg) && count($mwqs_admin_msg)){
 			echo '<div title="MyWorks QuickBooks Sync Setup Error" class="notice notice-error mwqs-setup-notice">';
 			foreach($mwqs_admin_msg as $msg){											
-				echo '<p>'.$msg.'</p>';						
+				echo '<p>'.esc_html($msg).'</p>';						
 			}
 			echo '</div>';
 		}
@@ -3043,7 +3758,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 	}
 	
 	public function qbo_help_admin_notice() {
-		$query_string = explode('=',$_SERVER['QUERY_STRING']);
+		$query_string = explode('=', sanitize_text_field(wp_unslash($_SERVER['QUERY_STRING'] ?? '')));
 		if(isset($query_string[1])){
 			if( strpos( $query_string[1], "myworks-wc-qbo" ) !== false ) {
 				global $MSQS_QL;
@@ -3101,6 +3816,8 @@ class MyWorks_WC_QBO_Sync_Admin {
 		        $rx_http = '/\AHTTP_/';
 
 		        foreach($_SERVER as $key => $val) {
+		            $key = sanitize_text_field($key);
+		            $val = sanitize_text_field($val);
 		            if( preg_match($rx_http, $key) ) {
 		                $arh_key = preg_replace($rx_http, '', $key);
 		                $rx_matches = array();
@@ -3131,7 +3848,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 	}
 
 	public static function mw_wc_qbo_sync_qbo_is_init(){
-		if(isset($_GET['mw_wc_qbo_sync_qbo_is_init']) && $_GET['mw_wc_qbo_sync_qbo_is_init']=='true'){
+		if(isset($_GET['mw_wc_qbo_sync_qbo_is_init']) && sanitize_text_field($_GET['mw_wc_qbo_sync_qbo_is_init'])=='true'){
 			update_option('mw_wc_qbo_sync_qbo_is_init','true');
 		}
 	}
@@ -3147,66 +3864,59 @@ class MyWorks_WC_QBO_Sync_Admin {
 				$is_db_updated = false;
 				if($k == $wpdb->prefix.'mw_wc_qbo_sync_payment_id_map'){
 					if(!array_key_exists("is_wc_order",$v)){
-						$sql = "ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_payment_id_map` ADD `is_wc_order` INT(1) NOT NULL DEFAULT '0' AFTER `qbo_payment_id`;";
-						$wpdb->query($sql);
+						// Static DDL statement for schema management - no user input
+						// Use direct query for ALTER TABLE statement
+						$wpdb->query("ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_payment_id_map` ADD `is_wc_order` INT(1) NOT NULL DEFAULT '0' AFTER `qbo_payment_id`;");
 						$is_db_updated = true;
 					}
 				}
 				
 				if($k == $wpdb->prefix.'mw_wc_qbo_sync_paymentmethod_map'){
 					if(!array_key_exists("ps_order_status",$v)){
-						$sql = "ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `ps_order_status` VARCHAR(255) NOT NULL AFTER `term_id`;";
-						$wpdb->query($sql);
+						// Use direct query for ALTER TABLE statement
+						$wpdb->query("ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `ps_order_status` VARCHAR(255) NOT NULL AFTER `term_id`;");
 						$is_db_updated = true;
 					}
 					
 					if(!array_key_exists("individual_batch_support",$v)){
-						$sql = "ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `individual_batch_support` INT(1) NOT NULL AFTER `ps_order_status`;";
-						$wpdb->query($sql);
+						$wpdb->query("ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `individual_batch_support` INT(1) NOT NULL AFTER `ps_order_status`;");
 						$is_db_updated = true;
 					}
 					
 					if(!array_key_exists("deposit_cron_utc",$v)){
-						$sql = "ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `deposit_cron_utc` VARCHAR(255) NOT NULL AFTER `individual_batch_support`;";
-						$wpdb->query($sql);
+						$wpdb->query("ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `deposit_cron_utc` VARCHAR(255) NOT NULL AFTER `individual_batch_support`;");
 						$is_db_updated = true;
 					}
 					if(!array_key_exists("inv_due_date_days",$v)){
-						$sql = "ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `inv_due_date_days` INT(3) NOT NULL AFTER `deposit_cron_utc`;";
-						$wpdb->query($sql);
+						$wpdb->query("ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `inv_due_date_days` INT(3) NOT NULL AFTER `deposit_cron_utc`;");
 						$is_db_updated = true;
 					}
 					
 					if(!array_key_exists("order_sync_as",$v)){						
-						$sql = "ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `order_sync_as` VARCHAR(255) NOT NULL AFTER `inv_due_date_days`;";
-						$wpdb->query($sql);
+						$wpdb->query("ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `order_sync_as` VARCHAR(255) NOT NULL AFTER `inv_due_date_days`;");
 						$is_db_updated = true;
 					}
 					
 					if(!array_key_exists("deposit_date_field",$v)){						
-						$sql = "ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `deposit_date_field` VARCHAR(255) NOT NULL AFTER `order_sync_as`;";
-						$wpdb->query($sql);
+						$wpdb->query("ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `deposit_date_field` VARCHAR(255) NOT NULL AFTER `order_sync_as`;");
 						$is_db_updated = true;
 					}
 					
 					if(!array_key_exists("deposit_cron_sch",$v)){
-						$sql = "ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `deposit_cron_sch` VARCHAR(255) NOT NULL AFTER `deposit_cron_utc`;";
-						$wpdb->query($sql);
+						$wpdb->query("ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_paymentmethod_map` ADD `deposit_cron_sch` VARCHAR(255) NOT NULL AFTER `deposit_cron_utc`;");
 						$is_db_updated = true;
 					}
 				}
 				
 				if($k == $wpdb->prefix.'mw_wc_qbo_sync_wq_cf_map'){
 					if(!array_key_exists("ext_data",$v)){
-						$sql = "ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_wq_cf_map` ADD `ext_data` TEXT NOT NULL AFTER `qb_field`;";
-						$wpdb->query($sql);
+						$wpdb->query("ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_wq_cf_map` ADD `ext_data` TEXT NOT NULL AFTER `qb_field`;");
 						$is_db_updated = true;
 					}
 					
 					//
 					if(isset($v['wc_field']['Type']) && $v['wc_field']['Type'] != 'text'){
-						$sql = "ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_wq_cf_map` MODIFY `wc_field` TEXT NOT NULL;";
-						$wpdb->query($sql);
+						$wpdb->query("ALTER TABLE `{$wpdb->prefix}mw_wc_qbo_sync_wq_cf_map` MODIFY `wc_field` TEXT NOT NULL;");
 						$is_db_updated = true;
 					}					
 				}
@@ -3222,6 +3932,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 				`class_id` varchar(255) NOT NULL,
 				PRIMARY KEY (`id`)
 				)';
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Safe CREATE TABLE statement with hardcoded table name
 				$wpdb->query($sql);
 				$is_new_db_tbl_created = true;
 			}
@@ -3234,6 +3945,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 				`ext_data` TEXT NOT NULL,
 				PRIMARY KEY (`id`)
 				)';
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Safe CREATE TABLE statement with hardcoded table name
 				$wpdb->query($sql);
 				$is_new_db_tbl_created = true;
 			}
@@ -3248,6 +3960,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 				  PRIMARY KEY (`session_id`),
 				  UNIQUE KEY `session_key` (`session_key`)
 				)";
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Safe CREATE TABLE statement with hardcoded table name
 				$wpdb->query($sql);
 				$is_new_db_tbl_created = true;
 			}			
@@ -3257,9 +3970,11 @@ class MyWorks_WC_QBO_Sync_Admin {
 		$enable_oauth2_db_changes = false;
 		if($enable_oauth2_db_changes && !$MSQS_QL->option_checked('mw_wc_qbo_sync_is_oauth2_db_change_applied')){
 			$sql = 'ALTER TABLE `quickbooks_oauth` RENAME TO `quickbooks_oauthv1`;';
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with hardcoded table names
 			$wpdb->query($sql);
 			
 			$sql = 'ALTER TABLE `quickbooks_oauthv1` CHANGE `quickbooks_oauth_id` `quickbooks_oauthv1_id` int(10) unsigned NOT NULL AUTO_INCREMENT FIRST;';
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with hardcoded table names
 			$wpdb->query($sql);
 			
 			$sql = 'CREATE TABLE IF NOT EXISTS `quickbooks_oauthv2` (
@@ -3278,6 +3993,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 			  `touch_datetime` datetime DEFAULT NULL,
 			  PRIMARY KEY (`quickbooks_oauthv2_id`)
 			);';
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Safe CREATE TABLE statement with hardcoded table name
 			$wpdb->query($sql);
 			
 			update_option('mw_wc_qbo_sync_is_oauth2_db_change_applied','true');
@@ -3293,6 +4009,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if(count($db_delta)){
 			foreach($db_delta as $query){
 				if($query)
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Legacy deprecated function with predefined schema queries
 				$wpdb->query($query);				
 			}
 		}
@@ -3350,13 +4067,13 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if(is_array($MSQS_QL->get_session_val('missing_db')) && count($MSQS_QL->get_session_val('missing_db'))){
 			echo '<div class="notice notice-error mwqs-setup-notice">
 			MyWorks Sync Database Table Missing: ';
-			echo implode(',',$MSQS_QL->get_session_val('missing_db',array(),true));
+			echo esc_html(implode(',',$MSQS_QL->get_session_val('missing_db',array(),true)));
 			echo '</div>';
 		}
 		
 		if($MSQS_QL->check_invalid_chars_in_db_conn_info()){
 
-			echo '<div title="MyWorks QuickBooks Sync Setup Error" class="notice notice-error mwqs-setup-notice">'.__("MyWorks QuickBooks Online Sync for WooCommerce does not support these special characters in your database password in your wp-config.php file:  (+ / # % ‘ ?)  Please update your database password to not include these characters.", 'mw_wc_qbo_sync').'</div>';
+			echo '<div title="MyWorks QuickBooks Sync Setup Error" class="notice notice-error mwqs-setup-notice">'.esc_html__("MyWorks QuickBooks Online Sync for WooCommerce does not support these special characters in your database password in your wp-config.php file:  (+ / # % ' ?)  Please update your database password to not include these characters.", 'mw_wc_qbo_sync').'</div>';
 		}
 	}
 	
@@ -3469,7 +4186,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 				);
 
 			    $ch = curl_init();
-			    curl_setopt($ch, CURLOPT_URL, $post_url); curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); curl_setopt($ch, CURLOPT_PROXYPORT, 3128); curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0); curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); curl_setopt($ch, CURLOPT_POST, true); curl_setopt($ch, CURLOPT_POSTFIELDS, $params); $response = curl_exec($ch);
+			    curl_setopt($ch, CURLOPT_URL, $post_url); curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); curl_setopt($ch, CURLOPT_PROXYPORT, 3128); curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2); curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1); curl_setopt($ch, CURLOPT_POST, true); curl_setopt($ch, CURLOPT_POSTFIELDS, $params); $response = curl_exec($ch);
 			    curl_close($ch);
 
 				update_option('mw_qbo_sync_last_updated_version',$current_version);
@@ -3813,6 +4530,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if ($MSQS_QL->get_option('mw_qbo_sync_activation_redirect')!='true') {
 			return false;
 		}
+
 		//$MSQS_QL->_p($pmnt_sync_info,true);die;
 		global $wpdb;
 		$_transaction_id = '';
@@ -3825,16 +4543,33 @@ class MyWorks_WC_QBO_Sync_Admin {
 				$manual = false;
 			}else{
 				$payment_id = (int) $pmnt_sync_info['payment_id'];
-				$_transaction_id = $MSQS_QL->get_field_by_val($wpdb->postmeta,'meta_value','meta_id',$payment_id);
-				$order_id = (int) $MSQS_QL->get_field_by_val($wpdb->postmeta,'post_id','meta_id',$payment_id);
+
+				if ($this->is_hpos_enabled()) {
+					// If hpos is enabled then $payment_id is order id
+					$order = wc_get_order($payment_id);
+					if ( is_a( $order, 'WC_Order' ) ) {
+						$_transaction_id = $order ? $order->get_transaction_id() : '';
+						$order_id = (int) $order->get_id();
+					}
+
+				} else {
+					$_transaction_id = $MSQS_QL->get_field_by_val($wpdb->postmeta,'meta_value','meta_id',$payment_id);
+					$order_id = (int) $MSQS_QL->get_field_by_val($wpdb->postmeta,'post_id','meta_id',$payment_id);
+				}
+
 				if(!isset($pmnt_sync_info['queue_side']) && !isset($pmnt_sync_info['after_order'])){
 					$manual = true;
-				}				
+				}		
 			}
 			
 		}else{
 			$order_id = (int) $pmnt_sync_info;
-			$_transaction_id = get_post_meta($order_id, '_transaction_id', true );
+			if ($this->is_hpos_enabled()) {
+				$order = wc_get_order($order_id);
+				$_transaction_id = $order ? $order->get_transaction_id() : '';
+			} else {
+				$_transaction_id = get_post_meta($order_id, '_transaction_id', true );
+			}
 			$manual = false;
 			
 			/**/
@@ -3902,7 +4637,12 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if($_transaction_id_tmp){
 			$payment_data = $MSQS_QL->wc_get_payment_details_by_txn_id($_transaction_id,$order_id);
 			/**/
-			$p_order_data = $MSQS_QL->get_wc_order_details_from_order($order_id,get_post($order_id));
+			if ($this->is_hpos_enabled()) {
+				$order_obj = wc_get_order($order_id);
+				$p_order_data = $MSQS_QL->get_wc_order_details_from_order($order_id, $order_obj);
+			} else {
+				$p_order_data = $MSQS_QL->get_wc_order_details_from_order($order_id,get_post($order_id));
+			}
 			//$MSQS_QL->_p($p_order_data);
 			/**/
 			if($MSQS_QL->option_checked('mw_wc_qbo_sync_compt_yithwgcp_gpc_ed')){
@@ -4275,8 +5015,16 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if(!(int) $refund_id && !is_array($order_sync_info)){
 			global $wpdb;
 			$ID = (int) $order_sync_info;
-			$rfd_q = $wpdb->prepare("SELECT ID FROM `{$wpdb->posts}` WHERE `post_type` = 'shop_order_refund' AND `post_parent` = %d ORDER BY ID DESC LIMIT 0,1 ",$ID);
-			$rf_data = $wpdb->get_row($rfd_q);
+			if ($this->is_hpos_enabled()) {
+				// For HPOS, use WooCommerce's method to get refunds
+				$order = wc_get_order($ID);
+				$refunds = $order ? $order->get_refunds() : array();
+				$rf_data = !empty($refunds) ? (object)array('ID' => $refunds[0]->get_id()) : null;
+			} else {
+				$rfd_q = $wpdb->prepare("SELECT ID FROM `{$wpdb->posts}` WHERE `post_type` = 'shop_order_refund' AND `post_parent` = %d ORDER BY ID DESC LIMIT 0,1 ",$ID);
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query already prepared using $wpdb->prepare()
+				$rf_data = $wpdb->get_row($rfd_q);
+			}
 			if(is_object($rf_data) && !empty($rf_data)){
 				$refund_id = $rf_data->ID;
 			}
@@ -4315,11 +5063,17 @@ class MyWorks_WC_QBO_Sync_Admin {
 			}
 			*/
 			
-			$order = get_post($order_id);
+			if ($this->is_hpos_enabled()) {
+				$order = wc_get_order($order_id);
+				$_payment_method = $order ? $order->get_payment_method() : '';
+				$_order_currency = $order ? $order->get_currency() : '';
+			} else {
+				$order = get_post($order_id);
+				$_payment_method = get_post_meta( $order_id, '_payment_method', true );
+				$_order_currency = get_post_meta( $order_id, '_order_currency', true );
+			}
 			
 			//13-06-2017
-			$_payment_method = get_post_meta( $order_id, '_payment_method', true );
-			$_order_currency = get_post_meta( $order_id, '_order_currency', true );
 			if(!$MSQS_QL->if_sync_refund(array('_payment_method'=>$_payment_method,'_order_currency'=>$_order_currency,'manual'=>$manual))){	
 				return false;
 			}
@@ -4330,13 +5084,18 @@ class MyWorks_WC_QBO_Sync_Admin {
 				}
 				return false;
 			}
-			if($order->post_type!='shop_order'){
+
+			$order_type = $this->is_hpos_enabled() && $order ? $order->get_type() : $order->post_type;
+
+			// HPOS Compatible order type check
+			if(!$order || $order_type !== 'shop_order'){
 				if($manual){					
 					$MSQS_QL->save_log('Export Refund Error #'.$refund_id.' Order #'.$order_id,'Woocommerce order is not valid.','Refund',0);
 				}
 				return false;
 			}
 			$refund_data = $MSQS_QL->get_wc_order_details_from_order($order_id,$order);
+			//$MSQS_QL->add_wc_debug_log( $refund_data, true, true, true );
 			if(!is_array($refund_data) || empty($refund_data)){
 				if($manual){					
 					$MSQS_QL->save_log('Export Refund Error #'.$refund_id.' Order #'.$order_id,'Woocommerce order details not found.','Refund',0);
@@ -4357,6 +5116,40 @@ class MyWorks_WC_QBO_Sync_Admin {
 			}
 			
 			$refund_meta = get_post_meta($refund_id);
+
+			if(empty($refund_meta) && function_exists('wc_get_orders')) {
+				$refund = wc_get_order( $refund_id );
+				if ( $refund instanceof WC_Order_Refund ) {
+					$refund_hpos_data = $refund->get_data($refund);
+
+					$meta_key_to_props = array(
+						'_order_currency'     => 'currency',
+						'_cart_discount'      => 'discount_total',
+						'_cart_discount_tax'  => 'discount_tax',
+						'_order_shipping'     => 'shipping_total',
+						'_order_shipping_tax' => 'shipping_tax',
+						'_order_tax'          => 'cart_tax',
+						'_order_total'        => 'total',
+						'_order_version'      => 'version',
+						'_prices_include_tax' => 'prices_include_tax',
+					);
+
+					$refund_meta = array();
+
+					// Dynamically populate refund meta based on mapping
+					foreach ( $meta_key_to_props as $meta_key => $prop_key ) {
+						$value = $refund_hpos_data[ $prop_key ] ?? '';
+						$refund_meta[ $meta_key ] = array( $value );
+					}
+
+					// Add refund-specific fields
+					$refund_meta['_refund_amount']     = array( $refund_hpos_data['amount'] );
+					$refund_meta['_refunded_by']       = array( $refund_hpos_data['refunded_by'] );
+					$refund_meta['_refunded_payment']  = array( $refund_hpos_data['refunded_payment'] );
+					$refund_meta['_refund_reason']     = array( $refund_hpos_data['reason'] ?? '' );
+
+				}
+			}
 			
 			if($MSQS_QL->option_checked('mw_wc_qbo_sync_order_as_sales_receipt') || $MSQS_QL->is_order_sync_as_sales_receipt($order_id)){
 				$qbo_salesreceipt_id = (int) $MSQS_QL->get_qbo_salesreceipt_id($order_id,$wc_inv_num);
@@ -4412,13 +5205,18 @@ class MyWorks_WC_QBO_Sync_Admin {
 			
 			/*Custom Post Customer Support*/
 			if($MSQS_QL->is_plugin_active('customer-custom-post-type-map-for-myworks-qbo-sync')){				
-				$wc_custom_cus_id = (int) get_post_meta( $order_id, 'assigned_customer_id', true );
+				if ($this->is_hpos_enabled()) {
+					$order = wc_get_order($order_id);
+					$wc_custom_cus_id = (int) ($order ? $order->get_meta('assigned_customer_id') : 0);
+				} else {
+					$wc_custom_cus_id = (int) get_post_meta( $order_id, 'assigned_customer_id', true );
+				}
 				if($wc_custom_cus_id > 0){
 					$qbo_customerid = (int) $MSQS_QL->get_field_by_val($wpdb->prefix.'mw_wc_qbo_sync_customer_pairs','qbo_customerid','wc_customerid',$wc_custom_cus_id);
 				}
 				
 				if(!$qbo_customerid){
-					$MSQS_QL->save_log('Export Refund Error #'.$refund_id.' Order #'.$ord_id_num,'Quickbooks customer not found!','Refund',0);
+					$MSQS_QL->save_log('Export Refund Error #'.$refund_id.' Order #'.$ord_id_num,'QuickBooks customer not found!','Refund',0);
 					return false;
 				}
 			}
@@ -4433,6 +5231,10 @@ class MyWorks_WC_QBO_Sync_Admin {
 							if(isset($user_info->roles) && is_array($user_info->roles)){
 								$wc_user_role = $user_info->roles[0];
 							}
+                            if (empty($wc_user_role) && !empty($user_info) && !empty($user_info->roles) && is_array($user_info->roles)) {
+                                // Get the first role regardless of array key format
+                                $wc_user_role = reset($user_info->roles);
+                            }
 						}else{
 							$wc_user_role = 'wc_guest_user';
 						}
@@ -4547,7 +5349,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 			}
 			
 			if(!$qbo_customerid){
-				$MSQS_QL->save_log('Export Refund Error #'.$refund_id.' Order #'.$ord_id_num,'Quickbooks customer not found!','Refund',0);
+				$MSQS_QL->save_log('Export Refund Error #'.$refund_id.' Order #'.$ord_id_num,'QuickBooks customer not found!','Refund',0);
 				return false;
 			}
 			$refund_data['qbo_customerid'] = $qbo_customerid;
@@ -4570,6 +5372,8 @@ class MyWorks_WC_QBO_Sync_Admin {
 			
 			$refund_data['manual'] = $manual;
 			//$MSQS_QL->_p($refund_data);return false;
+			// $MSQS_QL->add_wc_debug_log( $refund_data, true, true, true );
+			// $MSQS_QL->add_wc_debug_log( $order_id, true, true, true );
 			
 			if(!$MSQS_QL->if_refund_exists($refund_data)){
 				return $mw_qbo_inv_id = $MSQS_QL->AddRefund($refund_data);
@@ -4665,17 +5469,43 @@ class MyWorks_WC_QBO_Sync_Admin {
 		}
 		
 		if($order_id){
-			$order = get_post($order_id);
-			if(is_object($order) && !empty($order)){
-				if($order->post_status=='wc-cancelled'){
-					$invoice_data = $MSQS_QL->get_wc_order_details_from_order($order_id,$order);
-					if($MSQS_QL->option_checked('mw_wc_qbo_sync_order_as_sales_receipt') || $MSQS_QL->is_order_sync_as_sales_receipt($order_id)){
-						$MSQS_QL->VoidSalesReceipt(0,$invoice_data,true);
-					}elseif($MSQS_QL->option_checked('mw_wc_qbo_sync_order_as_estimate') || $MSQS_QL->is_order_sync_as_estimate($order_id)){
-						$MSQS_QL->VoidEstimate(0,$invoice_data,true);
+			if ($this->is_hpos_enabled()) {
+				$order = wc_get_order($order_id);
+				$order_status = $order ? $order->get_status() : '';
+				if(is_object($order) && !empty($order)){
+					if($order_status=='cancelled'){
+						$invoice_data = $MSQS_QL->get_wc_order_details_from_order($order_id,$order);
+						if($MSQS_QL->option_checked('mw_wc_qbo_sync_order_as_sales_receipt') || $MSQS_QL->is_order_sync_as_sales_receipt($order_id)){
+							$MSQS_QL->VoidSalesReceipt(0,$invoice_data,true);
+						}elseif($MSQS_QL->option_checked('mw_wc_qbo_sync_order_as_estimate') || $MSQS_QL->is_order_sync_as_estimate($order_id)){
+							$MSQS_QL->VoidEstimate(0,$invoice_data,true);
+						}
+						else{
+							$MSQS_QL->VoidInvoice(0,$invoice_data,true);
+						}
 					}
-					else{
-						$MSQS_QL->VoidInvoice(0,$invoice_data,true);
+				}
+			} else {
+				$order = get_post($order_id);
+				if(is_object($order) && !empty($order)){
+					// Get proper order status - for non-HPOS, $order is WP_Post object
+					if ($this->is_hpos_enabled()) {
+						// Try to get WC_Order object for HPOS
+						$wc_order = wc_get_order($order_id);
+						$order_status = $wc_order ? $wc_order->get_status() : $order->post_status;
+					} else {
+						$order_status = $order->post_status;
+					}
+					if($order_status=='wc-cancelled' || $order_status=='cancelled'){
+						$invoice_data = $MSQS_QL->get_wc_order_details_from_order($order_id,$order);
+						if($MSQS_QL->option_checked('mw_wc_qbo_sync_order_as_sales_receipt') || $MSQS_QL->is_order_sync_as_sales_receipt($order_id)){
+							$MSQS_QL->VoidSalesReceipt(0,$invoice_data,true);
+						}elseif($MSQS_QL->option_checked('mw_wc_qbo_sync_order_as_estimate') || $MSQS_QL->is_order_sync_as_estimate($order_id)){
+							$MSQS_QL->VoidEstimate(0,$invoice_data,true);
+						}
+						else{
+							$MSQS_QL->VoidInvoice(0,$invoice_data,true);
+						}
 					}
 				}
 			}			
@@ -4695,7 +5525,11 @@ class MyWorks_WC_QBO_Sync_Admin {
 				$this->myworks_wc_qbo_sync_order_realtime($renewal_order_id);
 				/**/
 				$order_id = $renewal_order_id;
-				$order = get_post($order_id);
+				if ($this->is_hpos_enabled()) {
+					$order = wc_get_order($order_id);
+				} else {
+					$order = get_post($order_id);
+				}
 				$invoice_data = $MSQS_QL->get_wc_order_details_from_order($order_id,$order);
 				$is_os_p_sync = $MSQS_QL->if_sync_os_payment($invoice_data);
 				if(!$is_os_p_sync){
@@ -4746,7 +5580,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 				#lpa
 				if(is_object($post_before) && !empty($post_before) && $mwqb_sync_uiiqb == 1 && !$MSQS_QL->is_plg_lc_p_l(false)){
 					if(isset($_POST['_original_stock']) && isset($_POST['_stock']) && isset($_POST['_manage_stock'])){
-						if($_POST['_manage_stock'] == 'yes' && $_POST['_stock'] != $_POST['_original_stock']){
+						if(sanitize_text_field($_POST['_manage_stock']) == 'yes' && sanitize_text_field($_POST['_stock']) != sanitize_text_field($_POST['_original_stock'])){
 							
 							$map_data = $MSQS_QL->get_row($wpdb->prepare("SELECT `quickbook_product_id` FROM `".$wpdb->prefix."mw_wc_qbo_sync_product_pairs` WHERE `wc_product_id` = %d AND `quickbook_product_id` > 0 ",$product_id));
 							$quickbook_product_id = 0;
@@ -4777,8 +5611,8 @@ class MyWorks_WC_QBO_Sync_Admin {
 		global $wpdb;
 		//$MSQS_QL->_p($post_ID);$MSQS_QL->_p($post_after);$MSQS_QL->_p($post_before);$MSQS_QL->_p($_POST);
 		if($post_ID>0 && is_object($post_after) && !empty($post_after) && isset($_POST['post_ID']) && (int) $_POST['post_ID'] > 0){
-			if(isset($post_after->post_type) && $post_after->post_type == 'product' && isset($_POST['product-type']) && $_POST['product-type'] == 'variable'){
-				$product_id = (int) $_POST['post_ID'];
+			if(isset($post_after->post_type) && $post_after->post_type == 'product' && isset($_POST['product-type']) && sanitize_text_field($_POST['product-type']) == 'variable'){
+				$product_id = (int) sanitize_text_field($_POST['post_ID']);
 				
 				$mwqb_sync_uiiqb = isset($_POST['mwqb_sync_uiiqb']) ?1:0;
 				//update_post_meta($product_id, 'mwqb_sync_uiiqb', $mwqb_sync_uiiqb);
@@ -4787,12 +5621,12 @@ class MyWorks_WC_QBO_Sync_Admin {
 				#lpa
 				if(is_object($post_before) && !empty($post_before) && $mwqb_sync_uiiqb == 1 && !$MSQS_QL->is_plg_lc_p_l(false)){
 					if(isset($_POST['variable_original_stock']) && isset($_POST['variable_stock']) && isset($_POST['variable_manage_stock'])){
-						if(is_array($_POST['variable_manage_stock']) && in_array('on',$_POST['variable_manage_stock'])){
+						if(is_array($_POST['variable_manage_stock']) && in_array('on', array_map('sanitize_text_field', $_POST['variable_manage_stock']))){
 							if(is_array($_POST['variable_stock']) && is_array($_POST['variable_original_stock'])){								
-								$vs_diff = array_diff($_POST['variable_stock'],$_POST['variable_original_stock']);
+								$vs_diff = array_diff(array_map('sanitize_text_field', $_POST['variable_stock']), array_map('sanitize_text_field', $_POST['variable_original_stock']));
 								if(is_array($vs_diff) && count($vs_diff)){
 									if(is_array($_POST['variable_post_id'])){
-										$vp_ids = $_POST['variable_post_id'];
+										$vp_ids = array_map('absint', $_POST['variable_post_id']);
 										foreach($vs_diff as $k=>$v){
 											if(isset($vp_ids[$k])){
 												$variation_id = (int) $vp_ids[$k];
@@ -4842,8 +5676,8 @@ class MyWorks_WC_QBO_Sync_Admin {
 				if(is_object($post_before) && !empty($post_before)){
 					//if($post_after->post_status == $post_before->post_status){}
 					if(isset($_POST['original_post_status']) && isset($_POST['order_status'])){
-						$original_post_status = trim($_POST['original_post_status']);
-						$order_status = trim($_POST['order_status']);
+						$original_post_status = trim(sanitize_text_field($_POST['original_post_status']));
+						$order_status = trim(sanitize_text_field($_POST['order_status']));
 						
 						$allow_spl_status = false;
 						/*New Pending Status Problem*/
@@ -4852,7 +5686,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 						
 						if($order_status == 'wc-pending'){
 							if(isset($_POST['post_status'])){
-								$post_status = trim($_POST['post_status']);
+								$post_status = trim(sanitize_text_field($_POST['post_status']));
 								if($original_post_status == 'auto-draft' && $post_status == 'draft'){
 									$a_os_l = $MSQS_QL->get_option('mw_wc_qbo_sync_specific_order_status');
 									if(!empty($a_os_l)){
@@ -4907,11 +5741,12 @@ class MyWorks_WC_QBO_Sync_Admin {
 		if(!class_exists('WooCommerce')) return;
 		global $MSQS_QL;
 		global $wpdb;
+
 		/*
 		$MSQS_QL->save_log('Hook Call Test',print_r($order_sync_info,true),'Test',2);
 		return false;
 		*/
-		
+
 		if(!$MSQS_QL->lp_chk_osl_allwd()){
 			$MSQS_QL->save_log('Export Order Error','Monthly limit of orders synced has been reached. To manage your plan and view more details, visit MyWorks Sync > Connection.','Invoice',0);
 			return false;
@@ -4940,18 +5775,33 @@ class MyWorks_WC_QBO_Sync_Admin {
 		}
 		
 		/**/
-		$o_id = (is_array($order_sync_info))?(int) $order_sync_info['order_id']:(int) $order_sync_info;		
+		$o_id = (is_array($order_sync_info))?(int) $order_sync_info['order_id']:(int) $order_sync_info;
+
 		if($or_queue_added && !$MSQS_QL->is_order_sync_as_sales_receipt($o_id) && !$MSQS_QL->is_order_sync_as_estimate($o_id)){
-			$_transaction_id = get_post_meta($o_id,'_transaction_id',true);
+			if ($this->is_hpos_enabled()) {
+				$order = wc_get_order($o_id);
+				$_transaction_id = $order ? $order->get_transaction_id() : '';
+			} else {
+				$_transaction_id = get_post_meta($o_id,'_transaction_id',true);
+			}
 			$a_bti = true;
+
 			if(!empty($_transaction_id) || $a_bti){
-				$pm_r = $MSQS_QL->get_row($wpdb->prepare("SELECT `meta_id` FROM `{$wpdb->postmeta}` WHERE `post_id` = %d AND `meta_key` = '_transaction_id' ",$o_id));
-				if(is_array($pm_r) && !empty($pm_r)){
-					$payment_id = (int) $pm_r['meta_id'];
-					if($payment_id > 0){
+
+				if ($this->is_hpos_enabled()) {
+					if(!empty($_transaction_id)) {
 						$MSQS_QL->real_time_hooks_add_queue('Payment',$o_id,'PaymentPush','nh_manually_after_order:mw_qbo_wc_order_payment');
 					}
+				} else {
+					$pm_r = $MSQS_QL->get_row($wpdb->prepare("SELECT `meta_id` FROM `{$wpdb->postmeta}` WHERE `post_id` = %d AND `meta_key` = '_transaction_id' ",$o_id));
+					if(is_array($pm_r) && !empty($pm_r)){
+						$payment_id = (int) $pm_r['meta_id'];
+						if($payment_id > 0){
+							$MSQS_QL->real_time_hooks_add_queue('Payment',$o_id,'PaymentPush','nh_manually_after_order:mw_qbo_wc_order_payment');
+						}
+					}
 				}
+
 			}			
 		}
 		
@@ -5011,14 +5861,21 @@ class MyWorks_WC_QBO_Sync_Admin {
 		}
 				
 		if($order_id){
-			$order = get_post($order_id);			
+			if ($this->is_hpos_enabled()) {
+				$order = wc_get_order($order_id);
+			} else {
+				// HPOS Compatible order retrieval
+				$order = wc_get_order( $order_id ) ?: get_post($order_id);
+			}			
 			if(!is_object($order) || empty($order)){
 				if($manual){
 					$MSQS_QL->save_log('Export Order Error #'.$order_id,'Woocommerce order not found!','Invoice',0);
 				}
 				return false;
 			}
-			if($order->post_type!='shop_order'){
+
+			// HPOS Compatible order type check
+			if(!$order || $order->get_type() !== 'shop_order'){
 				if($manual){
 					$MSQS_QL->save_log('Export Order Error #'.$order_id,'Woocommerce order is not valid.','Invoice',0);
 				}
@@ -5026,11 +5883,13 @@ class MyWorks_WC_QBO_Sync_Admin {
 			}
 			
 			//25-04-2017
-			if($order->post_status=='auto-draft' || $order->post_status=='trash'){				
+			// HPOS Compatible status check
+			if(method_exists($order, 'get_status') ? (in_array($order->get_status(), array('auto-draft', 'trash'))) : ($order->post_status=='auto-draft' || $order->post_status=='trash')){				
 				return false;
 			}
 			
-			if(!$manual && $order->post_status=='draft'){				
+			// HPOS Compatible status check
+			if(!$manual && (method_exists($order, 'get_status') ? $order->get_status()=='draft' : $order->post_status=='draft')){				
 				if(is_admin()){					
 					//do_action('mw_wc_qbo_sync_add_order_status_draft_qbo', $order_id, $order);
 				}
@@ -5044,13 +5903,15 @@ class MyWorks_WC_QBO_Sync_Admin {
 			$only_sync_status = $MSQS_QL->get_option('mw_wc_qbo_sync_specific_order_status');
 			if($only_sync_status!=''){$only_sync_status = explode(',',$only_sync_status);}
 			
-			if(!$manual && (!is_array($only_sync_status) || (is_array($only_sync_status) && !in_array($order->post_status,$only_sync_status)))){
+			// HPOS Compatible status check
+			$order_status = method_exists($order, 'get_status') ? 'wc-'.$order->get_status() : $order->post_status;
+			if(!$manual && (!is_array($only_sync_status) || (is_array($only_sync_status) && !in_array($order_status,$only_sync_status)))){
 				//return false;
 				if(!$allow_spl_status){
 					//$is_os_err = true;
 					return false;
 				}				
-			}			
+			}
 			
 			//if(is_admin()){$manual = true;}
 			
@@ -5166,10 +6027,10 @@ class MyWorks_WC_QBO_Sync_Admin {
 				
 				if(!$qbo_customerid){
 					if(!$is_os_err){					
-						$MSQS_QL->save_log('Export Order Error #'.$ord_id_num,'Quickbooks customer not found!','Invoice',0);
+						$MSQS_QL->save_log('Export Order Error #'.$ord_id_num,'QuickBooks customer not found!','Invoice',0);
 					}else{
 						if($is_os_p_sync){
-							$MSQS_QL->save_log('Export Payment Error Order #'.$ord_id_num,'Quickbooks customer not found!','Payment',0);
+							$MSQS_QL->save_log('Export Payment Error Order #'.$ord_id_num,'QuickBooks customer not found!','Payment',0);
 						}					
 					}			
 					return false;
@@ -5186,6 +6047,10 @@ class MyWorks_WC_QBO_Sync_Admin {
 							if(isset($user_info->roles) && is_array($user_info->roles)){
 								$wc_user_role = $user_info->roles[0];
 							}
+                            if (empty($wc_user_role) && !empty($user_info) && !empty($user_info->roles) && is_array($user_info->roles)) {
+                                // Get the first role regardless of array key format
+                                $wc_user_role = reset($user_info->roles);
+                            }
 						}else{
 							$wc_user_role = 'wc_guest_user';
 						}
@@ -5317,10 +6182,10 @@ class MyWorks_WC_QBO_Sync_Admin {
 			
 			if(!$qbo_customerid){		
 				if(!$is_os_err){					
-					$MSQS_QL->save_log('Export Order Error #'.$ord_id_num,'Quickbooks customer not found!','Invoice',0);
+					$MSQS_QL->save_log('Export Order Error #'.$ord_id_num,'QuickBooks customer not found!','Invoice',0);
 				}else{
 					if($is_os_p_sync){
-						$MSQS_QL->save_log('Export Payment Error Order #'.$ord_id_num,'Quickbooks customer not found!','Payment',0);
+						$MSQS_QL->save_log('Export Payment Error Order #'.$ord_id_num,'QuickBooks customer not found!','Payment',0);
 					}					
 				}			
 				return false;
@@ -5399,6 +6264,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 			}			
 			
 			//$MSQS_QL->_p($invoice_data);return false;
+			//$MSQS_QL->add_wc_debug_log( $invoice_data, true, true, true );
 			
 			if($MSQS_QL->option_checked('mw_wc_qbo_sync_order_as_sales_receipt') || $MSQS_QL->is_order_sync_as_sales_receipt($order_id)){
 				$mw_qbo_sr_id = 0;
@@ -5541,15 +6407,28 @@ class MyWorks_WC_QBO_Sync_Admin {
 							
 							/**/
 							if((!$psfphia && (!$manual || $odp_qb)) && !$MSQS_QL->is_order_sync_as_sales_receipt($order_id)){
-								$_transaction_id = get_post_meta($order_id,'_transaction_id',true);
+								if ($this->is_hpos_enabled()) {
+									$order = wc_get_order($order_id);
+									$_transaction_id = $order ? $order->get_transaction_id() : '';
+								} else {
+									$_transaction_id = get_post_meta($order_id,'_transaction_id',true);
+								}
+
 								$a_bti = true;
 								if(!empty($_transaction_id) || $a_bti){
-									$pm_r = $MSQS_QL->get_row($wpdb->prepare("SELECT `meta_id` FROM `{$wpdb->postmeta}` WHERE `post_id` = %d AND `meta_key` = '_transaction_id' ",$order_id));
-									if(is_array($pm_r) && !empty($pm_r)){
-										$payment_id = (int) $pm_r['meta_id'];
-										if($payment_id > 0 && !$MSQS_QL->check_payment_get_obj(array('payment_id' => $payment_id))){
-											#
-											$this->mw_qbo_wc_order_payment(array('payment_id'=>$payment_id,'after_order'=>true));
+
+									if ($this->is_hpos_enabled()) {
+										if(!empty($_transaction_id)) {
+											$this->mw_qbo_wc_order_payment(array('order_id'=>$order_id));
+										}
+									} else {
+										$pm_r = $MSQS_QL->get_row($wpdb->prepare("SELECT `meta_id` FROM `{$wpdb->postmeta}` WHERE `post_id` = %d AND `meta_key` = '_transaction_id' ",$order_id));
+										if(is_array($pm_r) && !empty($pm_r)){
+											$payment_id = (int) $pm_r['meta_id'];
+											if($payment_id > 0 && !$MSQS_QL->check_payment_get_obj(array('payment_id' => $payment_id))){
+												#
+												$this->mw_qbo_wc_order_payment(array('payment_id'=>$payment_id,'after_order'=>true));
+											}
 										}
 									}
 								}								
@@ -5782,22 +6661,22 @@ class MyWorks_WC_QBO_Sync_Admin {
 		$rds = ($qb_te_yn == 'yes')?'':' style="display:none;"';
 		echo '
 		<div id="mw-qb-customer-gte-cnt" style="display:none;">
-			<h3>'. __('QuickBooks Tax Exempt Status', 'mw_wc_qbo_sync') .'</h3>
+			<h3>'. esc_html__('QuickBooks Tax Exempt Status', 'mw_wc_qbo_sync') .'</h3>
 				<table class="form-table">
 					<tr>
-						<th><label for="myworks_qb_tax_exempt_yn">'. __('Tax-Exempt', 'mw_wc_qbo_sync') .'</label></th>
+						<th><label for="myworks_qb_tax_exempt_yn">'. esc_html__('Tax-Exempt', 'mw_wc_qbo_sync') .'</label></th>
 						<td>
 							<select id="myworks_qb_tax_exempt_yn" name="myworks_qb_tax_exempt_yn">
-							'.$MSQS_QL->only_option($qb_te_yn,$MSQS_QL->yes_no,'','',true).'
+							'.wp_kses_post($MSQS_QL->only_option($qb_te_yn,$MSQS_QL->yes_no,'','',true)).'
 							</select>
 						</td>
 					</tr>
 					
-					<tr id="mwqbter_tr"'.$rds.'>
-						<th><label for="myworks_qb_tax_exempt_reason">'. __('Reason', 'mw_wc_qbo_sync') .'</label></th>
+					<tr id="mwqbter_tr"'.esc_attr($rds).'>
+						<th><label for="myworks_qb_tax_exempt_reason">'. esc_html__('Reason', 'mw_wc_qbo_sync') .'</label></th>
 						<td>
 							<select id="myworks_qb_tax_exempt_reason" name="myworks_qb_tax_exempt_reason">							
-							'.$MSQS_QL->only_option($qb_te_reason,$MSQS_QL->get_qbo_cus_tax_exem_rsn_id_list(),'','',true).'
+							'.wp_kses_post($MSQS_QL->only_option($qb_te_reason,$MSQS_QL->get_qbo_cus_tax_exem_rsn_id_list(),'','',true)).'
 							</select>
 							<br>
 							<span class="description">Select QuickBooks tax exemption reason</span>
@@ -5814,14 +6693,14 @@ class MyWorks_WC_QBO_Sync_Admin {
 			return;
 		}
 		
-		update_user_meta($userId, 'myworks_qb_tax_exempt_yn', (isset($_POST['myworks_qb_tax_exempt_yn']))?trim($_POST['myworks_qb_tax_exempt_yn']):'');
-		update_user_meta($userId, 'myworks_qb_tax_exempt_reason', (isset($_POST['myworks_qb_tax_exempt_reason']))?(int) $_POST['myworks_qb_tax_exempt_reason']:'');
+		update_user_meta($userId, 'myworks_qb_tax_exempt_yn', (isset($_POST['myworks_qb_tax_exempt_yn']))?trim(sanitize_text_field($_POST['myworks_qb_tax_exempt_yn'])):'');
+		update_user_meta($userId, 'myworks_qb_tax_exempt_reason', (isset($_POST['myworks_qb_tax_exempt_reason']))?(int) sanitize_text_field($_POST['myworks_qb_tax_exempt_reason']):'');
 	}
 	
 	public function myworks_customer_group_qb_tax_exempt_js(){
 		$output = '';
 		global $pagenow;
-		if ( ( $pagenow == 'user-edit.php' ) && empty( $_GET['page'] ) ) {
+		if ( ( $pagenow == 'user-edit.php' ) && empty( sanitize_text_field($_GET['page'] ?? '') ) ) {
 			$output = '
 			<script type="text/javascript">
 				jQuery(document).ready(function($){
@@ -5838,7 +6717,7 @@ class MyWorks_WC_QBO_Sync_Admin {
 			</script>
 			';
 		}
-		echo $output;
+		echo wp_kses_post($output);
 	}
 	
 }

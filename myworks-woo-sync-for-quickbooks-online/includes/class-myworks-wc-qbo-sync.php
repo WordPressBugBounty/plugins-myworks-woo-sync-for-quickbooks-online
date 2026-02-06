@@ -333,6 +333,8 @@ class MyWorks_WC_QBO_Sync {
 		//
 		add_action( 'wp_ajax_mw_wc_qbo_sync_odpage_qbsync', 'mw_wc_qbo_sync_odpage_qbsync' );
 		add_action( 'wp_ajax_mw_wc_qbo_sync_odpage_sync_status', 'mw_wc_qbo_sync_odpage_sync_status' );
+
+		add_action( 'wp_ajax_mw_wc_qbo_sync_settings_refresh_qb_data', 'mw_wc_qbo_sync_settings_refresh_qb_data' );
 	}
 
 	/**

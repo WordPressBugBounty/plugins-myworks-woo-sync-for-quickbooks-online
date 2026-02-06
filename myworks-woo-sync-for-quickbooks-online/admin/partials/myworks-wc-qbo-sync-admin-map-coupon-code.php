@@ -6,11 +6,20 @@ global $MWQS_OF;
 global $MSQS_QL;
 global $wpdb;
 
+/*
 if($MSQS_QL->option_checked('mw_wc_qbo_sync_pause_up_qbo_conection')){
 	$MSQS_QL = new MyWorks_WC_QBO_Sync_QBO_Lib(true);	
 }
+*/
 
 $page_url = 'admin.php?page=myworks-wc-qbo-map&tab=coupon-code';
+
+# New
+if($MSQS_QL->use_new_qbo_local_data('class') && $MSQS_QL->get_option('mw_wc_qbo_sync_app_setting_qbo_classes_data_fetched') != 'true'){
+	# Fetch and save new QBO classes into DB
+	$MSQS_QL->save_all_classes();
+	update_option('mw_wc_qbo_sync_app_setting_qbo_classes_data_fetched','true',false);
+}
 
 if (! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_coupon_code', 'map_wc_qbo_coupon_code' ) ) {
 	$item_ids = array();
@@ -26,7 +35,7 @@ if (! empty( $_POST ) && check_admin_referer( 'myworks_wc_qbo_sync_map_wc_qbo_co
 		foreach ($item_ids as $key=>$value){
 			$save_data = array();			
 			$save_data['qbo_product_id'] = $value;
-			$save_data['class_id'] = (isset($_POST['class_map_coupon_code_'.$key]))?$_POST['class_map_coupon_code_'.$key]:'';
+			$save_data['class_id'] = (isset($_POST['class_map_coupon_code_'.$key]))?sanitize_text_field($_POST['class_map_coupon_code_'.$key]):'';
 			
 			$table = $wpdb->prefix.'mw_wc_qbo_sync_promo_code_product_map';
 			if($MSQS_QL->get_field_by_val($table,'id','promo_id',$key)){
@@ -72,11 +81,11 @@ if(is_array($cpm_map_data) && count($cpm_map_data)){
 <?php require_once plugin_dir_path( __FILE__ ) . 'myworks-wc-qbo-sync-admin-map-nav.php' ?>
 
 <div class="container map-coupon-code-outer">
-	<div class="page_title"><h4><?php _e( 'Coupon Code Mappings', 'mw_wc_qbo_sync' );?></h4></div>
+	<div class="page_title"><h4><?php esc_html_e( 'Coupon Code Mappings', 'mw_wc_qbo_sync' );?></h4></div>
 	<div class="mw_wc_filter">
 	 <span class="search_text">Search</span>
 	  &nbsp;
-	  <input type="text" id="coupon_map_search" value="<?php echo $coupon_map_search;?>">
+	  <input type="text" id="coupon_map_search" value="<?php echo esc_attr($coupon_map_search);?>">
 	  &nbsp;		
 	  <button onclick="javascript:search_item();" class="btn btn-info">Filter</button>
 	  &nbsp;
@@ -85,8 +94,8 @@ if(is_array($cpm_map_data) && count($cpm_map_data)){
 	  <span class="filter-right-sec">
 		  <span class="entries">Show entries</span>
 		  &nbsp;
-		  <select style="width:50px;" onchange="javascript:window.location='<?php echo $page_url;?>&<?php echo $MSQS_QL->per_page_keyword;?>='+this.value;">
-			<?php echo  $MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page);?>
+		  <select style="width:50px;" onchange="javascript:window.location='<?php echo esc_url_raw($page_url);?>&<?php echo esc_js($MSQS_QL->per_page_keyword);?>='+this.value;">
+			<?php echo wp_kses($MSQS_QL->only_option($items_per_page,$MSQS_QL->show_per_page), array('option' => array('value' => array(), 'selected' => array())));?>
 		 </select>
 	 </span>
 	 </div>
@@ -95,7 +104,7 @@ if(is_array($cpm_map_data) && count($cpm_map_data)){
 		<div class="card-content">
 			<div class="row">
 			<?php if(is_array($wc_coupon_codes) && count($wc_coupon_codes)):?>
-				<form method="POST" class="col s12 m12 l12" action="<?php echo $page_url;?>">
+				<form method="POST" class="col s12 m12 l12" action="<?php echo esc_url($page_url);?>">
 					<div class="row">
 						<div class="col s12 m12 l12">
 							<div class="myworks-wc-qbo-sync-table-responsive">
@@ -106,10 +115,10 @@ if(is_array($cpm_map_data) && count($cpm_map_data)){
 											Woocommerce Coupon Code								    	
 	                                        </th>
 	                                        <th width="25%" class="title-description">
-	                                            Quickbooks Product								    	
+	                                            QuickBooks Product								    	
 	                                        </th>
 	                                        <th width="25%" class="title-description">
-	                                            Quickbooks Class
+	                                            QuickBooks Class
 	                                        </th>
 	                                	</tr>
 	                                </thead>			
@@ -117,23 +126,23 @@ if(is_array($cpm_map_data) && count($cpm_map_data)){
 									<?php foreach($wc_coupon_codes as $cp_val):?>
 									<tr>
 										<td>
-										<b><?php echo $cp_val->post_title;?></b>
-										<p><?php echo stripslashes(strip_tags($cp_val->post_excerpt));?></p>
+										<b><?php echo esc_html($cp_val->post_title);?></b>
+										<p><?php echo esc_html(wp_strip_all_tags($cp_val->post_excerpt));?></p>
 										</td>
 										<td>
-											<select class="mw_wc_qbo_sync_select2" name="map_coupon_code_<?php echo $cp_val->ID?>" id="map_coupon_code_<?php echo $cp_val->ID?>">
-												<?php echo $qbo_product_options;?>
+											<select class="mw_wc_qbo_sync_select2" name="map_coupon_code_<?php echo esc_attr($cp_val->ID)?>" id="map_coupon_code_<?php echo esc_attr($cp_val->ID)?>">
+												<?php echo wp_kses($qbo_product_options, array('option' => array('value' => array(), 'selected' => array())));?>
 											</select>
 										</td>
 										<td>
-											<select class="mw_wc_qbo_sync_select2" name="class_map_coupon_code_<?php echo $cp_val->ID?>" id="class_map_coupon_code_<?php echo $cp_val->ID?>">
-												<?php echo $qbo_class_options;?>
+											<select class="mw_wc_qbo_sync_select2" name="class_map_coupon_code_<?php echo esc_attr($cp_val->ID)?>" id="class_map_coupon_code_<?php echo esc_attr($cp_val->ID)?>">
+												<?php echo wp_kses($qbo_class_options, array('option' => array('value' => array(), 'selected' => array())));?>
 											</select>
 										</td>
 									</tr>
 									<?php endforeach;?>
 								</table>
-								<?php echo $pagination_links?>
+								<?php echo $pagination_links; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</div>
 						</div>
 					</div>
@@ -149,7 +158,7 @@ if(is_array($cpm_map_data) && count($cpm_map_data)){
 				<?php else:?>
 				
 				<h4 class="mw_mlp_ndf">
-					<?php _e( 'No available coupon codes to display.', 'mw_wc_qbo_sync' );?>
+					<?php esc_html_e( 'No available coupon codes to display.', 'mw_wc_qbo_sync' );?>
 				</h4>
 				<?php endif;?>
 			</div>
@@ -162,25 +171,25 @@ if(is_array($cpm_map_data) && count($cpm_map_data)){
 		var coupon_map_search = jQuery('#coupon_map_search').val();
 		coupon_map_search = jQuery.trim(coupon_map_search);
 		if(coupon_map_search!=''){
-			window.location = '<?php echo $page_url;?>&coupon_map_search='+coupon_map_search;
+			window.location = '<?php echo esc_url_raw($page_url);?>&coupon_map_search='+coupon_map_search;
 		}else{
-			alert('<?php echo __('Please enter search keyword.','mw_wc_qbo_sync')?>');
+			alert('<?php echo esc_js(__('Please enter search keyword.','mw_wc_qbo_sync')); ?>');
 		}
 	}
 
 	function reset_item(){		
-		window.location = '<?php echo $page_url;?>&coupon_map_search=';
+		window.location = '<?php echo esc_url_raw($page_url);?>&coupon_map_search=';
 	}
 	<?php if($selected_options_script!=''):?>
 	jQuery(document).ready(function(){
-		<?php echo $selected_options_script;?>
+		<?php echo wp_kses($selected_options_script, array('script' => array()));?>
 	});
 	<?php endif;?>
 	
 	<?php if($selected_options_script!=''):?>	
 	jQuery(document).ready(function(){
-		<?php echo $selected_options_script;?>
+		<?php echo wp_kses($selected_options_script, array('script' => array()));?>
 	});	
 	<?php endif;?>
  </script>
- <?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select2');?>
+ <?php echo $MWQS_OF->get_select2_js('.mw_wc_qbo_sync_select2'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already sanitized in get_select2_js function ?>

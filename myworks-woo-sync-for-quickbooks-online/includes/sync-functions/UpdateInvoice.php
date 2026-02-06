@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) )
 exit;
 
 /**
- * Update Invoice Into Quickbooks Online.
+ * Update Invoice Into QuickBooks Online.
  *
  * @since    1.0.9
  * Last Updated: 2019-01-25
@@ -18,6 +18,9 @@ if($include_this_function){
 	}
 
 	if($this->is_connected()){
+		// Round all monetary values in invoice data to 2 decimal places
+		$invoice_data = $this->round_invoice_monetary_data($invoice_data);
+		
 		$wc_inv_id = $this->get_array_isset($invoice_data,'wc_inv_id',0);
 		$wc_inv_num = $this->get_array_isset($invoice_data,'wc_inv_num','');
 		$wc_cus_id = $this->get_array_isset($invoice_data,'wc_cus_id','');
@@ -142,9 +145,9 @@ if($include_this_function){
 				$qbo_date = ''; $is_line_item_date = false;
 				if(is_array($qbo_inv_items) && count($qbo_inv_items)){
 					foreach($qbo_inv_items as $qbo_item){
-						$total_line_subtotal+=$qbo_item['line_subtotal'];
+						$total_line_subtotal+=floatval($qbo_item['line_subtotal']);
 						if($this->wacs_base_cur_enabled()){
-							$line_subtotal_base_currency+=$qbo_item['line_subtotal_base_currency'];
+							$line_subtotal_base_currency+=floatval($qbo_item['line_subtotal_base_currency']);
 						}
 						if(empty($qbo_date) && isset($qbo_item['Date_QF'])){
 							$qbo_date = $qbo_item['Date_QF'];
@@ -426,7 +429,7 @@ if($include_this_function){
 											$gp_line->setDetailType('SalesItemLineDetail');
 											$UnitPrice = $qbo_gp_item["UnitPrice"];
 											//$Amount = $qbo_gp_item['Qty']*$UnitPrice;
-											$Amount = ($qbo_gp_item['Qty']*$qbo_item['Qty'])*$UnitPrice;
+											$Amount = (floatval($qbo_gp_item['Qty'])*floatval($qbo_item['Qty']))*$UnitPrice;
 											$gp_line->setAmount($Amount);
 											
 											if(!$this->option_checked('mw_wc_qbo_sync_skip_os_lid')){
@@ -493,7 +496,7 @@ if($include_this_function){
 											//$Qty = $qbo_item['Qty'];
 											
 											//$salesItemLineDetail->setQty($Qty);
-											$salesItemLineDetail->setQty($Qty*$qbo_item['Qty']);
+											$salesItemLineDetail->setQty(floatval($Qty)*floatval($qbo_item['Qty']));
 											$salesItemLineDetail->setUnitPrice($UnitPrice);
 											//$salesItemLineDetail->setUnitPrice($UnitPrice*$qbo_item['Qty']);
 											
@@ -541,7 +544,7 @@ if($include_this_function){
 										$gp_line->setDetailType('SalesItemLineDetail');
 										
 										//$UnitPrice = $gp_p_diff;
-										$UnitPrice = $gp_p_diff*$qbo_item['Qty'];
+										$UnitPrice = $gp_p_diff*floatval($qbo_item['Qty']);
 										$Qty = 1;
 										$Amount = $Qty*$UnitPrice;
 										$gp_line->setAmount($Amount);
@@ -664,7 +667,7 @@ if($include_this_function){
 											$gp_line->setDetailType('SalesItemLineDetail');
 											$UnitPrice = $qbo_gp_item["UnitPrice"];
 											//$Amount = $qbo_gp_item['Qty']*$UnitPrice;
-											$Amount = ($qbo_gp_item['Qty']*$qbo_item['Qty'])*$UnitPrice;
+											$Amount = (floatval($qbo_gp_item['Qty'])*floatval($qbo_item['Qty']))*$UnitPrice;
 											$gp_line->setAmount($Amount);
 											
 											if(!$this->option_checked('mw_wc_qbo_sync_skip_os_lid')){
@@ -732,7 +735,7 @@ if($include_this_function){
 											//$Qty = $qbo_item['Qty'];
 											
 											//$salesItemLineDetail->setQty($Qty);
-											$salesItemLineDetail->setQty($Qty*$qbo_item['Qty']);
+											$salesItemLineDetail->setQty(floatval($Qty)*floatval($qbo_item['Qty']));
 											$salesItemLineDetail->setUnitPrice($UnitPrice);
 											//$salesItemLineDetail->setUnitPrice($UnitPrice*$qbo_item['Qty']);
 											
@@ -775,7 +778,7 @@ if($include_this_function){
 									}
 									
 									$qbo_b_tp = $qbo_gp_details['b_tp'];
-									$qbo_b_tp = $qbo_b_tp*$qbo_item['Qty'];
+									$qbo_b_tp = $qbo_b_tp*floatval($qbo_item['Qty']);
 									$gp_p_diff = ($wc_b_price-$qbo_b_tp);
 									
 									$allow_bndl_line_adstmnt = true;
@@ -912,7 +915,7 @@ if($include_this_function){
 						# && !empty($invoice_data['used_coupons'])
 						if($sdioli_isli && !$is_sync_discount_line && isset($invoice_data['used_coupons'])){
 							if($qbo_item['line_subtotal'] > $qbo_item['line_total']){
-								$line_discount = (float) $qbo_item['line_subtotal'] - $qbo_item['line_total'];
+								$line_discount = floatval($qbo_item['line_subtotal']) - floatval($qbo_item['line_total']);
 								if($line_discount > 0){
 									$di_ioli = true;
 									$line_D = new QuickBooks_IPP_Object_Line();
@@ -925,15 +928,15 @@ if($include_this_function){
 						$line->setDetailType('SalesItemLineDetail');
 						
 						$Description = $qbo_item['Description'];
-						$UnitPrice = $qbo_item["UnitPrice"];
-						$line_total = $qbo_item["line_total"];
-						$line_subtotal = $qbo_item["line_subtotal"];
+						$UnitPrice = floatval($qbo_item["UnitPrice"]);
+						$line_total = floatval($qbo_item["line_total"]);
+						$line_subtotal = floatval($qbo_item["line_subtotal"]);
 						
 						if($this->wacs_base_cur_enabled()){
-							$UnitPrice = $qbo_item["UnitPrice_base_currency"];
+							$UnitPrice = floatval($qbo_item["UnitPrice_base_currency"]);
 							$Description.= " ({$_order_currency} ".$qbo_item["UnitPrice"].")";
-							$line_total = $qbo_item["line_total_base_currency"];
-							$line_subtotal = $qbo_item["line_subtotal_base_currency"];
+							$line_total = floatval($qbo_item["line_total_base_currency"]);
+							$line_subtotal = floatval($qbo_item["line_subtotal_base_currency"]);
 						}
 						
 						if($_cart_discount){
@@ -965,6 +968,12 @@ if($include_this_function){
 							$qbo_item['Qty'] = 1;
 							
 							$Amount = $UnitPrice;
+						}
+						
+						// QuickBooks Fix Error:6070 [Amount calculation incorrect in the request., Amount is not equal to UnitPrice * Qty]
+						$calculated_amount = $qbo_item['Qty']*$UnitPrice;
+						if($calculated_amount !== $Amount) {
+							$Amount = $calculated_amount;
 						}
 						
 						$line->setAmount($Amount);
@@ -1009,19 +1018,19 @@ if($include_this_function){
 								$TaxCodeRef = ($qbo_company_country=='US')?'TAX':$qbo_tax_code_fli;
 
 								if($is_inclusive){
-									$TaxInclusiveAmt = ($qbo_item['line_subtotal']+$qbo_item['line_subtotal_tax']);
+									$TaxInclusiveAmt = (floatval($qbo_item['line_subtotal'])+floatval($qbo_item['line_subtotal_tax']));
 									if($this->option_checked('mw_wc_qbo_sync_no_ad_discount_li')){
-										$TaxInclusiveAmt = ($qbo_item['line_total']+$qbo_item['line_tax']);
+										$TaxInclusiveAmt = (floatval($qbo_item['line_total'])+floatval($qbo_item['line_tax']));
 									}
 									
 									if($use_lt_if_ist_l_item){
-										$TaxInclusiveAmt = ($qbo_item['line_total']+$qbo_item['line_tax']);
+										$TaxInclusiveAmt = (floatval($qbo_item['line_total'])+floatval($qbo_item['line_tax']));
 									}
 									
 									//
 									$TaxInclusiveAmt = $this->trim_after_decimal_place($TaxInclusiveAmt,7);
 									
-									$NetAmountTaxable += $qbo_item['line_total'];
+									$NetAmountTaxable += floatval($qbo_item['line_total']);
 									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt);
 								}
 
@@ -1054,7 +1063,7 @@ if($include_this_function){
 						
 						$salesItemLineDetail->setItemRef($qbo_item["ItemRef"]);
 
-						$Qty = $qbo_item["Qty"];
+						$Qty = floatval($qbo_item["Qty"]);
 						//$is_set_up = false;
 						$is_set_up = true;
 						if($this->option_checked('mw_wc_qbo_sync_os_skip_uprice_l_item')){
@@ -1070,7 +1079,7 @@ if($include_this_function){
 									$is_set_up = true;
 									$UnitPrice = $UnitPrice/$_measurement_needed;
 									//$UnitPrice = number_format($UnitPrice, 2);
-									$_quantity = (isset($measurement_data['_quantity']))?$measurement_data['_quantity']:1;
+									$_quantity = (isset($measurement_data['_quantity']))?floatval($measurement_data['_quantity']):1;
 									$Qty = $_measurement_needed*$_quantity;
 								}
 							}
@@ -1171,7 +1180,7 @@ if($include_this_function){
 					$dc_gt_fees = (isset($invoice_data['dc_gt_fees']))?$invoice_data['dc_gt_fees']:array();
 					if(is_array($dc_gt_fees) && count($dc_gt_fees)){
 						foreach($dc_gt_fees as $df){
-							$UnitPrice = $df['_line_total'];								
+							$UnitPrice = floatval($df['_line_total']);								
 							if($UnitPrice<0){
 								$nfd_amount += $UnitPrice;
 								
@@ -1479,7 +1488,27 @@ if($include_this_function){
 								if($TaxCodeRef!=''){
 									$salesItemLineDetail->setTaxCodeRef($TaxCodeRef);
 								}
+								
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
 							}else{
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
+								
 								$zero_rated_tax_code = $this->get_qbo_zero_rated_tax_code($qbo_company_country);
 								$salesItemLineDetail->setTaxCodeRef($zero_rated_tax_code);
 							}
@@ -1491,7 +1520,27 @@ if($include_this_function){
 								if($TaxCodeRef!=''){
 									$salesItemLineDetail->setTaxCodeRef($TaxCodeRef);
 								}
+								
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
 							}else{
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
+								
 								$zero_rated_tax_code = $this->get_qbo_zero_rated_tax_code($qbo_company_country);
 								$salesItemLineDetail->setTaxCodeRef($zero_rated_tax_code);
 							}
@@ -1558,7 +1607,27 @@ if($include_this_function){
 								if($TaxCodeRef!=''){
 									$salesItemLineDetail->setTaxCodeRef($TaxCodeRef);
 								}
+								
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
 							}else{
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
+								
 								$zero_rated_tax_code = $this->get_qbo_zero_rated_tax_code($qbo_company_country);
 								$salesItemLineDetail->setTaxCodeRef($zero_rated_tax_code);
 							}
@@ -1570,7 +1639,27 @@ if($include_this_function){
 								if($TaxCodeRef!=''){
 									$salesItemLineDetail->setTaxCodeRef($TaxCodeRef);
 								}
+								
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
 							}else{
+								if($is_inclusive){
+									if($this->wacs_base_cur_enabled()){
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total_base_currency + $_order_shipping_tax_base_currency);
+									}else{
+										$TaxInclusiveAmt_Shipping = ($order_shipping_total + $_order_shipping_tax);
+									}
+									$TaxInclusiveAmt_Shipping = $this->trim_after_decimal_place($TaxInclusiveAmt_Shipping,7);
+									$salesItemLineDetail->setTaxInclusiveAmt($TaxInclusiveAmt_Shipping);
+								}
+								
 								$zero_rated_tax_code = $this->get_qbo_zero_rated_tax_code($qbo_company_country);
 								$salesItemLineDetail->setTaxCodeRef($zero_rated_tax_code);
 							}
@@ -1781,7 +1870,7 @@ if($include_this_function){
 					$dc_gt_fees = (isset($invoice_data['dc_gt_fees']))?$invoice_data['dc_gt_fees']:array();
 					if(is_array($dc_gt_fees) && count($dc_gt_fees)){
 						foreach($dc_gt_fees as $df){
-							$UnitPrice = $df['_line_total'];								
+							$UnitPrice = floatval($df['_line_total']);								
 							if(!$UnitPrice<0){									
 								continue;
 							}
@@ -2884,12 +2973,12 @@ if($include_this_function){
 					$this->add_qbo_item_obj_into_log_file('Invoice Update',$invoice_data,$invoice,$this->get_IPP()->lastRequest(),$this->get_IPP()->lastResponse(),true);
 					
 					/*Order Note Add*/
-					$order = new WC_Order( $wc_inv_id );
+					$order = wc_get_order( $wc_inv_id );
 					$o_note = __('Order updated in QuickBooks Online - MyWorks Sync','mw_wc_qbo_sync');
 					$order->add_order_note($o_note);
 					
 					/*Send Invoice*/
-					if($this->option_checked('mw_wc_qbo_sync_send_inv_sr_afsi_qb') && ($is_unpaid_order || $this->get_option('mw_wc_qbo_sync_send_inv_sr_afsi_qb_option') == 'f_a_o')){
+					if(($this->get_option('mw_wc_qbo_sync_send_inv_sr_afsi_qb_option') == 'f_a_o') || ($is_unpaid_order && $this->get_option('mw_wc_qbo_sync_send_inv_sr_afsi_qb_option') == 'o_f_u_o')){
 						//BillEmail
 						if((!empty($bill_email_addr) || !empty($_billing_email)) && $invoice->getEmailStatus() == 'NeedToSend'){
 							if ($resp_send = $invoiceService->send($Context, $realm, $qbo_inv_id)){
@@ -2913,7 +3002,7 @@ if($include_this_function){
 					$this->add_qbo_item_obj_into_log_file('Invoice Update',$invoice_data,$invoice,$this->get_IPP()->lastRequest(),$this->get_IPP()->lastResponse());
 					
 					/*Order Note Add*/
-					$order = new WC_Order( $wc_inv_id );
+					$order = wc_get_order( $wc_inv_id );
 					$o_note = __('Order attempted update to QuickBooks but failed. Check MyWorks Sync > Log for more info.','mw_wc_qbo_sync');
 					$order->add_order_note($o_note);
 					
